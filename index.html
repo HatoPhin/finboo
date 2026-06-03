@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Finboo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+*{box-sizing:border-box;transition:background-color .2s,color .2s,border-color .2s;}
+body{font-family:'Plus Jakarta Sans','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);margin:0;}
+
+/* ===== CSS変数 ライト ===== */
+:root{
+  --bg:#f8fafc;--card:#ffffff;--card2:#f1f5f9;--border:#e2e8f0;
+  --text:#0f172a;--text2:#64748b;--text3:#94a3b8;
+  --indigo:#4f46e5;--indigo-light:#eef2ff;--indigo-text:#4338ca;
+  --green:#059669;--green-light:#ecfdf5;
+  --red:#e11d48;--red-light:#fff1f2;
+  --amber:#d97706;--amber-light:#fffbeb;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+  --nav-bg:#ffffff;--nav-border:#e2e8f0;
+}
+/* ===== CSS変数 ダーク ===== */
+body.dark{
+  --bg:#0f172a;--card:#1e293b;--card2:#273548;--border:#334155;
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;
+  --indigo:#818cf8;--indigo-light:#1e1b4b;--indigo-text:#a5b4fc;
+  --green:#34d399;--green-light:#064e3b;
+  --red:#fb7185;--red-light:#4c0519;
+  --amber:#fbbf24;--amber-light:#451a03;
+  --shadow:0 1px 4px rgba(0,0,0,.4);
+  --nav-bg:#1e293b;--nav-border:#334155;
+}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);}
+.tab-pane{display:none;animation:fi .2s ease;}
+.tab-pane.active{display:block;}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.noscroll::-webkit-scrollbar{display:none;}
+.noscroll{-ms-overflow-style:none;scrollbar-width:none;}
+.cal-on{outline:2.5px solid var(--indigo);outline-offset:-2px;background:var(--indigo-light)!important;}
+input,select,textarea{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--indigo);}
+a{color:var(--indigo);}
+
+/* 同期オーバーレイ */
+#sync-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;padding-bottom:90px;z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s;}
+#sync-overlay.show{opacity:1;pointer-events:all;}
+#sync-card{width:min(420px,92vw);background:#1e293b;border-radius:18px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+#sync-track{height:6px;background:#334155;border-radius:99px;overflow:hidden;margin:10px 0 8px;}
+#sync-fill{height:100%;background:linear-gradient(90deg,#6366f1,#06b6d4);border-radius:99px;width:0%;transition:width .4s ease;}
+#sync-log{font-size:10px;font-family:monospace;color:#94a3b8;max-height:100px;overflow-y:auto;}
+#sync-log div{padding:1px 0;}
+#top-bar{position:fixed;top:0;left:0;right:0;height:3px;z-index:10000;pointer-events:none;}
+#top-fill{height:100%;background:var(--indigo);width:0%;transition:width .4s ease;}
+</style>
+</head>
+<body class="min-h-screen flex flex-col pb-20 md:pb-0">
+<div id="top-bar"><div id="top-fill"></div></div>
+
+<!-- 同期オーバーレイ -->
+<div id="sync-overlay">
+  <div id="sync-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span id="sync-title" style="color:#f1f5f9;font-size:12px;font-weight:700;">同期中...</span>
+      <span id="sync-pct" style="color:#818cf8;font-size:12px;font-family:monospace;">0%</span>
+    </div>
+    <div id="sync-track"><div id="sync-fill"></div></div>
+    <div id="sync-log"></div>
+  </div>
+</div>
+
+<!-- ヘッダー -->
+<header style="background:var(--nav-bg);border-bottom:1px solid var(--nav-border);position:sticky;top:0;z-index:50;box-shadow:var(--shadow);">
+  <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div style="padding:8px;background:var(--indigo);color:#fff;border-radius:12px;">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1;">Finboo</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">U25特約・月間合算 & PayPay都度計算対応</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap justify-end">
+      <!-- 年月セレクター -->
+      <div class="flex items-center gap-1">
+        <select id="sel-year" style="padding:4px 6px;font-size:11px;font-weight:600;"></select>
+        <select id="sel-month" style="padding:4px 6px;font-size:11px;font-weight:600;"></select>
+      </div>
+      <!-- ダークモードトグル -->
+      <button id="btn-dark" style="padding:6px 10px;font-size:16px;background:var(--card2);border:1px solid var(--border);border-radius:10px;cursor:pointer;color:var(--text);">🌙</button>
+      <button id="btn-reset" style="padding:4px 10px;font-size:10px;font-weight:700;background:var(--card2);color:var(--text2);border:1px solid var(--border);border-radius:8px;cursor:pointer;">🔄 初期化</button>
+    </div>
+  </div>
+</header>
+
+<!-- タブ(PC) -->
+<div style="background:var(--nav-bg);border-bottom:1px solid var(--nav-border);overflow-x:auto;" class="noscroll">
+  <div class="max-w-7xl mx-auto px-4">
+    <nav class="flex min-w-max gap-1">
+      <button class="tab-t" data-tab="dashboard">📊 グラフ・ホーム</button>
+      <button class="tab-t" data-tab="points">🪙 ポイントシミュレーション</button>
+      <button class="tab-t" data-tab="calendar">📅 収支カレンダー</button>
+      <button class="tab-t" data-tab="transactions">📝 明細一覧</button>
+      <button class="tab-t" data-tab="sync">🔄 同期・インポート</button>
+      <button class="tab-t" data-tab="ai">✨ Gemini分析</button>
+    </nav>
+  </div>
+</div>
+
+<main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+
+<!-- ======= ダッシュボード ======= -->
+<div id="pane-dashboard" class="tab-pane active space-y-6">
+  <!-- 同期バナー -->
+  <div style="background:var(--indigo-light);border:1px solid var(--border);border-radius:16px;padding:16px;">
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex-grow space-y-2">
+        <div style="font-size:12px;font-weight:700;color:var(--indigo-text);">⚡ Googleスプレッドシート自動連携 / ファイルアップロード</div>
+        <div style="font-size:11px;color:var(--text2);">URLを貼るだけ or CSVをアップロードしてデータを読み込みます</div>
+        <div class="flex gap-2">
+          <input id="url-dash" type="url" placeholder="スプレッドシートのCSV公開URL" style="flex:1;min-width:0;padding:7px 12px;font-size:11px;">
+          <button id="btn-sync-dash" style="padding:7px 14px;background:var(--indigo);color:#fff;font-size:11px;font-weight:700;border:none;border-radius:10px;cursor:pointer;white-space:nowrap;">🔄 同期</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 上段: ポイントバナー + 予算 -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="md:col-span-2 rounded-2xl shadow-md p-5 flex items-center justify-between" style="background:linear-gradient(135deg,#1e1b4b,#0f172a);color:#fff;">
+      <div>
+        <div style="font-size:10px;color:#a5b4fc;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Cashback & Rewards</div>
+        <div style="font-size:18px;font-weight:700;margin-top:2px;">今月の獲得予定ポイント</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">三井住友(月間合算＋U25特約)＋PayPay(都度)</div>
+      </div>
+      <div style="text-align:right;">
+        <div id="ui-total-pts" style="font-size:36px;font-weight:900;color:#fbbf24;font-family:monospace;">0 pt</div>
+        <div style="font-size:11px;color:#cbd5e1;margin-top:2px;">実質還元率: <span id="ui-avg-rate" style="font-weight:700;">0.0%</span></div>
+      </div>
+    </div>
+    <div class="card p-5 flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span style="font-size:11px;font-weight:700;color:var(--text3);">🎯 今月の生活費予算</span>
+        <button id="btn-edit-budget" style="font-size:10px;color:var(--indigo);font-weight:600;background:none;border:none;cursor:pointer;">変更</button>
+      </div>
+      <div class="flex items-baseline gap-1.5 mt-1.5">
+        <span id="ui-expense" style="font-size:22px;font-weight:700;color:var(--red);">¥0</span>
+        <span style="font-size:11px;color:var(--text3);">/ <span id="ui-budget-lim">¥10,000</span></span>
+      </div>
+      <div style="width:100%;background:var(--card2);border-radius:99px;height:7px;overflow:hidden;margin-top:8px;">
+        <div id="ui-budget-bar" style="height:100%;background:linear-gradient(90deg,#6366f1,#f43f5e);border-radius:99px;width:0%;transition:width .5s;"></div>
+      </div>
+      <div class="flex justify-between mt-2" style="font-size:9px;color:var(--text3);">
+        <span id="ui-b-spent">支出: ¥0</span>
+        <span id="ui-b-remain">残り: ¥10,000</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 収支サマリー 6連カード -->
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div class="card p-4">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);">💰 収入合計</div>
+      <div id="ui-income" style="font-size:20px;font-weight:700;color:var(--green);margin-top:4px;font-family:monospace;">¥0</div>
+    </div>
+    <div class="card p-4">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);">💸 支出合計</div>
+      <div id="ui-expense2" style="font-size:20px;font-weight:700;color:var(--red);margin-top:4px;font-family:monospace;">¥0</div>
+      <div id="ui-point-sub" style="display:none;margin-top:4px;">
+        <div style="font-size:9px;color:var(--text3);">うちポイント払い: <span id="ui-point-sub-amt" style="color:var(--indigo);font-weight:700;font-family:monospace;">¥0</span></div>
+        <div style="font-size:9px;color:var(--text3);">実質支出: <span id="ui-real-expense" style="color:var(--red);font-weight:700;font-family:monospace;">¥0</span></div>
+      </div>
+    </div>
+    <div class="card p-4">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);">📊 収支結果</div>
+      <div id="ui-balance" style="font-size:20px;font-weight:700;margin-top:4px;font-family:monospace;">¥0</div>
+    </div>
+    <div class="card p-4">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);">🍱 昼食（大学）費</div>
+      <div id="ui-lunch" style="font-size:20px;font-weight:700;color:var(--indigo);margin-top:4px;font-family:monospace;">¥0</div>
+    </div>
+    <div class="card p-4">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);">🟢 Vポイント</div>
+      <div id="ui-vpts" style="font-size:20px;font-weight:700;color:var(--green);margin-top:4px;font-family:monospace;">0 pt</div>
+    </div>
+    <div class="card p-4">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);">🔴 PayPayポイント</div>
+      <div id="ui-pppts" style="font-size:20px;font-weight:700;color:#db2777;margin-top:4px;font-family:monospace;">0 pt</div>
+    </div>
+  </div>
+
+
+  <!-- グラフ -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <div class="flex justify-between items-center">
+        <div><div style="font-size:13px;font-weight:700;color:var(--text);">💳 支払い手段別支出</div><div style="font-size:10px;color:var(--text3);">決済手段別の支出比率</div></div>
+        <div class="flex gap-1" style="background:var(--card2);padding:2px;border-radius:8px;font-size:10px;font-weight:600;">
+          <button id="btn-pay-donut" class="chart-tgl active-tgl" style="padding:4px 8px;border-radius:6px;border:none;cursor:pointer;">円</button>
+          <button id="btn-pay-bar"   class="chart-tgl"             style="padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);">棒</button>
+        </div>
+      </div>
+      <div style="height:256px;margin-top:16px;display:flex;align-items:center;justify-content:center;"><canvas id="chart-pay"></canvas></div>
+    </div>
+    <div class="card p-5">
+      <div class="flex justify-between items-center">
+        <div><div style="font-size:13px;font-weight:700;color:var(--text);">🏷️ カテゴリ別支出</div><div style="font-size:10px;color:var(--text3);">食費のみ小カテゴリで分類</div></div>
+        <div class="flex gap-1" style="background:var(--card2);padding:2px;border-radius:8px;font-size:10px;font-weight:600;">
+          <button id="btn-cat-stack" class="chart-tgl active-tgl" style="padding:4px 8px;border-radius:6px;border:none;cursor:pointer;">積上</button>
+          <button id="btn-cat-donut" class="chart-tgl"            style="padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);">円</button>
+        </div>
+      </div>
+      <div style="height:256px;margin-top:16px;display:flex;align-items:center;justify-content:center;"><canvas id="chart-cat"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= ポイント ======= -->
+<div id="pane-points" class="tab-pane space-y-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="card p-5 space-y-5">
+      <div><div style="font-size:13px;font-weight:700;color:var(--text);">⚙️ 還元プログラム設定</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">U25特別特約が自動反映されます</div></div>
+      <div class="space-y-3 pt-3" style="border-top:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;color:var(--green);">🟢 三井住友カード (Olive)</div>
+        <div class="space-y-1.5">
+          <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">Vポイントアッププログラム加算</span><span id="ui-vprog-rate" style="font-weight:700;color:var(--indigo);">+8.0%</span></div>
+          <input id="slider-vprog" type="range" min="0" max="15" step="0.5" value="8" class="w-full accent-indigo-600" style="background:none;border:none;">
+        </div>
+        <div class="pt-2 space-y-2" style="border-top:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);">✨ U25特別特約</div>
+          <div style="background:var(--indigo-light);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;">
+            <div class="flex justify-between font-bold" style="color:var(--text);">📱 対象携帯料金<span style="color:var(--indigo);">+1.5%</span></div>
+            <div style="color:var(--text3);margin-top:2px;">基本0.5%＋特約→合計 <strong>2.0%</strong></div>
+          </div>
+          <div style="background:var(--indigo-light);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;">
+            <div class="flex justify-between font-bold" style="color:var(--text);">🛍️ PayPay支払い<span style="color:var(--indigo);">+0.5%</span></div>
+            <div style="color:var(--text3);margin-top:2px;">PayPay連携＋Olive→ <strong>1.0%</strong></div>
+          </div>
+        </div>
+        <div style="background:var(--green-light);padding:12px;border-radius:10px;border:1px solid var(--border);font-size:11px;color:var(--text);">
+          <div class="flex justify-between font-semibold"><span>通常店舗</span><span>0.5%</span></div>
+          <div class="flex justify-between font-semibold mt-1"><span>特約店合計</span><span id="ui-vtotal-rate">10.0%</span></div>
+        </div>
+      </div>
+      <div class="space-y-2 pt-3" style="border-top:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;color:#be185d;">🔴 PayPayカード / クレジット</div>
+        <div style="background:var(--red-light);padding:12px;border-radius:10px;border:1px solid var(--border);font-size:10px;color:var(--text);">
+          <div class="font-bold">・通常還元率: 200円ごとに2ポイント(1.0%)</div>
+          <div style="margin-top:4px;color:var(--text2);">※都度計算 — 200円未満は0 pt</div>
+        </div>
+      </div>
+    </div>
+    <div class="card p-5 lg:col-span-2 space-y-5">
+      <div><div style="font-size:13px;font-weight:700;color:var(--text);">💡 ポイント最適化アドバイザー</div></div>
+      <div style="background:var(--amber-light);border:1px solid var(--border);padding:14px;border-radius:12px;font-size:11px;color:var(--text);">
+        <div style="font-weight:700;margin-bottom:4px;">📱 LYPプレミアム with Netflixに関する分析</div>
+        <div style="line-height:1.6;color:var(--text2);">楽天モバイルはU25携帯代金ボーナス（+1.5%）の対象外ですが、LINEスタンプ使い放題やYahoo!ショッピング優待など多くの独自特典が付帯しています。ポイント倍率に囚われず実質的な便利さを活用されている賢い選択です！</div>
+      </div>
+      <div style="background:var(--indigo-light);border:1px solid var(--border);padding:14px;border-radius:12px;font-size:11px;">
+        <div style="font-weight:700;color:var(--indigo-text);margin-bottom:4px;">🧠 U25特別ポイントアドバイス</div>
+        <div id="ui-advisor" style="color:var(--text2);line-height:1.6;">取引データを同期すると詳細なアドバイスが表示されます。</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;">🔍 取引ごとのポイント発生と適用ルール一覧</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;font-size:11px;border-collapse:collapse;">
+            <thead><tr style="background:var(--card2);border-bottom:1px solid var(--border);">
+              <th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:700;">日付</th>
+              <th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:700;">利用先</th>
+              <th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:700;">決済手段</th>
+              <th style="padding:8px 10px;text-align:right;color:var(--text3);font-weight:700;">金額</th>
+              <th style="padding:8px 10px;text-align:right;color:var(--indigo);font-weight:700;">付与(予定)</th>
+              <th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:700;">ルール</th>
+            </tr></thead>
+            <tbody id="pt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= カレンダー ======= -->
+<div id="pane-calendar" class="tab-pane space-y-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="card p-5 lg:col-span-2 space-y-4">
+      <div class="flex items-center justify-between">
+        <div style="font-size:13px;font-weight:700;color:var(--text);">📅 収支カレンダー</div>
+        <div style="font-size:10px;color:var(--text3);">日付タップでその日の収支を確認</div>
+      </div>
+      <div class="grid grid-cols-7 text-center pb-1" style="font-size:11px;font-weight:700;color:var(--text3);border-bottom:1px solid var(--border);">
+        <div style="color:#ef4444;">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div style="color:var(--indigo);">土</div>
+      </div>
+      <div id="cal-grid" class="grid grid-cols-7 gap-1.5"></div>
+    </div>
+    <div class="card p-5 flex flex-col justify-between">
+      <div>
+        <div style="border-bottom:1px solid var(--border);padding-bottom:12px;">
+          <div id="cal-sel-label" style="font-size:10px;font-weight:700;color:var(--indigo);letter-spacing:.06em;">SELECTED DATE</div>
+          <div id="cal-sel-title" style="font-size:14px;font-weight:700;color:var(--text);margin-top:4px;">日付を選択してください</div>
+        </div>
+        <div id="cal-sel-list" class="space-y-2 mt-4 overflow-y-auto noscroll" style="max-height:280px;"></div>
+      </div>
+      <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:16px;space-y:8px;">
+        <div class="flex justify-between" style="font-size:11px;font-weight:600;color:var(--text3);">
+          <span>合計支出</span><span id="cal-sel-total" style="color:var(--red);font-weight:700;font-family:monospace;font-size:13px;">¥0</span>
+        </div>
+        <div class="flex justify-between mt-1" style="font-size:11px;font-weight:600;color:var(--green);">
+          <span>合計収入</span><span id="cal-sel-income" style="font-weight:700;font-family:monospace;font-size:13px;">¥0</span>
+        </div>
+        <div class="flex justify-between mt-1" style="font-size:11px;font-weight:600;color:var(--indigo);">
+          <span>付与ポイント</span><span id="cal-sel-pts" style="font-weight:700;font-family:monospace;font-size:13px;">0 pt</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= 明細一覧 ======= -->
+<div id="pane-transactions" class="tab-pane space-y-4">
+  <div class="card overflow-hidden">
+    <div style="padding:20px;border-bottom:1px solid var(--border);" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div><div style="font-size:13px;font-weight:700;color:var(--text);">📝 取引明細一覧</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">全取引履歴（ポイント付与情報付き）</div></div>
+      <div class="flex flex-wrap gap-2">
+        <input id="tbl-search" type="text" placeholder="お店やカテゴリで検索..." style="padding:6px 12px;font-size:11px;flex:1;min-width:140px;">
+        <select id="tbl-cat" style="padding:6px 10px;font-size:11px;">
+          <option value="">すべてのカテゴリ</option>
+        </select>
+        <select id="tbl-type" style="padding:6px 10px;font-size:11px;">
+          <option value="">支出+収入</option>
+          <option value="expense">支出のみ</option>
+          <option value="income">収入のみ</option>
+        </select>
+        <select id="tbl-method" style="padding:6px 10px;font-size:11px;">
+          <option value="">すべての決済手段</option>
+        </select>
+      </div>
+    </div>
+    <div id="tbl-mobile" class="block md:hidden divide-y px-4" style="border-color:var(--border);"></div>
+    <div class="hidden md:block overflow-x-auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="background:var(--card2);border-bottom:1px solid var(--border);">
+          <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);">利用先 / 収入源</th>
+          <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);">カテゴリ</th>
+          <th style="padding:12px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);">決済手段</th>
+          <th style="padding:12px 16px;text-align:right;font-size:11px;font-weight:700;color:var(--text3);">金額</th>
+          <th style="padding:12px 16px;text-align:right;font-size:11px;font-weight:700;color:var(--indigo);">ポイント</th>
+        </tr></thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======= 同期・インポート ======= -->
+<div id="pane-sync" class="tab-pane space-y-6">
+  <div class="card p-5 sm:p-8 space-y-6">
+    <div><div style="font-size:14px;font-weight:700;color:var(--text);">🔗 Googleスプレッドシート自動連携</div><div style="font-size:11px;color:var(--text3);margin-top:4px;">CSV公開URL or 通常の共有URLを入力するだけで自動同期</div></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" style="font-size:11px;">
+      <div style="background:var(--green-light);padding:12px;border-radius:12px;border:1px solid var(--border);">
+        <div style="font-weight:700;color:var(--green);">📌 方式A：CSV公開URL（推奨）</div>
+        <div style="color:var(--text2);margin-top:4px;">ファイル→共有→ウェブに公開→CSV形式</div>
+        <div style="color:var(--green);font-weight:600;margin-top:4px;">✅ CORS制限なし・最確実</div>
+      </div>
+      <div style="background:var(--indigo-light);padding:12px;border-radius:12px;border:1px solid var(--border);">
+        <div style="font-weight:700;color:var(--indigo-text);">📌 方式B：通常共有URL（自動変換）</div>
+        <div style="color:var(--text2);margin-top:4px;">「リンクを知っている全員が閲覧可能」に設定したURLを入力</div>
+        <div style="color:var(--indigo-text);font-weight:600;margin-top:4px;">🔄 IDを自動抽出してCSV取得</div>
+      </div>
+    </div>
+    <div class="space-y-2">
+      <div style="font-size:12px;font-weight:700;color:var(--text);">スプレッドシートのURL</div>
+      <input id="url-sync" type="url" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;padding:10px 14px;font-size:11px;">
+      <button id="btn-sync-sync" style="padding:9px 20px;background:var(--indigo);color:#fff;font-size:11px;font-weight:700;border:none;border-radius:10px;cursor:pointer;">🔄 同期開始</button>
+    </div>
+
+    <!-- CSV直貼り -->
+    <div style="border-top:1px solid var(--border);padding-top:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px;">✅ 確実な方法 — CSVをコピペで読み込む</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:10px;">
+        ① <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vRSzPLBhNYdED5LyKGNIE8HbRGmnm50h943dEgTyrJG5K_vPNdLLicqxdeblV-HmrFaCHfvAoFKz2Op/pub?output=csv" target="_blank">このリンクをタップ</a>してCSVをブラウザで開く<br>
+        ② 全選択（Ctrl+A）→ コピー（Ctrl+C）<br>
+        ③ 下に貼り付け → 「読み込む」ボタン
+      </div>
+      <textarea id="csv-paste-area" rows="4" placeholder="CSVテキストをここに貼り付け..." style="width:100%;padding:10px;font-size:10px;font-family:monospace;resize:vertical;"></textarea>
+      <button id="btn-paste-import" style="margin-top:8px;padding:10px 24px;background:var(--amber);color:#fff;font-size:12px;font-weight:700;border:none;border-radius:10px;cursor:pointer;width:100%;">📋 貼り付けたデータを読み込む</button>
+    </div>
+
+    <!-- ファイルアップロード -->
+    <div style="border-top:1px solid var(--border);padding-top:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;">📁 ファイルアップロード（CSV / PDF）</div>
+      <div id="drop-zone" style="padding:24px;background:var(--card2);border:2px dashed var(--border);border-radius:16px;text-align:center;cursor:pointer;transition:border-color .2s;">
+        <input id="file-input" type="file" class="hidden" accept=".csv,.tsv,.txt,.pdf" multiple>
+        <div style="font-size:28px;">📁</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-top:6px;">CSVファイルを選択してインポート</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;">個別CSV（現金・Olive・PayPay等）＋TOTAL.csv対応 / PDF対応</div>
+      </div>
+      <div id="data-status-badge" style="font-size:10px;color:var(--indigo-text);background:var(--indigo-light);border:1px solid var(--border);border-radius:8px;padding:4px 10px;display:inline-block;margin-top:10px;">🟢 データ記憶システム稼働中</div>
+    </div>
+
+    <!-- 手順 -->
+    <div style="border-top:1px solid var(--border);padding-top:20px;space-y:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;">📖 スプレッドシート公開手順（CSV方式）</div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div style="background:var(--card2);padding:16px;border-radius:12px;border:1px solid var(--border);">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--indigo);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px;">1</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">「ウェブに公開」を選択</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.5;">ファイル → 共有 → <strong>ウェブに公開</strong></div>
+        </div>
+        <div style="background:var(--card2);padding:16px;border-radius:12px;border:1px solid var(--border);">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--indigo);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px;">2</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">形式を「CSV」に変更</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.5;">プルダウンを<strong>カンマ区切り(.csv)</strong>に変更して公開</div>
+        </div>
+        <div style="background:var(--card2);padding:16px;border-radius:12px;border:1px solid var(--border);">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--indigo);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px;">3</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);">URLを貼り付けて同期</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px;line-height:1.5;">生成URLを入力欄に貼り付けて「同期開始」</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= Gemini ======= -->
+<div id="pane-ai" class="tab-pane space-y-6">
+  <div class="card p-5 sm:p-8" style="background:var(--indigo-light);">
+    <div class="max-w-3xl space-y-4">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--indigo);letter-spacing:.06em;text-transform:uppercase;">✨ Gemini AI Integration</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-top:4px;">Gemini財政・ポイント最適化コンサル</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.6;">U25特約シミュレーション結果を反映した特製分析プロンプトを自動生成しました。</div>
+      </div>
+      <div class="space-y-4">
+        <div class="card p-4">
+          <textarea id="gemini-prompt" readonly rows="10" style="width:100%;font-size:10px;font-family:monospace;color:var(--text2);background:transparent;border:none;resize:none;line-height:1.6;"></textarea>
+        </div>
+        <button id="btn-copy-prompt" style="padding:10px 20px;background:var(--indigo);color:#fff;font-size:11px;font-weight:600;border:none;border-radius:12px;cursor:pointer;">プロンプトをコピー</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- ボトムナビ（スマホ） -->
+<nav style="background:var(--nav-bg);border-top:1px solid var(--nav-border);" class="md:hidden fixed bottom-0 left-0 right-0 h-16 flex justify-around items-center z-50">
+  <button class="tab-b flex flex-col items-center justify-center w-14 h-12" data-tab="dashboard"><span style="font-size:18px;">📊</span><span style="font-size:9px;margin-top:2px;color:var(--text3);">ホーム</span></button>
+  <button class="tab-b flex flex-col items-center justify-center w-14 h-12" data-tab="points"><span style="font-size:18px;">🪙</span><span style="font-size:9px;margin-top:2px;color:var(--text3);">ポイント</span></button>
+  <button class="tab-b flex flex-col items-center justify-center w-14 h-12" data-tab="calendar"><span style="font-size:18px;">📅</span><span style="font-size:9px;margin-top:2px;color:var(--text3);">カレンダー</span></button>
+  <button class="tab-b flex flex-col items-center justify-center w-14 h-12" data-tab="transactions"><span style="font-size:18px;">📝</span><span style="font-size:9px;margin-top:2px;color:var(--text3);">明細</span></button>
+  <button class="tab-b flex flex-col items-center justify-center w-14 h-12" data-tab="sync"><span style="font-size:18px;">🔄</span><span style="font-size:9px;margin-top:2px;color:var(--text3);">同期</span></button>
+</nav>
+
+<!-- トースト -->
+<div id="toast" style="position:fixed;bottom:72px;left:50%;transform:translateX(-50%);color:#fff;font-size:11px;padding:8px 18px;border-radius:99px;box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:9998;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;background:#1e293b;">
+  <span id="toast-msg">メッセージ</span>
+</div>
+
+<script>
+// ============================================================
+// 定数
+// ============================================================
+const CATS=["食費","交通費","遊び","コレクション","旅行","通信","貯める","増やす","ガジェット","教育・教養","シェアサービス","美容・衣服","クルマ・自転車","日用雑貨","サブスクリプション","家具","その他"];
+
+const INIT={
+  viewYear:2026, viewMonth:6,
+  budgetLimit:10000,
+  darkMode:false,
+  pointSettings:{
+    vProgramRate:8.0,
+    vTargetShops:["セブン","セブンイレブン","マクドナルド","マック","ローソン","ファミリーマート","ファミマ","サイゼリヤ","ドトール"],
+    mobileKeywords:["povo","uq","uq mobile","au","linemo","docomo","softbank","y!mobile","ahamo","lineモバイル","rakuten","楽天モバイル"]
+  },
+  summary:{totalExpense:0,personalExpense:0,univLunchExpense:0,totalIncome:0,netBalance:0},
+  paymentMethods:{},
+  categories:Object.fromEntries(CATS.map(c=>[c,0])),
+  foodBreakdown:{"昼食（大学）":0,"夕食":0,"その他食費":0},
+  transactions:[]
+};
+
+let S=JSON.parse(JSON.stringify(INIT));
+let selDate=null;
+let payChartType='doughnut', catChartType='stacked';
+let payChart=null, catChart=null;
+let toastTmr=null;
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+const $=id=>document.getElementById(id);
+function setText(id,v){const el=$(id);if(el)el.textContent=v;}
+
+function cleanDate(raw){
+  if(!raw)return null;
+  let s=raw.toString().trim().replace(/年|月/g,'/').replace(/日/g,'');
+  if(/^\d{4}\/\d{2}\/\d{2}$/.test(s))return s;
+  if(/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(s)){const p=s.split('/');return`${p[0]}/${p[1].padStart(2,'0')}/${p[2].padStart(2,'0')}`;}
+  if(/^\d{1,2}\/\d{1,2}$/.test(s)){const p=s.split('/');return`${S.viewYear}/${p[0].padStart(2,'0')}/${p[1].padStart(2,'0')}`;}
+  if(/^\d{5}$/.test(s)){const d=new Date(Date.UTC(1899,11,30)+parseInt(s)*86400000);return`${d.getUTCFullYear()}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${String(d.getUTCDate()).padStart(2,'0')}`;}
+  return null;
+}
+
+function parseCurrency(s){if(!s)return 0;const n=parseFloat(s.toString().replace(/[¥,"\s]/g,''));return isNaN(n)?0:Math.abs(n);}
+
+function parseCsvRow(line){
+  let res=[],cur='',q=false;
+  for(const c of line){if(c==='"'){q=!q;}else if(c===','&&!q){res.push(cur.trim());cur='';}else{cur+=c;}}
+  res.push(cur.trim());return res;
+}
+
+function daysInMonth(y,m){return new Date(y,m,0).getDate();}
+function firstDOW(y,m){return new Date(y,m-1,1).getDay();}
+
+// ============================================================
+// 決済手段正規化
+// ============================================================
+// カード種別を識別する（ファイル先頭行用）
+function normalizeMethod(raw){
+  const s=(raw||'').trim();
+  if(!s)return null;
+  if(s.includes('三井住友')||s.includes('Olive')||s.includes('VISA*2311')||s.toLowerCase().includes('olive'))return '三井住友カード(Olive)';
+  if(s.includes('PayPayクレジット')||s.includes('PayPayカード')||s.includes('VISA*8187'))return 'PayPayクレジット';
+  if(s.includes('PayPay残高'))return 'PayPay残高';
+  if(s.includes('楽天カード')||s.includes('楽天ペイ')||s.includes('MasterCard'))return '楽天カード';
+  if(s.includes('EPOS')||s.includes('エポス')||s.includes('VISA*7586'))return 'EPOSカード';
+  if(s.includes('V Point Pay')||s.includes('VポイントPay')||s.includes('MEMBER*4240'))return 'V Point Pay';
+  if(s==='現金'||s.startsWith('現金'))return '現金';
+  return null;
+}
+
+// 決済手段列の値（楽天・PayPay）からポイント払いを判定して最終的なmethod文字列を返す
+// cardMethod: ファイル先頭で確定したカード種別
+// colVal: 決済手段列の値（例: "楽天ポイント", "クレジット", "全額PayPayポイント払い"）
+function resolveMethod(cardMethod, colVal){
+  const v=(colVal||'').trim();
+  // 楽天系
+  if(cardMethod==='楽天カード'){
+    if(v.includes('ポイント')||v.includes('楽天ポイント'))return '楽天カード（ポイント払い）';
+    return '楽天カード';
+  }
+  // PayPayクレジット系
+  if(cardMethod==='PayPayクレジット'){
+    if(v.includes('ポイント')||v.includes('全額PayPay'))return 'PayPayクレジット（ポイント払い）';
+    return 'PayPayクレジット';
+  }
+  // Olive・現金・その他は列値を無視してcardMethodをそのまま使う
+  return cardMethod;
+}
+
+// ポイント払い判定
+function isPointPayment(t){
+  return (t.method||'').includes('ポイント払い');
+}
+
+// ============================================================
+// 重複チェックキー
+// ============================================================
+function txKey(t){return`${t.date}|${(t.shop||'').trim()}|${t.amount}|${(t.method||'').trim()}|${t.type||'expense'}`;}
+
+// ============================================================
+// ポイント計算
+// ============================================================
+function isVTarget(shop){return S.pointSettings.vTargetShops.some(k=>(shop||'').includes(k));}
+function isMobile(shop){const l=(shop||'').toLowerCase();return S.pointSettings.mobileKeywords.some(k=>l.includes(k));}
+function isPayPayShop(shop){return(shop||'').includes('PayPay');}
+
+function calcPt(t){
+  if(t.type==='income')return{pt:0,rule:'収入'};
+  if(t.method==='三井住友カード(Olive)'){
+    if(isVTarget(t.shop))return{pt:Math.round(t.amount*(0.5+S.pointSettings.vProgramRate)/100),rule:`月合算 特約店(${(0.5+S.pointSettings.vProgramRate).toFixed(1)}%)`};
+    if(isMobile(t.shop))return{pt:Math.round(t.amount*2.0/100),rule:'月合算 U25携帯(2.0%)'};
+    if(isPayPayShop(t.shop))return{pt:Math.round(t.amount*1.0/100),rule:'月合算 U25 PayPay(1.0%)'};
+    return{pt:Math.round(t.amount*0.5/100),rule:'月合算(0.5%)'};
+  }
+  // PayPayクレジット（通常・ポイント払いともに200円毎2pt）
+  if(t.method==='PayPayクレジット'||t.method==='PayPay残高'||t.method==='PayPayクレジット（ポイント払い）'){
+    if(t.amount<200)return{pt:0,rule:'200円未満対象外'};
+    return{pt:Math.floor(t.amount/200)*2,rule:'都度(200円毎2pt)'};
+  }
+  // 楽天カード（通常・ポイント払いともに100円毎1pt）
+  if(t.method==='楽天カード'||t.method==='楽天カード（ポイント払い）'){
+    if(t.amount<100)return{pt:0,rule:'100円未満対象外'};
+    return{pt:Math.floor(t.amount/100)*1,rule:'都度(100円毎1pt)'};
+  }
+  return{pt:0,rule:'非対象'};
+}
+
+function calcAllPts(){
+  let oT=0,oM=0,oP=0,oN=0,pp=0;
+  const txs=S.transactions.map(t=>{
+    const{pt,rule}=calcPt(t);
+    if(t.method==='三井住友カード(Olive)'&&t.type!=='income'){
+      if(isVTarget(t.shop))oT+=t.amount;
+      else if(isMobile(t.shop))oM+=t.amount;
+      else if(isPayPayShop(t.shop))oP+=t.amount;
+      else oN+=t.amount;
+    }else if((t.method==='PayPayクレジット'||t.method==='PayPay残高'||t.method==='PayPayクレジット（ポイント払い）')&&t.type!=='income'){pp+=pt;}
+    return{...t,cp:pt,rule};
+  });
+  const r=(0.5+S.pointSettings.vProgramRate)/100;
+  const vPts=Math.floor(oT/200)*Math.round(200*r)+Math.floor(oM/200)*Math.round(200*0.02)+Math.floor(oP/200)*Math.round(200*0.01)+Math.floor(oN/200)*1;
+  return{txs,vPts,pp,total:vPts+pp,oT,oM,oP,oN};
+}
+
+// ============================================================
+// ストレージ（設定は共通、取引データは月別）
+// ============================================================
+const SETTINGS_KEY='finboo_settings';
+function txKey_monthly(y,m){return`finboo_tx_${y}_${String(m).padStart(2,'0')}`;}
+
+function saveSettings(){
+  try{
+    const cfg={
+      viewYear:S.viewYear,viewMonth:S.viewMonth,
+      budgetLimit:S.budgetLimit,darkMode:S.darkMode,
+      pointSettings:S.pointSettings
+    };
+    localStorage.setItem(SETTINGS_KEY,JSON.stringify(cfg));
+  }catch(e){}
+}
+
+function saveTx(){
+  try{
+    const key=txKey_monthly(S.viewYear,S.viewMonth);
+    localStorage.setItem(key,JSON.stringify(S.transactions));
+  }catch(e){}
+}
+
+function save(){saveSettings();saveTx();}
+
+function loadTx(y,m){
+  try{
+    const key=txKey_monthly(y,m);
+    const d=localStorage.getItem(key);
+    return d?JSON.parse(d):[];
+  }catch(e){return [];}
+}
+
+function load(){
+  // 設定を読み込む
+  try{
+    const d=localStorage.getItem(SETTINGS_KEY);
+    if(d){
+      const cfg=JSON.parse(d);
+      S.viewYear=cfg.viewYear||S.viewYear;
+      S.viewMonth=cfg.viewMonth||S.viewMonth;
+      S.budgetLimit=cfg.budgetLimit||S.budgetLimit;
+      S.darkMode=cfg.darkMode||false;
+      if(cfg.pointSettings)S.pointSettings=cfg.pointSettings;
+    }
+  }catch(e){}
+  // その月の取引を読み込む
+  S.transactions=loadTx(S.viewYear,S.viewMonth);
+  recalc();
+}
+
+// 年月切り替え時: 現在月を保存して新しい月を読み込む
+function switchMonth(y,m){
+  saveTx(); // 現在の月データを保存
+  S.viewYear=y;S.viewMonth=m;
+  S.transactions=loadTx(y,m);
+  recalc();
+  saveSettings();
+  renderAll();
+  buildSelectors();
+  selDate=null;
+}
+
+// ============================================================
+// 進行バー
+// ============================================================
+function setProgress(pct,msg,logMsg){
+  const fill=$('sync-fill'),topFill=$('top-fill'),overlay=$('sync-overlay'),pctEl=$('sync-pct'),titleEl=$('sync-title');
+  if(fill)fill.style.width=pct+'%';
+  if(topFill)topFill.style.width=pct+'%';
+  if(pctEl)pctEl.textContent=Math.round(pct)+'%';
+  if(titleEl&&msg)titleEl.textContent=msg;
+  if(overlay){
+    if(pct>0&&pct<100)overlay.classList.add('show');
+    else if(pct>=100)setTimeout(()=>{overlay.classList.remove('show');if(fill)fill.style.width='0%';if(topFill)topFill.style.width='0%';},2200);
+    else overlay.classList.remove('show');
+  }
+  if(logMsg){const logEl=$('sync-log');if(logEl){const d=document.createElement('div');d.textContent=`[${new Date().toLocaleTimeString('ja-JP')}] ${logMsg}`;logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;}}
+}
+
+// ============================================================
+// Google Sheets 連携
+// ============================================================
+function toCsvUrls(raw){
+  const url=raw.trim();
+  if(url.includes('output=csv'))return[{label:'CSV公開URL',url}];
+  const eM=url.match(/\/spreadsheets\/d\/e\/([a-zA-Z0-9_-]+)/);
+  if(eM){
+    const eid=eM[1];const gm=url.match(/[?&]gid=(\d+)/);const gid=gm?gm[1]:'0';
+    const base=`https://docs.google.com/spreadsheets/d/e/${eid}/pub?output=csv`;
+    return[{label:`公開CSV gid=${gid}`,url:`${base}&gid=${gid}`},{label:'公開CSV gid=0',url:`${base}&gid=0`},{label:'公開CSV',url:base}];
+  }
+  const m=url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if(!m)return null;
+  const id=m[1];const gm=url.match(/[?&]gid=(\d+)/);const gid=gm?gm[1]:'0';
+  return[
+    {label:`export csv gid=${gid}`,url:`https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`},
+    {label:`pub csv gid=${gid}`,url:`https://docs.google.com/spreadsheets/d/${id}/pub?output=csv&gid=${gid}`},
+    {label:'gid=0 fallback',url:`https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=0`},
+  ];
+}
+
+const PROXIES=[
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u=>`https://thingproxy.freeboard.io/fetch/${u}`,
+  u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+];
+
+async function fetchCsv(url){
+  try{const r=await fetch(url,{mode:'cors',cache:'no-cache'});if(r.ok){const t=await r.text();if(t&&t.length>20&&!t.trimStart().startsWith('<'))return{text:t,via:'direct'};}}catch(e){}
+  for(let i=0;i<PROXIES.length;i++){
+    try{
+      const ctrl=new AbortController();const tid=setTimeout(()=>ctrl.abort(),8000);
+      const r=await fetch(PROXIES[i](url),{signal:ctrl.signal,cache:'no-cache'});clearTimeout(tid);
+      if(r.ok){const t=await r.text();if(t&&t.length>20&&!t.trimStart().startsWith('<'))return{text:t,via:`proxy${i+1}`};}
+    }catch(e){}
+  }
+  return null;
+}
+
+async function doSync(inputUrl){
+  if(!inputUrl){toast('URLを入力してください');return;}
+  const du=$('url-dash');if(du)du.value=inputUrl;
+  const su=$('url-sync');if(su)su.value=inputUrl;
+  $('sync-log').innerHTML='';
+  setProgress(5,'URLを解析中...','接続開始: '+inputUrl.substring(0,60)+'...');
+  const cands=toCsvUrls(inputUrl);
+  if(!cands){toast('URLの形式が認識できません','error');setProgress(0);return;}
+  setProgress(20,'データ取得中...',`${cands.length}種類の取得方式を試行`);
+  let ok=null;
+  for(let i=0;i<cands.length;i++){
+    setProgress(20+i*15,'取得中: '+cands[i].label,'試行'+(i+1)+': '+cands[i].label);
+    ok=await fetchCsv(cands[i].url);
+    if(ok){setProgress(20+i*15+15,'取得成功','✅ 成功 (経由: '+ok.via+')');break;}
+    else setProgress(20+i*15,'次の方式を試みます','❌ 失敗');
+  }
+  if(!ok){
+    toast('データ取得に失敗しました。URLと公開設定をご確認ください','error');
+    setProgress(0,'失敗','❌ 全プロキシ失敗');
+    const p=$('paste-panel');if(p)p.style.display='block';
+    return;
+  }
+  setProgress(80,'データを解析中...',`解析開始 (${ok.text.length} bytes)`);
+  try{
+    parseCsvAndApply(ok.text);
+    setProgress(100,'同期完了！',`🎉 完了！${S.transactions.filter(t=>t.type!=='income').length}件の取引を読み込みました`);
+    const b=$('data-status-badge');if(b)b.textContent=`🟢 同期済み (${new Date().toLocaleString('ja-JP')})`;
+    toast(`同期完了！(${ok.via})`,'success');
+    switchTab('dashboard');
+  }catch(e){
+    toast('データの解析に失敗しました: '+e.message,'error');
+    setProgress(0,'エラー','❌ '+e.message);
+  }
+}
+
+// ============================================================
+// CSV解析（個別カードCSV）
+// ============================================================
+function parseCsvAndApply(text){
+  const lines=text.split(/\r?\n/);
+
+  // TOTAL.csvかどうか判定（「収　入　額」または「支出入管理」を含む）
+  const fullText=lines.slice(0,10).join('');
+  if(fullText.includes('支出入管理')||fullText.includes('収　入　額')){
+    parseTotalCsv(lines);
+    return;
+  }
+
+  // Step1: カード種別を先頭7行から確定
+  let cardMethod='不明';
+  for(let i=0;i<Math.min(lines.length,7);i++){
+    const row=parseCsvRow(lines[i]);
+    const cell=(row[0]||'').trim()||(row[1]||'').trim();
+    const nm=normalizeMethod(cell);
+    if(nm){cardMethod=nm;setProgress(85,'カード種別確定',`カード: ${cardMethod} (行${i})`);break;}
+  }
+  if(cardMethod==='不明'){
+    for(const line of lines){const nm=normalizeMethod(line.split(',')[0]);if(nm){cardMethod=nm;break;}}
+  }
+
+  // Step2: ヘッダー行（DATE）を探して列位置を確定
+  let hIdx=-1,dateCol=0,shopCol=1,catMajCol=2,catMinCol=3,methodCol=-1,amtCol=5;
+  for(let i=0;i<Math.min(lines.length,10);i++){
+    const row=parseCsvRow(lines[i]);
+    const low=row.map(c=>(c||'').toLowerCase().trim());
+    if(low[0]==='date'){
+      hIdx=i;
+      shopCol=   low.findIndex(h=>h.includes('利用先')||h==='shop');
+      catMajCol= low.findIndex(h=>h.includes('大カテ')||h.includes('カテゴリ'));
+      catMinCol= low.findIndex(h=>h.includes('小カテ'));
+      methodCol= low.findIndex(h=>h.includes('決済手段')||h==='method');
+      amtCol=    low.findIndex(h=>h.includes('利用金額')||h.includes('amount'));
+      if(shopCol<0)shopCol=1;if(catMajCol<0)catMajCol=2;if(catMinCol<0)catMinCol=3;if(amtCol<0)amtCol=5;
+      setProgress(87,'ヘッダー確定',`行${i}: 店名=${shopCol} 大カテ=${catMajCol} 小カテ=${catMinCol} 決済手段=${methodCol} 金額=${amtCol}`);
+      break;
+    }
+  }
+  if(hIdx<0){setProgress(0,'失敗','❌ ヘッダー行(DATE)が見つかりません');toast('CSVのヘッダー行が見つかりません','error');return;}
+
+  // Step3: データ行を追記（重複スキップ）
+  const existingKeys=new Set(S.transactions.map(t=>txKey(t)));
+  let added=0,skipped=0;
+  for(let i=hIdx+1;i<lines.length;i++){
+    const row=parseCsvRow(lines[i]);
+    const ds=cleanDate((row[dateCol]||'').trim());
+    if(!ds)continue;
+    const amt=parseCurrency(row[amtCol]||'');
+    if(amt<=0)continue;
+    // 決済手段列の値を取得し resolveMethod でポイント払いを判定
+    const methodColVal=methodCol>=0?(row[methodCol]||'').trim():'';
+    const resolvedMethod=resolveMethod(cardMethod, methodColVal);
+    const newTx={
+      date:ds,
+      shop:(row[shopCol]||'').trim(),
+      categoryMajor:(row[catMajCol]||'その他').trim()||'その他',
+      categoryMinor:catMinCol>=0?(row[catMinCol]||'').trim():'',
+      method:resolvedMethod,
+      amount:amt,
+      type:'expense'
+    };
+    const k=txKey(newTx);
+    if(!existingKeys.has(k)){S.transactions.push(newTx);existingKeys.add(k);added++;}
+    else skipped++;
+  }
+  if(S.transactions.filter(t=>t.type!=='income').length===0){
+    setProgress(0,'取引0件','❌ 新規取引が見つかりませんでした');
+    toast('新規取引が見つかりませんでした','error');return;
+  }
+  recalc();save();renderAll();
+  setProgress(100,'完了！',`✅ ${cardMethod}: ${added}件追加、${skipped}件重複スキップ（合計${S.transactions.length}件）`);
+}
+
+// ============================================================
+// TOTAL.csv 解析（収入行を抽出）
+// ============================================================
+function parseTotalCsv(lines){
+  // ヘッダー行を探す（名称,DATE,Category,amountの行）
+  let hIdx=-1;
+  for(let i=0;i<Math.min(lines.length,15);i++){
+    const row=parseCsvRow(lines[i]);
+    if((row[0]||'').toLowerCase().includes('名称')&&(row[1]||'').toLowerCase().includes('date')){
+      hIdx=i;break;
+    }
+  }
+  if(hIdx<0){toast('TOTAL.csvのヘッダーが見つかりません','error');return;}
+
+  const existingKeys=new Set(S.transactions.map(t=>txKey(t)));
+  let added=0,skipped=0;
+
+  for(let i=hIdx+1;i<lines.length;i++){
+    const row=parseCsvRow(lines[i]);
+    // 収入行: col1=DATE（日付）, col2=Category, col3=amount, col0=名称
+    const ds=cleanDate((row[1]||'').trim());
+    if(!ds)continue;
+    const amt=parseCurrency(row[3]||'');
+    if(amt<=0)continue;
+    const newTx={
+      date:ds,
+      shop:(row[0]||'収入').trim()||'収入',
+      categoryMajor:(row[2]||'収入').trim()||'収入',
+      categoryMinor:'',
+      method:'収入',
+      amount:amt,
+      type:'income'
+    };
+    const k=txKey(newTx);
+    if(!existingKeys.has(k)){S.transactions.push(newTx);existingKeys.add(k);added++;}
+    else skipped++;
+  }
+  recalc();save();renderAll();
+  setProgress(100,'完了！',`✅ TOTAL.csv: 収入${added}件追加、${skipped}件重複スキップ`);
+}
+
+// ============================================================
+// 再計算
+// ============================================================
+function recalc(){
+  CATS.forEach(c=>S.categories[c]=0);
+  S.paymentMethods={};
+  S.foodBreakdown={"昼食（大学）":0,"夕食":0,"その他食費":0};
+  let totalExp=0,totalInc=0,univ=0;
+  S.transactions.forEach(t=>{
+    if(t.type==='income'){totalInc+=t.amount;return;}
+    const cat=CATS.find(c=>(t.categoryMajor||'').includes(c))||'その他';
+    S.categories[cat]=(S.categories[cat]||0)+t.amount;
+    // グラフ用: ポイント払いはベースカード名に統合（例: 楽天カード（ポイント払い）→ 楽天カード）
+    const baseMethod=t.method.replace('（ポイント払い）','').replace('（ポイント払い）','');
+    if(!S.paymentMethods[baseMethod])S.paymentMethods[baseMethod]=0;
+    S.paymentMethods[baseMethod]+=t.amount;
+    if(cat==='食費'){
+      const m=t.categoryMinor||'';
+      if(m.includes('昼食')||m.includes('大学'))S.foodBreakdown['昼食（大学）']+=t.amount;
+      else if(m.includes('夕食'))S.foodBreakdown['夕食']+=t.amount;
+      else S.foodBreakdown['その他食費']+=t.amount;
+    }
+    totalExp+=t.amount;
+    if((t.categoryMinor||'').includes('昼食（大学）'))univ+=t.amount;
+  });
+  // ポイント払い合計
+  let totalPoint=0;
+  S.transactions.forEach(t=>{if(t.type!=='income'&&isPointPayment(t))totalPoint+=t.amount;});
+  S.summary.totalExpense=totalExp;
+  S.summary.personalExpense=totalExp;
+  S.summary.univLunchExpense=univ;
+  S.summary.totalIncome=totalInc;
+  S.summary.netBalance=totalInc-totalExp;
+  S.summary.totalPointPayment=totalPoint;
+}
+
+// ============================================================
+// PDF（Anthropic Vision API）
+// ============================================================
+async function parsePdfFile(arrayBuffer){
+  const bytes=new Uint8Array(arrayBuffer);
+  let binary='';
+  for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
+  const base64=btoa(binary);
+  setProgress(20,'PDFをAnthropicで解析中...','Vision APIにPDFを送信します');
+  const systemPrompt=`あなたは家計簿PDFから取引データを抽出する専門家です。PDFの各シートから取引行を読み取り、必ずJSON配列のみを返してください。
+フォーマット: [{"date":"2026/06/01","shop":"セブンイレブン","categoryMajor":"食費","categoryMinor":"昼食（大学）","method":"三井住友カード(Olive)","amount":127,"type":"expense"},...]
+決済手段: 三井住友/Olive/VISA*2311→"三井住友カード(Olive)", PayPayクレジット/VISA*8187→"PayPayクレジット", 現金→"現金", 楽天カード/MasterCard→"楽天カード", EPOSカード/VISA*7586→"EPOSカード"
+収入行はtype="income"、method="収入"とすること。取引がないページは無視。`;
+  try{
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,system:systemPrompt,
+        messages:[{role:'user',content:[
+          {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+          {type:'text',text:'このPDFの全ページから取引データと収入データを抽出してJSON配列で返してください。'}
+        ]}]})
+    });
+    if(!response.ok)throw new Error(`API error ${response.status}`);
+    const data=await response.json();
+    setProgress(80,'レスポンス解析中...','APIレスポンスを受信');
+    const rawText=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    const jsonMatch=rawText.match(/\[[\s\S]*\]/);
+    if(!jsonMatch)throw new Error('JSONが見つかりません');
+    const transactions=JSON.parse(jsonMatch[0]);
+    const existingKeys=new Set(S.transactions.map(t=>txKey(t)));
+    let added=0,skipped=0;
+    transactions.forEach(t=>{
+      const newTx={
+        date:cleanDate(t.date)||t.date,shop:t.shop||'',
+        categoryMajor:t.categoryMajor||'その他',categoryMinor:t.categoryMinor||'',
+        method:t.method||'その他',
+        amount:typeof t.amount==='number'?t.amount:parseCurrency(String(t.amount)),
+        type:t.type||'expense'
+      };
+      if(newTx.amount<=0)return;
+      const k=txKey(newTx);
+      if(!existingKeys.has(k)){S.transactions.push(newTx);existingKeys.add(k);added++;}else skipped++;
+    });
+    recalc();save();renderAll();
+    setProgress(100,'完了！',`✅ ${added}件追加、${skipped}件重複スキップ`);
+  }catch(e){setProgress(0,'エラー','❌ '+e.message);toast('PDF解析エラー: '+e.message,'error');throw e;}
+}
+
+// ============================================================
+// UI描画
+// ============================================================
+function renderAll(){renderStats();renderPayChart();renderCatChart();renderCalendar();if(selDate)selectDay(selDate);renderTable();renderPtTab();renderGemini();}
+
+function renderStats(){
+  const pc=calcAllPts();
+  const exp=S.summary.totalExpense,inc=S.summary.totalIncome,bal=S.summary.netBalance;
+  setText('ui-total-pts',`${pc.total} pt`);
+  setText('ui-avg-rate',`${exp>0?((pc.total/exp)*100).toFixed(1):'0.0'}%`);
+  setText('ui-vpts',`${pc.vPts} pt`);setText('ui-pppts',`${pc.pp} pt`);
+  setText('ui-expense',`¥${exp.toLocaleString()}`);
+  setText('ui-expense2',`¥${exp.toLocaleString()}`);
+  // うちポイント払い・実質支出
+  const ptPay2=S.summary.totalPointPayment||0;
+  const subEl=$('ui-point-sub');
+  if(subEl)subEl.style.display=ptPay2>0?'block':'none';
+  setText('ui-point-sub-amt',`¥${ptPay2.toLocaleString()}`);
+  setText('ui-real-expense',`¥${(exp-ptPay2).toLocaleString()}`);
+  setText('ui-income',`¥${inc.toLocaleString()}`);
+  setText('ui-lunch',`¥${S.summary.univLunchExpense.toLocaleString()}`);
+  const balEl=$('ui-balance');
+  if(balEl){
+    balEl.textContent=(bal>=0?'+':'')+'¥'+Math.abs(bal).toLocaleString();
+    balEl.style.color=bal>=0?'var(--green)':'var(--red)';
+  }
+  const pct=Math.min((exp/S.budgetLimit)*100,100);
+  setText('ui-budget-lim',`¥${S.budgetLimit.toLocaleString()}`);
+  const bar=$('ui-budget-bar');if(bar)bar.style.width=pct.toFixed(1)+'%';
+  setText('ui-b-spent',`支出: ¥${exp.toLocaleString()}`);
+  setText('ui-b-remain',`残り: ¥${Math.max(S.budgetLimit-exp,0).toLocaleString()}`);
+  setText('ui-vprog-rate',`+${S.pointSettings.vProgramRate.toFixed(1)}%`);
+  setText('ui-vtotal-rate',`${(0.5+S.pointSettings.vProgramRate).toFixed(1)}%`);
+
+}
+
+// ============================================================
+// グラフ
+// ============================================================
+function chartColors(){return{colors:['#6366f1','#06b6d4','#10b981','#f59e0b','#ec4899','#8b5cf6','#94a3b8'],gridColor:getComputedStyle(document.body).getPropertyValue('--border').trim()||'#e2e8f0',textColor:getComputedStyle(document.body).getPropertyValue('--text2').trim()||'#64748b'};}
+
+function renderPayChart(){
+  const ctx=$('chart-pay');if(!ctx)return;
+  if(payChart)payChart.destroy();
+  const keys=Object.keys(S.paymentMethods).filter(k=>(S.paymentMethods[k]||0)>0);
+  const vals=keys.map(k=>S.paymentMethods[k]);
+  const{colors}=chartColors();
+  if(payChartType==='doughnut'){
+    payChart=new Chart(ctx,{type:'doughnut',data:{labels:keys.length?keys:['データなし'],datasets:[{data:vals.length?vals:[0],backgroundColor:colors,borderWidth:2,borderColor:getComputedStyle(document.body).getPropertyValue('--card')}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,color:chartColors().textColor}}},cutout:'65%'}});
+  }else{
+    payChart=new Chart(ctx,{type:'bar',data:{labels:keys.length?keys:['データなし'],datasets:[{data:vals.length?vals:[0],backgroundColor:'#6366f1',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:chartColors().textColor,font:{size:9}}},y:{grid:{color:chartColors().gridColor},ticks:{color:chartColors().textColor,font:{size:9}}}}}});
+  }
+}
+
+function renderCatChart(){
+  const ctx=$('chart-cat');if(!ctx)return;
+  if(catChart)catChart.destroy();
+  const{colors,textColor,gridColor}=chartColors();
+  if(catChartType==='stacked'){
+    const others=CATS.filter(c=>c!=='食費'&&(S.categories[c]||0)>0);
+    const labels=['食費',...others];
+    catChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+      {label:'昼食（大学）',data:[S.foodBreakdown['昼食（大学）']||0,...others.map(()=>0)],backgroundColor:'#6366f1'},
+      {label:'夕食',data:[S.foodBreakdown['夕食']||0,...others.map(()=>0)],backgroundColor:'#4f46e5'},
+      {label:'その他食費',data:[S.foodBreakdown['その他食費']||0,...others.map(()=>0)],backgroundColor:'#818cf8'},
+      {label:'その他',data:[0,...others.map(c=>S.categories[c]||0)],backgroundColor:'#34d399'}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,color:textColor}}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:textColor,font:{size:10}}},y:{stacked:true,grid:{color:gridColor},ticks:{color:textColor,font:{size:9}}}}}});
+  }else{
+    const acs=CATS.filter(c=>(S.categories[c]||0)>0);
+    catChart=new Chart(ctx,{type:'doughnut',data:{labels:acs.length?acs:['データなし'],datasets:[{data:acs.length?acs.map(c=>S.categories[c]):[0],backgroundColor:colors,borderWidth:2,borderColor:getComputedStyle(document.body).getPropertyValue('--card')}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,color:textColor}}},cutout:'65%'}});
+  }
+}
+
+// ============================================================
+// カレンダー（可変式）
+// ============================================================
+function renderCalendar(){
+  const grid=$('cal-grid');if(!grid)return;
+  grid.innerHTML='';
+  const y=S.viewYear,m=S.viewMonth;
+  const days=daysInMonth(y,m);
+  const fdow=firstDOW(y,m);
+  const ym=`${y}/${String(m).padStart(2,'0')}`;
+
+  // その月の取引を集計
+  const daily={};
+  for(let d=1;d<=days;d++){
+    const ds=`${ym}/${String(d).padStart(2,'0')}`;
+    daily[ds]={exp:0,inc:0,pts:0};
+  }
+  S.transactions.forEach(t=>{
+    const ds=t.date;
+    if(!ds||!ds.startsWith(ym))return;
+    if(daily[ds]===undefined)return;
+    if(t.type==='income'){daily[ds].inc+=t.amount;}
+    else{daily[ds].exp+=t.amount;daily[ds].pts+=calcPt(t).pt;}
+  });
+
+  // 空白セル
+  for(let i=0;i<fdow;i++){
+    const el=document.createElement('div');
+    el.style.cssText=`height:56px;background:var(--card2);border-radius:10px;border:1px dashed var(--border);`;
+    grid.appendChild(el);
+  }
+  // 日付セル
+  for(let d=1;d<=days;d++){
+    const ds=`${ym}/${String(d).padStart(2,'0')}`;
+    const stat=daily[ds]||{exp:0,inc:0,pts:0};
+    const dow=(fdow+d-1)%7;
+    const cell=document.createElement('div');
+    cell.id=`cd-${d}`;
+    cell.style.cssText=`height:56px;background:var(--card);border-radius:10px;border:1px solid var(--border);padding:4px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:background .15s;`;
+    cell.onmouseenter=()=>{if(!cell.classList.contains('cal-on'))cell.style.background='var(--indigo-light)';};
+    cell.onmouseleave=()=>{if(!cell.classList.contains('cal-on'))cell.style.background='var(--card)';};
+    cell.onclick=()=>selectDay(ds);
+    const num=document.createElement('span');
+    num.style.cssText=`font-size:11px;font-weight:700;color:${dow===0?'#ef4444':dow===6?'var(--indigo)':'var(--text)'};`;
+    num.textContent=d;
+    cell.appendChild(num);
+    if(stat.exp>0||stat.inc>0){
+      const info=document.createElement('div');
+      info.style.cssText='text-align:right;';
+      let html='';
+      if(stat.exp>0)html+=`<div style="font-size:8px;font-family:monospace;font-weight:700;color:var(--red);">-¥${stat.exp.toLocaleString()}</div>`;
+      if(stat.inc>0)html+=`<div style="font-size:8px;font-family:monospace;font-weight:700;color:var(--green);">+¥${stat.inc.toLocaleString()}</div>`;
+      if(stat.pts>0)html+=`<div style="font-size:7px;font-family:monospace;font-weight:700;color:var(--indigo);">+${stat.pts}pt</div>`;
+      info.innerHTML=html;
+      cell.appendChild(info);
+    }else{cell.appendChild(document.createElement('div'));}
+    grid.appendChild(cell);
+  }
+}
+
+function selectDay(ds){
+  selDate=ds;
+  document.querySelectorAll('[id^="cd-"]').forEach(el=>{el.classList.remove('cal-on');el.style.background='var(--card)';});
+  const day=parseInt(ds.split('/')[2]);
+  const cell=$(`cd-${day}`);if(cell)cell.classList.add('cal-on');
+  setText('cal-sel-title',`${day}日の取引明細`);
+  const list=$('cal-sel-list');if(!list)return;
+  list.innerHTML='';
+  const txs=S.transactions.filter(t=>t.date===ds);
+  let totExp=0,totInc=0,totPt=0;
+  if(txs.length===0){
+    list.innerHTML=`<div style="padding:40px 0;text-align:center;color:var(--text3);font-size:11px;">🦕 取引履歴はありません。</div>`;
+  }else{
+    txs.forEach(t=>{
+      const isIncome=t.type==='income';
+      if(isIncome)totInc+=t.amount;else{totExp+=t.amount;}
+      const{pt}=calcPt(t);totPt+=pt;
+      const item=document.createElement('div');
+      item.style.cssText=`padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;`;
+      const amtColor=isIncome?'var(--green)':'var(--text)';
+      const prefix=isIncome?'+':'';
+      const isPt=isPointPayment(t);
+      item.innerHTML=`<div style="max-width:65%;"><div style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.shop||'利用先不明'}</div><div style="font-size:9px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:3px;flex-wrap:wrap;"><span style="background:var(--indigo-light);color:var(--indigo-text);padding:0 4px;border-radius:4px;font-weight:600;">${t.categoryMajor}</span>${isPt?'<span style="background:#e0e7ff;color:#4338ca;padding:0 4px;border-radius:4px;font-weight:700;font-size:9px;">💠ポイント払い</span>':''} ${isIncome?'💰':'💳'}${t.method}</div></div><div style="text-align:right;"><div style="font-size:12px;font-weight:700;font-family:monospace;color:${amtColor};">${prefix}¥${t.amount.toLocaleString()}</div>${pt>0?`<div style="font-size:9px;font-weight:700;color:var(--indigo);font-family:monospace;">+${pt} pt</div>`:''}</div>`;
+      list.appendChild(item);
+    });
+  }
+  setText('cal-sel-total',`¥${totExp.toLocaleString()}`);
+  setText('cal-sel-income',`¥${totInc.toLocaleString()}`);
+  setText('cal-sel-pts',`${totPt} pt`);
+}
+
+// ============================================================
+// 明細テーブル（日付グループ化 + 決済手段フィルター）
+// ============================================================
+const DOW_JA=['日','月','火','水','木','金','土'];
+
+function renderTable(){
+  const tbody=$('tbl-body'),mbl=$('tbl-mobile');
+  if(tbody)tbody.innerHTML='';if(mbl)mbl.innerHTML='';
+  const search=($('tbl-search')||{value:''}).value.toLowerCase();
+  const catF=($('tbl-cat')||{value:''}).value;
+  const typeF=($('tbl-type')||{value:''}).value;
+  const methodF=($('tbl-method')||{value:''}).value;
+
+  // カテゴリフィルター更新
+  const catSel=$('tbl-cat');
+  if(catSel){
+    const cur=catSel.value;
+    catSel.innerHTML='<option value="">すべてのカテゴリ</option>';
+    const used=[...new Set(S.transactions.map(t=>t.categoryMajor).filter(Boolean))].sort();
+    used.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;if(c===cur)o.selected=true;catSel.appendChild(o);});
+  }
+
+  // 決済手段フィルター更新
+  const methodSel=$('tbl-method');
+  if(methodSel){
+    const cur=methodSel.value;
+    methodSel.innerHTML='<option value="">すべての決済手段</option>';
+    const used=[...new Set(S.transactions.map(t=>t.method).filter(Boolean))].sort();
+    used.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;if(m===cur)o.selected=true;methodSel.appendChild(o);});
+  }
+
+  let filtered=S.transactions.filter(t=>{
+    const ok1=!search||(t.shop||'').toLowerCase().includes(search)||(t.categoryMajor||'').toLowerCase().includes(search);
+    const ok2=!catF||t.categoryMajor===catF;
+    const ok3=!typeF||(typeF==='income'?t.type==='income':t.type!=='income');
+    const ok4=!methodF||t.method===methodF;
+    return ok1&&ok2&&ok3&&ok4;
+  }).sort((a,b)=>(a.date||'')>(b.date||'')?1:-1);
+
+  if(filtered.length===0){
+    if(tbody)tbody.innerHTML=`<tr><td colspan="5" style="padding:32px;text-align:center;color:var(--text3);font-size:11px;">該当する明細がありません。</td></tr>`;
+    if(mbl)mbl.innerHTML=`<div style="padding:32px;text-align:center;color:var(--text3);font-size:11px;">該当する明細がありません。</div>`;
+    return;
+  }
+
+  // 日付でグループ化
+  const groups=new Map();
+  filtered.forEach(t=>{
+    if(!groups.has(t.date))groups.set(t.date,[]);
+    groups.get(t.date).push(t);
+  });
+
+  groups.forEach((txs,date)=>{
+    // グループヘッダーの集計
+    let dayExp=0,dayInc=0,dayPt=0;
+    txs.forEach(t=>{
+      const{pt}=calcPt(t);
+      if(t.type==='income')dayInc+=t.amount;else dayExp+=t.amount;
+      dayPt+=pt;
+    });
+    // 曜日を計算
+    let dowStr='';
+    if(date){
+      const parts=date.split('/');
+      if(parts.length===3){const d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));dowStr=DOW_JA[d.getDay()];}
+    }
+    const dateLabel=date?`${parseInt(date.split('/')[1]||0)}月${parseInt(date.split('/')[2]||0)}日（${dowStr}）`:'-';
+    const summaryParts=[];
+    if(dayExp>0)summaryParts.push(`<span style="color:var(--red);">支出: ¥${dayExp.toLocaleString()}</span>`);
+    if(dayInc>0)summaryParts.push(`<span style="color:var(--green);">収入: ¥${dayInc.toLocaleString()}</span>`);
+    if(dayPt>0)summaryParts.push(`<span style="color:var(--indigo);">+${dayPt}pt</span>`);
+
+    // PC: グループヘッダー行
+    if(tbody){
+      const htr=document.createElement('tr');
+      htr.style.cssText=`background:var(--card2);border-top:2px solid var(--border);`;
+      htr.innerHTML=`<td colspan="5" style="padding:8px 16px;font-size:11px;font-weight:700;color:var(--text);">
+        ${dateLabel}
+        <span style="margin-left:12px;font-size:10px;font-weight:500;">${summaryParts.join('<span style="color:var(--text3);margin:0 6px;">|</span>')}</span>
+      </td>`;
+      tbody.appendChild(htr);
+    }
+    // スマホ: 日付ヘッダー
+    if(mbl){
+      const hd=document.createElement('div');
+      hd.style.cssText=`padding:8px 0 4px;border-top:2px solid var(--border);margin-top:4px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;`;
+      hd.innerHTML=`<span style="font-size:11px;font-weight:700;color:var(--text);">${dateLabel}</span><span style="font-size:10px;">${summaryParts.join('<span style="color:var(--text3);margin:0 4px;">|</span>')}</span>`;
+      mbl.appendChild(hd);
+    }
+
+    // 取引行
+    txs.forEach(t=>{
+      const{pt}=calcPt(t);
+      const isOlive=t.method==='三井住友カード(Olive)';
+      const isIncome=t.type==='income';
+      const amtColor=isIncome?'var(--green)':'var(--text)';
+      const prefix=isIncome?'+':'';
+
+      if(tbody){
+        const tr=document.createElement('tr');
+        tr.style.cssText=`border-bottom:1px solid var(--border);transition:background .1s;`;
+        tr.onmouseenter=()=>tr.style.background='var(--card2)';
+        tr.onmouseleave=()=>tr.style.background='';
+        tr.innerHTML=`
+          <td style="padding:10px 16px;font-weight:600;color:var(--text);padding-left:28px;">${t.shop||'-'}</td>
+          <td style="padding:10px 16px;"><span style="font-size:10px;background:var(--card2);color:var(--text2);border:1px solid var(--border);border-radius:99px;padding:2px 8px;">${t.categoryMajor||'その他'}</span></td>
+          <td style="padding:10px 16px;font-size:11px;color:var(--text3);">${t.method||'-'}${isPointPayment(t)?'<span style=\"margin-left:4px;background:#e0e7ff;color:#4338ca;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;">💠ポイント払い</span>':''}</td>
+          <td style="padding:10px 16px;text-align:right;font-weight:700;font-family:monospace;color:${amtColor};">${prefix}¥${t.amount.toLocaleString()}</td>
+          <td style="padding:10px 16px;text-align:right;font-weight:700;color:var(--indigo);font-family:monospace;">${pt>0?`+${pt} pt${isOlive?' <span style="font-size:9px;color:var(--green);">(※)</span>':''}`:'<span style="color:var(--text3);">0</span>'}</td>`;
+        tbody.appendChild(tr);
+      }
+      if(mbl){
+        const card=document.createElement('div');
+        card.style.cssText=`padding:8px 0 8px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);`;
+        card.innerHTML=`<div style="max-width:68%;">
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+            <span style="font-size:9px;background:var(--card2);border:1px solid var(--border);border-radius:4px;padding:0 4px;color:var(--text2);">${t.categoryMajor}</span>
+            <span style="font-size:9px;color:var(--text3);">${isIncome?'💰':'💳'}${t.method}${isPointPayment(t)?'<span style=\"background:#e0e7ff;color:#4338ca;padding:0 4px;border-radius:99px;font-size:9px;font-weight:700;margin-left:3px;">💠ポイント払い</span>':''}</span>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.shop||'利用先不明'}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:14px;font-weight:700;font-family:monospace;color:${amtColor};">${prefix}¥${t.amount.toLocaleString()}</div>
+          ${pt>0?`<div style="font-size:9px;font-weight:700;color:var(--indigo);font-family:monospace;">+${pt} pt</div>`:''}
+        </div>`;
+        mbl.appendChild(card);
+      }
+    });
+  });
+}
+
+// ============================================================
+// ポイントタブ
+// ============================================================
+function renderPtTab(){
+  const tbody=$('pt-tbody');if(!tbody)return;
+  tbody.innerHTML='';
+  const pc=calcAllPts();
+  pc.txs.filter(t=>t.type!=='income').sort((a,b)=>(a.date||'')>(b.date||'')?1:-1).forEach(t=>{
+    const tr=document.createElement('tr');
+    tr.style.cssText=`border-bottom:1px solid var(--border);`;
+    tr.innerHTML=`<td style="padding:8px 10px;color:var(--text3);">${t.date}</td><td style="padding:8px 10px;font-weight:600;color:var(--text);">${t.shop||'現金等'}</td><td style="padding:8px 10px;font-size:10px;color:var(--text3);">${t.method}</td><td style="padding:8px 10px;text-align:right;font-family:monospace;font-weight:700;color:var(--text);">¥${t.amount.toLocaleString()}</td><td style="padding:8px 10px;text-align:right;font-weight:700;color:var(--indigo);font-family:monospace;">${t.cp>0?`+${t.cp} pt`:`<span style="color:var(--text3);">0 pt</span>`}</td><td style="padding:8px 10px;font-size:10px;color:var(--text3);">${t.rule}</td>`;
+    tbody.appendChild(tr);
+  });
+  const oliveTotal=pc.oT+pc.oM+pc.oP+pc.oN;
+  const adv=$('ui-advisor');
+  if(adv)adv.innerHTML=`三井住友カード(Olive)での月間総決済額は <strong>¥${oliveTotal.toLocaleString()}</strong> です。<br>・特約対象店 (¥${pc.oT.toLocaleString()}) → <strong>${Math.floor(pc.oT/200)*Math.round(200*(0.5+S.pointSettings.vProgramRate)/100)} pt</strong><br>・PayPay経由 (¥${pc.oP.toLocaleString()}) → U25 PayPay特約(+0.5%) <strong>${Math.floor(pc.oP/200)*Math.round(200*0.01)} pt</strong><br><br>三井住友カードは月間合算のため端数ロスがなく、学生に最もやさしい決済方法です！`;
+}
+
+// ============================================================
+// Geminiプロンプト
+// ============================================================
+function renderGemini(){
+  const el=$('gemini-prompt');if(!el)return;
+  const pc=calcAllPts();
+  let catStr='';CATS.forEach(c=>{if((S.categories[c]||0)>0)catStr+=`- ${c}: ¥${S.categories[c].toLocaleString()}\n`;});
+  el.value=`私は学生です。${S.viewYear}年${S.viewMonth}月の家計簿データとポイント獲得状況について、改善点と効果的なアドバイスをお願いします。\n\n### 📊 家計の状況\n- 生活費予算: ¥${S.budgetLimit.toLocaleString()}\n- 収入合計: ¥${S.summary.totalIncome.toLocaleString()}\n- 支出合計: ¥${S.summary.totalExpense.toLocaleString()}\n- 収支結果: ${S.summary.netBalance>=0?'+':''}¥${S.summary.netBalance.toLocaleString()}\n\n### 🏷️ カテゴリ別支出\n${catStr||'（データなし）'}\n### 🪙 ポイント還元シミュレーション\n- 総獲得ポイント: ${pc.total} pt\n  * Vポイント(月間合算＋U25特約): ${pc.vPts} pt\n  * PayPayポイント(都度計算): ${pc.pp} pt\n\n### 🧐 相談事項\n1. 今の支払い方法でポイントをさらに最大化するアドバイスをください。\n2. 楽天モバイルをOliveで払った場合のメリットを教えてください。\n3. ¥${S.budgetLimit.toLocaleString()}予算内でつみたてNISAに回す現実的な貯蓄ステップを教えてください。`;
+}
+
+// ============================================================
+// タブ切替
+// ============================================================
+function switchTab(id){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  const pane=$('pane-'+id);if(pane)pane.classList.add('active');
+  const INDIGO='var(--indigo)';const TRANS='var(--text3)';
+  document.querySelectorAll('.tab-t').forEach(btn=>{
+    const on=btn.dataset.tab===id;
+    btn.style.cssText=on
+      ?`border-bottom:2px solid ${INDIGO};padding:16px 4px;font-size:12px;font-weight:700;color:${INDIGO};background:none;cursor:pointer;white-space:nowrap;`
+      :`border-bottom:2px solid transparent;padding:16px 4px;font-size:12px;font-weight:500;color:${TRANS};background:none;cursor:pointer;white-space:nowrap;`;
+  });
+  document.querySelectorAll('.tab-b').forEach(btn=>{
+    const on=btn.dataset.tab===id;
+    btn.style.cssText=on
+      ?`display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:48px;color:${INDIGO};background:none;border:none;cursor:pointer;`
+      :`display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:48px;color:${TRANS};background:none;border:none;cursor:pointer;`;
+    const lbl=btn.querySelector('span:last-child');if(lbl)lbl.style.fontWeight=on?'700':'400';
+  });
+  if(id==='dashboard'){renderPayChart();renderCatChart();}
+  if(id==='calendar'){renderCalendar();if(selDate)selectDay(selDate);}
+  if(id==='points')renderPtTab();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ============================================================
+// ダークモード
+// ============================================================
+function applyDark(on){
+  document.body.classList.toggle('dark',on);
+  const btn=$('btn-dark');if(btn)btn.textContent=on?'☀️':'🌙';
+  // グラフ再描画（色変数が変わるため）
+  setTimeout(()=>{renderPayChart();renderCatChart();},50);
+}
+
+// ============================================================
+// 年月セレクター
+// ============================================================
+function buildSelectors(){
+  const ySel=$('sel-year'),mSel=$('sel-month');
+  if(!ySel||!mSel)return;
+  ySel.innerHTML='';
+  for(let y=2024;y<=2035;y++){const o=document.createElement('option');o.value=y;o.textContent=y+'年';if(y===S.viewYear)o.selected=true;ySel.appendChild(o);}
+  mSel.innerHTML='';
+  for(let m=1;m<=12;m++){const o=document.createElement('option');o.value=m;o.textContent=m+'月';if(m===S.viewMonth)o.selected=true;mSel.appendChild(o);}
+}
+
+// ============================================================
+// トースト
+// ============================================================
+function toast(msg,type='info'){
+  const el=$('toast');if(!el)return;
+  $('toast-msg').textContent=msg;
+  el.style.background=type==='success'?'#059669':type==='error'?'#dc2626':'#1e293b';
+  el.style.opacity='1';
+  if(toastTmr)clearTimeout(toastTmr);
+  toastTmr=setTimeout(()=>{el.style.opacity='0';},3000);
+}
+
+// ============================================================
+// 初期化
+// ============================================================
+document.addEventListener('DOMContentLoaded',()=>{
+  load();
+  buildSelectors();
+  applyDark(S.darkMode||false);
+
+  // スライダー
+  const sl=$('slider-vprog');if(sl)sl.value=S.pointSettings.vProgramRate;
+
+  renderAll();
+  switchTab('dashboard');
+
+  // タブ
+  document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
+
+  // 年月切り替え
+  $('sel-year').addEventListener('change',function(){switchMonth(parseInt(this.value),S.viewMonth);});
+  $('sel-month').addEventListener('change',function(){switchMonth(S.viewYear,parseInt(this.value));});
+
+  // ダークモード
+  $('btn-dark').addEventListener('click',()=>{S.darkMode=!S.darkMode;save();applyDark(S.darkMode);});
+
+  // デモ初期化
+  $('btn-reset').addEventListener('click',()=>{
+    if(confirm('家計簿データを初期状態に戻しますか？')){
+      const y=S.viewYear,m=S.viewMonth,dark=S.darkMode,bgt=S.budgetLimit;
+      S=JSON.parse(JSON.stringify(INIT));
+      S.viewYear=y;S.viewMonth=m;S.darkMode=dark;S.budgetLimit=bgt;
+      if(sl)sl.value=8;save();renderAll();buildSelectors();switchTab('dashboard');
+      toast('初期状態に復元しました！','success');
+    }
+  });
+
+  // Vポイントスライダー
+  $('slider-vprog').addEventListener('input',function(){S.pointSettings.vProgramRate=parseFloat(this.value);recalc();save();renderAll();});
+
+  // 予算変更
+  $('btn-edit-budget').addEventListener('click',()=>{
+    const v=prompt('今月の生活費予算を入力:',S.budgetLimit);
+    if(v!==null){const n=parseInt(v);if(!isNaN(n)&&n>0){S.budgetLimit=n;save();renderStats();toast(`予算を¥${n.toLocaleString()}に更新しました！`,'success');}}
+  });
+
+  // 同期ボタン
+  $('btn-sync-dash').addEventListener('click',()=>{const url=($('url-dash')||{value:''}).value.trim();doSync(url);});
+  $('btn-sync-sync').addEventListener('click',()=>{const url=($('url-sync')||{value:''}).value.trim();doSync(url);});
+
+  // グラフ切替
+  $('btn-pay-donut').addEventListener('click',()=>{payChartType='doughnut';$('btn-pay-donut').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:var(--card);color:var(--indigo);font-weight:700;';$('btn-pay-bar').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);';renderPayChart();});
+  $('btn-pay-bar').addEventListener('click',()=>{payChartType='bar';$('btn-pay-bar').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:var(--card);color:var(--indigo);font-weight:700;';$('btn-pay-donut').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);';renderPayChart();});
+  $('btn-cat-stack').addEventListener('click',()=>{catChartType='stacked';$('btn-cat-stack').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:var(--card);color:var(--indigo);font-weight:700;';$('btn-cat-donut').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);';renderCatChart();});
+  $('btn-cat-donut').addEventListener('click',()=>{catChartType='doughnut';$('btn-cat-donut').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:var(--card);color:var(--indigo);font-weight:700;';$('btn-cat-stack').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);';renderCatChart();});
+
+  // テーブル検索
+  $('tbl-search').addEventListener('input',renderTable);
+  $('tbl-cat').addEventListener('change',renderTable);
+  $('tbl-type').addEventListener('change',renderTable);
+  $('tbl-method').addEventListener('change',renderTable);
+
+  // ファイルアップロード
+  const dz=$('drop-zone'),fi=$('file-input');
+  if(dz)dz.addEventListener('click',()=>fi&&fi.click());
+  if(fi)fi.addEventListener('change',e=>{
+    Array.from(e.target.files).forEach(file=>{
+      const isPdf=file.name.toLowerCase().endsWith('.pdf');
+      if(isPdf){
+        const reader=new FileReader();
+        reader.onload=async ev=>{
+          const b=$('data-status-badge');if(b)b.textContent=`🔄 ${file.name} を解析中...`;
+          toast('📄 PDFを解析中...','info');
+          await parsePdfFile(ev.target.result);
+          if(b)b.textContent=`🟢 ${file.name} 読込完了 (${S.transactions.length}件)`;
+          toast(`${file.name} から${S.transactions.length}件読み込みました！`,'success');
+        };
+        reader.readAsArrayBuffer(file);
+      }else{
+        const reader=new FileReader();
+        reader.onload=ev=>{
+          parseCsvAndApply(ev.target.result);
+          const b=$('data-status-badge');if(b)b.textContent=`🟢 ${file.name} 読込完了`;
+          toast(`${file.name} をインポートしました！`,'success');
+        };
+        reader.readAsText(file,'utf-8');
+      }
+    });
+  });
+
+  // CSV貼り付け
+  const pasteBtn=$('btn-paste-import');
+  if(pasteBtn)pasteBtn.addEventListener('click',()=>{
+    const txt=($('csv-paste-area')||{value:''}).value.trim();
+    if(!txt){toast('CSVテキストを貼り付けてください','error');return;}
+    try{parseCsvAndApply(txt);toast(`CSVを読み込みました！${S.transactions.length}件`,'success');switchTab('dashboard');}
+    catch(e){toast('CSVの解析に失敗しました: '+e.message,'error');}
+  });
+
+  // コピー
+  $('btn-copy-prompt').addEventListener('click',()=>{
+    const ta=$('gemini-prompt');if(ta){ta.select();try{document.execCommand('copy');toast('プロンプトをコピーしました！','success');}catch(e){toast('長押しして手動コピーしてください');}}
+  });
+});
+</script>
+</body>
+</html>
