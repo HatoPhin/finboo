@@ -1522,6 +1522,7 @@ let toastTmr=null;
 // ============================================================
 const $=id=>document.getElementById(id);
 function setText(id,v){const el=$(id);if(el)el.textContent=v;}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 
 function cleanDate(raw){
   if(!raw)return null;
