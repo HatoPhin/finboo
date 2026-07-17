@@ -349,31 +349,31 @@ header{padding-top:var(--sat);}
 <div style="background:var(--nav-bg);border-bottom:1px solid var(--nav-border);overflow-x:auto;" class="noscroll">
   <div class="max-w-7xl mx-auto px-4">
     <nav class="flex min-w-max gap-0">
-      <button type="button" class="tab-t" data-tab="dashboard" onclick="return finbooNavigate('dashboard', event)">
+      <button class="tab-t" data-tab="dashboard">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         ホーム
       </button>
-      <button type="button" class="tab-t" data-tab="points" onclick="return finbooNavigate('points', event)">
+      <button class="tab-t" data-tab="points">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v2m0 8v2M8.5 9.5C8.5 8.1 10.1 7 12 7s3.5 1.1 3.5 2.5c0 2-3.5 2.5-3.5 4.5m0 2h.01"/></svg>
         ポイント
       </button>
-      <button type="button" class="tab-t" data-tab="calendar" onclick="return finbooNavigate('calendar', event)">
+      <button class="tab-t" data-tab="calendar">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
         カレンダー
       </button>
-      <button type="button" class="tab-t" data-tab="transactions" onclick="return finbooNavigate('transactions', event)">
+      <button class="tab-t" data-tab="transactions">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         明細
       </button>
-      <button type="button" class="tab-t" data-tab="sync" onclick="return finbooNavigate('sync', event)">
+      <button class="tab-t" data-tab="sync">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         同期
       </button>
-      <button type="button" class="tab-t tab-campaign" data-tab="campaign" onclick="return finbooNavigate('campaign', event)" style="display:none;">
+      <button class="tab-t tab-campaign" data-tab="campaign" style="display:none;">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
         キャンペーン
       </button>
-      <button type="button" class="tab-t" data-tab="ai" onclick="return finbooNavigate('ai', event)">
+      <button class="tab-t" data-tab="ai">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         Gemini
       </button>
@@ -952,33 +952,287 @@ header{padding-top:var(--sat);}
   </div>
 </div>
 
+<!-- ==================== 資産タブ ==================== -->
+<div id="pane-assets" class="tab-pane space-y-4">
+
+  <!-- 総資産サマリー -->
+  <div style="background:linear-gradient(135deg,var(--hero-bg,#111827) 0%,color-mix(in srgb,var(--hero-bg,#111827) 60%,var(--primary)) 100%);border-radius:16px;padding:20px 22px;color:#fff;position:relative;overflow:hidden;">
+    <div style="font-size:10px;color:rgba(255,255,255,.5);font-weight:600;letter-spacing:.05em;">総預金残高</div>
+    <div id="asset-total-balance" style="font-size:32px;font-weight:800;font-family:monospace;margin-top:6px;letter-spacing:-1px;">¥0</div>
+    <div style="display:flex;gap:20px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);">
+      <div><div style="font-size:9px;color:rgba(255,255,255,.5);">口座数</div><div id="asset-account-count" style="font-size:13px;font-weight:700;margin-top:2px;">0口座</div></div>
+      <div><div style="font-size:9px;color:rgba(255,255,255,.5);">来月引き落とし予定（今月利用分）</div><div id="asset-debit-total" style="font-size:13px;font-weight:700;margin-top:2px;font-family:monospace;">¥0</div></div>
+    </div>
+  </div>
+
+  <!-- 口座一覧 -->
+  <div class="card p-4">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);">🏦 口座一覧</span>
+      <button onclick="openAccountModal()" class="btn btn-primary" style="font-size:11px;padding:5px 12px;">＋ 追加</button>
+    </div>
+    <div id="account-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div id="account-list-empty" style="display:none;text-align:center;padding:20px 0;font-size:11px;color:var(--text3);">口座が登録されていません</div>
+  </div>
+
+  <!-- クレジットカード引き落とし設定 -->
+  <div class="card p-4">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);">💳 引き落とし設定</span>
+      <button onclick="openCardSettingModal()" class="btn btn-ghost" style="font-size:11px;padding:5px 12px;">＋ 追加</button>
+    </div>
+    <div id="card-setting-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="card-setting-empty" style="display:none;text-align:center;padding:16px 0;font-size:11px;color:var(--text3);">引き落とし設定がありません</div>
+  </div>
+
+  <!-- 残高不足アラート -->
+  <div id="balance-alert-card" class="card p-4" style="display:none;border-color:var(--red);">
+    <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px;">⚠️ 残高不足の可能性</div>
+    <div id="balance-alert-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
+
+  <!-- 口座間送金 -->
+  <div class="card p-4">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);">↔️ 口座間送金</span>
+      <button onclick="openTransferModal()" class="btn btn-ghost" style="font-size:11px;padding:5px 12px;">＋ 登録</button>
+    </div>
+    <div id="transfer-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="transfer-list-empty" style="display:none;text-align:center;padding:16px 0;font-size:11px;color:var(--text3);">送金履歴がありません</div>
+  </div>
+
+  <!-- 定期自動転送 -->
+  <div class="card p-4">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);">🔄 定期自動転送</span>
+      <button onclick="openRecurringModal()" class="btn btn-ghost" style="font-size:11px;padding:5px 12px;">＋ 追加</button>
+    </div>
+    <div style="font-size:9.5px;color:var(--text3);margin-bottom:10px;">毎月同じ日に自動で口座残高を動かします（アプリを開いたときに実行日が過ぎていれば自動反映）</div>
+    <div id="recurring-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="recurring-list-empty" style="display:none;text-align:center;padding:16px 0;font-size:11px;color:var(--text3);">定期自動転送が設定されていません</div>
+  </div>
+
+  <!-- 投資信託・株式 -->
+  <div class="card p-4">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);">📈 投資信託・株式</span>
+      <button onclick="openHoldingModal()" class="btn btn-ghost" style="font-size:11px;padding:5px 12px;">＋ 追加</button>
+    </div>
+    <div style="font-size:9.5px;color:var(--text3);margin-bottom:10px;">基準価額・株価は自動取得できないため、最新の値を手入力で更新してください</div>
+
+    <div style="background:var(--card2);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:9px;color:var(--text3);">評価額 合計</div>
+      <div id="holding-total-value" style="font-size:22px;font-weight:800;font-family:monospace;color:var(--text);margin-top:2px;">¥0</div>
+      <div id="holding-total-pl" style="font-size:12px;font-weight:700;margin-top:2px;">¥0（0.00%）</div>
+    </div>
+
+    <div id="holding-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="holding-list-empty" style="display:none;text-align:center;padding:16px 0;font-size:11px;color:var(--text3);">投資信託・株式が登録されていません</div>
+  </div>
+
+</div>
+
 <nav class="md:hidden bottom-nav" style="background:var(--nav-bg);border-top:1px solid var(--nav-border);position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:flex-start;padding-top:8px;">
-  <button type="button" class="tab-b" data-tab="dashboard" onclick="return finbooNavigate('dashboard', event)" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
+  <button class="tab-b" data-tab="dashboard" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
     <span style="font-size:9px;">ホーム</span>
   </button>
-  <button type="button" class="tab-b" data-tab="points" onclick="return finbooNavigate('points', event)" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
+  <button class="tab-b" data-tab="points" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v2m0 8v2M8.5 9.5C8.5 8.1 10.1 7 12 7s3.5 1.1 3.5 2.5c0 2-3.5 2.5-3.5 4.5m0 2h.01"/></svg>
     <span style="font-size:9px;">ポイント</span>
   </button>
-  <button type="button" class="tab-b" data-tab="calendar" onclick="return finbooNavigate('calendar', event)" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
+  <button class="tab-b" data-tab="calendar" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
     <span style="font-size:9px;">カレンダー</span>
   </button>
-  <button type="button" class="tab-b" data-tab="transactions" onclick="return finbooNavigate('transactions', event)" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
+  <button class="tab-b" data-tab="transactions" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
     <span style="font-size:9px;">明細</span>
   </button>
-  <button type="button" class="tab-b" data-tab="sync" onclick="return finbooNavigate('sync', event)" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
+  <button class="tab-b" data-tab="sync" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
     <span style="font-size:9px;">同期</span>
   </button>
-  <button type="button" class="tab-b tab-campaign" data-tab="campaign" onclick="return finbooNavigate('campaign', event)" style="display:none;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
+  <button class="tab-b tab-campaign" data-tab="campaign" style="display:none;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
     <span style="font-size:9px;">キャンペーン</span>
   </button>
+  <button class="tab-b" data-tab="assets" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><path d="M12 12v4m-2-2h4"/></svg>
+    <span style="font-size:9px;">資産</span>
+  </button>
 </nav>
 
+<!-- ==================== 口座追加/編集モーダル ==================== -->
+<div id="account-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(440px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span id="account-modal-title" style="font-size:14px;font-weight:700;color:var(--text);">口座を追加</span>
+      <button onclick="hideModal('account-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">銀行名 *</label>
+        <input id="acc-bank" type="text" list="bank-name-list" placeholder="例: 住信SBIネット銀行" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+        <datalist id="bank-name-list"><option value="住信SBIネット銀行"><option value="楽天銀行"><option value="PayPay銀行"><option value="ゆうちょ銀行"><option value="三菱UFJ銀行"><option value="三井住友銀行"><option value="みずほ銀行"><option value="イオン銀行"><option value="au じぶん銀行"><option value="セブン銀行"></datalist></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">口座種別</label>
+        <select id="acc-type" oninput="onAccTypeChange()" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <option value="普通">普通預金（代表口座）</option>
+          <option value="SBIハイブリッド">SBIハイブリッド預金（SBI証券連携）</option>
+          <option value="目的別">目的別口座</option>
+          <option value="定期">定期預金</option>
+          <option value="貯蓄">貯蓄預金</option>
+        </select></div>
+      <div id="acc-purpose-row" style="display:none;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">目的別口座の名前 *</label>
+        <input id="acc-purpose" type="text" placeholder="例: 旅行、緊急資金、定期代" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">現在の残高 *</label>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--text3);font-size:13px;">¥</span><input id="acc-balance" type="number" min="0" step="1000" style="flex:1;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">メモ（任意）</label>
+        <input id="acc-memo" type="text" placeholder="例: 給与受取口座" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+      <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <button onclick="saveAccountModal()" class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;">保存する</button>
+        <button id="acc-delete-btn" onclick="deleteAccount()" class="btn" style="display:none;background:var(--red-light);color:var(--red);font-size:12px;">削除</button>
+        <button onclick="hideModal('account-modal-overlay')" class="btn btn-ghost" style="font-size:12px;">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 引き落とし設定モーダル ==================== -->
+<div id="card-setting-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(440px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span id="cs-modal-title" style="font-size:14px;font-weight:700;color:var(--text);">引き落とし設定</span>
+      <button onclick="hideModal('card-setting-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">決済手段 *</label>
+        <select id="cs-method" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">引き落とし口座 *</label>
+        <select id="cs-account" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
+      <div id="cs-credit-fields">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-top:4px;border-top:1px solid var(--border);">クレジットカード設定</div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">締め日</label>
+            <select id="cs-closing-day" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
+          <div style="flex:1;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">引き落とし日</label>
+            <select id="cs-debit-day" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
+        </div>
+        <div style="margin-top:10px;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">引き落とし日が休日の場合</label>
+          <select id="cs-holiday-rule" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+            <option value="prev">前営業日</option><option value="next">翌営業日</option>
+          </select></div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <button onclick="saveCardSettingModal()" class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;">保存する</button>
+        <button id="cs-delete-btn" onclick="deleteCardSetting()" style="display:none;background:var(--red-light);color:var(--red);" class="btn">削除</button>
+        <button onclick="hideModal('card-setting-modal-overlay')" class="btn btn-ghost" style="font-size:12px;">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 口座間送金モーダル ==================== -->
+<div id="transfer-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(440px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span style="font-size:14px;font-weight:700;color:var(--text);">口座間送金を登録</span>
+      <button onclick="hideModal('transfer-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">送金元 *</label>
+          <select id="tf-from" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
+        <div style="flex:1;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">送金先 *</label>
+          <select id="tf-to" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
+      </div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">金額 *</label>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--text3);font-size:13px;">¥</span><input id="tf-amount" type="number" min="1" step="1000" style="flex:1;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">日付 *</label>
+        <input id="tf-date" type="date" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">扱い</label>
+        <select id="tf-type" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <option value="transfer">残高移動のみ（支出に含めない）</option>
+          <option value="expense">支出として扱う（Finbooの取引にも追加）</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">メモ（任意）</label>
+        <input id="tf-memo" type="text" placeholder="例: 家賃用に移動" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+      <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <button onclick="saveTransferModal()" class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;">登録する</button>
+        <button onclick="hideModal('transfer-modal-overlay')" class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px;">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 投資信託・株式モーダル ==================== -->
+<div id="holding-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(440px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span id="hold-modal-title" style="font-size:14px;font-weight:700;color:var(--text);">投資信託・株式を追加</span>
+      <button id="hold-modal-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">銘柄名 *</label>
+        <input id="hold-name" type="text" placeholder="例: eMAXIS Slim 米国株式（S&P500）" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">保有区分</label>
+        <select id="hold-category" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <option value="NISA成長">NISA（成長投資枠）</option>
+          <option value="NISAつみたて">NISA（つみたて投資枠）</option>
+          <option value="特定口座">特定口座</option>
+          <option value="一般口座">一般口座</option>
+        </select></div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">取得金額 *</label>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--text3);font-size:13px;">¥</span><input id="hold-cost" type="number" min="0" step="1" style="flex:1;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px;">購入時に支払った合計金額</div></div>
+      </div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">現在の評価額 *</label>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--text3);font-size:13px;">¥</span><input id="hold-value" type="number" min="0" step="1" style="flex:1;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:3px;">証券会社アプリの「評価額」をそのまま入力（更新のたびに書き換えてください）</div></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">最終更新日</label>
+        <input id="hold-updated" type="date" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+      <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <button id="hold-save-btn" class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;">保存する</button>
+        <button id="hold-delete-btn" class="btn" style="display:none;background:var(--red-light);color:var(--red);font-size:12px;">削除</button>
+        <button id="hold-cancel-btn" class="btn btn-ghost" style="font-size:12px;">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 定期自動転送モーダル ==================== -->
+<div id="recurring-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(440px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span id="rec-modal-title" style="font-size:14px;font-weight:700;color:var(--text);">定期自動転送を追加</span>
+      <button id="rec-modal-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">送金元 *</label>
+          <select id="rec-from" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
+        <div style="flex:1;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">送金先 *</label>
+          <select id="rec-to" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
+      </div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">金額 *</label>
+        <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--text3);font-size:13px;">¥</span><input id="rec-amount" type="number" min="1" step="100" style="flex:1;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">毎月の実行日 *</label>
+        <select id="rec-day" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">種別</label>
+        <select id="rec-type" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <option value="transfer">移動扱い（支出に含めない）</option>
+          <option value="expense">支出扱い（Finbooの取引にも追加）</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">メモ（任意）</label>
+        <input id="rec-memo" type="text" placeholder="例: 貯金、定期代" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+      <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <button id="rec-save-btn" class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;">保存する</button>
+        <button id="rec-delete-btn" class="btn" style="display:none;background:var(--red-light);color:var(--red);font-size:12px;">削除</button>
+        <button id="rec-cancel-btn" class="btn btn-ghost" style="font-size:12px;">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ==================== 固定費追加モーダル ==================== -->
 <div id="fixed-cost-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
@@ -1412,6 +1666,11 @@ const INIT={
   catBudgets:{},        // カテゴリ名(または食費内訳キー) → 予算額(0=未設定)
   pinnedCats:["昼食（大学）"], // ホーム画面に大きく表示するカテゴリ/内訳キー
   subscriptionAutoLog:{}, // SubScan連携: 'subId_YYYY-MM' -> true（その月に自動生成済みかの記録）
+  accounts:[],           // 銀行口座 [{id,bankName,accountType,balance,memo}]
+  cardSettings:[],       // 引き落とし設定 [{id,method,accountId,isDebit,closingDay,debitDay,holidayRule}]
+  transfers:[],          // 口座間送金 [{id,fromId,toId,amount,date,type,memo}]
+  recurringTransfers:[],  // 定期自動転送 [{id,fromId,toId,amount,day,type,memo,executedMonths:[]}]
+  holdings:[],             // 投資信託・株式 [{id,name,category,cost,value,updatedAt}]
   fixedCostItems:[],       // 登録済み固定費 [{id,shop,method,amount,day,addedFrom}] addedFrom:'auto'|'manual'
   catMinors:{               // 大カテゴリ名 → 小カテゴリ選択肢リスト（同期タブで編集可能）
     "食費":["昼食（大学）","夕食","カフェ","その他食費"],
@@ -1698,15 +1957,11 @@ function calcPt(t){
     if(t.amount<100)return{pt:0,rule:'100円未満対象外'};
     return{pt:Math.floor(t.amount/100)*1,rule:'都度(100円毎1pt)'};
   }
-  // 住信SBIデビット：利用額の0.8%を1ポイント未満切り捨てで付与
-  if(t.method==='住信SBI - デビット'){
-    return{pt:Math.floor(t.amount*0.008),rule:'都度(0.8%)'};
-  }
   return{pt:0,rule:'非対象'};
 }
 
 function calcAllPts(){
-  let oT=0,oM=0,oP=0,oN=0,pp=0,sbi=0;
+  let oT=0,oM=0,oP=0,oN=0,pp=0;
   const txs=S.transactions.map(t=>{
     const{pt,rule}=calcPt(t);
     // 立替は集計から除外
@@ -1717,7 +1972,6 @@ function calcAllPts(){
         else if(isPayPayShop(t.shop))oP+=t.amount;
         else oN+=t.amount;
       }else if((t.method==='PayPayクレジット'||t.method==='PayPay残高'||t.method==='PayPayクレジット（ポイント払い）')&&t.type!=='income'){pp+=pt;}
-      else if(t.method==='住信SBI - デビット'&&t.type!=='income'){sbi+=pt;}
     }
     return{...t,cp:pt,rule};
   });
@@ -1729,7 +1983,7 @@ function calcAllPts(){
   const ptP = Math.floor(oP/200) * Math.round(200*0.01);// U25 PayPay(1.0%)
   const ptN = Math.floor(oN/200) * 1;                   // 通常還元(0.5% = 200円で1pt)
   const vPts = ptT + ptM + ptP + ptN;
-  return{txs,vPts,pp,sbi,total:vPts+pp+sbi,oT,oM,oP,oN,ptT,ptM,ptP,ptN};
+  return{txs,vPts,pp,total:vPts+pp,oT,oM,oP,oN,ptT,ptM,ptP,ptN};
 }
 
 // ============================================================
@@ -1747,6 +2001,11 @@ function saveSettings(){
       catBudgets:S.catBudgets||{},
       pinnedCats:S.pinnedCats||[],
       subscriptionAutoLog:S.subscriptionAutoLog||{},
+      accounts:S.accounts||[],
+      cardSettings:S.cardSettings||[],
+      transfers:S.transfers||[],
+      recurringTransfers:S.recurringTransfers||[],
+      holdings:S.holdings||[],
       fixedCostItems:S.fixedCostItems||[],
       catMinors:S.catMinors||{},
       darkMode:S.darkMode,
@@ -1806,6 +2065,11 @@ function load(){
       S.catBudgets      = cfg.catBudgets      || {};
       S.pinnedCats      = cfg.pinnedCats      || ["昼食（大学）"];
       S.subscriptionAutoLog = cfg.subscriptionAutoLog || {};
+      S.accounts     = cfg.accounts     || [];
+      S.cardSettings = cfg.cardSettings || [];
+      S.transfers    = cfg.transfers    || [];
+      S.recurringTransfers = cfg.recurringTransfers || [];
+      S.holdings = cfg.holdings || [];
       S.fixedCostItems = cfg.fixedCostItems || [];
       S.catMinors = cfg.catMinors && Object.keys(cfg.catMinors).length ? cfg.catMinors : S.catMinors;
       S.darkMode        = cfg.darkMode        || false;
@@ -2831,6 +3095,824 @@ function subAvatarHtml(sub,size){
   return `<div style="width:${size}px;height:${size}px;border-radius:9px;background:${color};color:#fff;font-weight:800;font-size:${Math.round(size*0.42)}px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${initial}</div>`;
 }
 
+// ============================================================
+// 資産タブ — 銀行金利マスタ
+// ============================================================
+const BANK_INTEREST_MASTER={
+  "住信SBIネット銀行":{
+    "普通":{rate:0.30,timing:"毎月",note:"代表口座の円普通預金（2026年1月改定）。毎月利息が付与されます"},
+    "SBIハイブリッド":{rate:0.31,timing:"毎月",note:"SBI証券と連携したハイブリッド預金。証券買付余力にも自動反映されます"},
+    "目的別":{rate:0.30,timing:"毎月",note:"代表口座と同じ金利が適用。最大10口座まで作成可能。ATM直接入出金不可"},
+    "定期":{rate:0.40,timing:"満期",note:"期間・金額によって異なります（1年もの目安）"},
+    "貯蓄":{rate:0.30,timing:"毎月",note:"ハイブリッド預金に準じます"}
+  },
+  "楽天銀行":{
+    "普通":{rate:0.10,timing:"毎月",note:"楽天証券と連携（マネーブリッジ）で年0.10%。残高300万円超は年0.04%"},
+    "定期":{rate:0.25,timing:"満期",note:"期間・金額によって異なります"},
+    "貯蓄":{rate:0.10,timing:"毎月",note:"マネーブリッジ適用時"}
+  },
+  "PayPay銀行":{
+    "普通":{rate:0.03,timing:"毎月",note:"通常金利。PayPay残高連携で若干優遇される場合あり"},
+    "定期":{rate:0.30,timing:"満期",note:"期間によって異なります"},
+    "貯蓄":{rate:0.03,timing:"毎月",note:""}
+  },
+  "ゆうちょ銀行":{
+    "普通":{rate:0.02,timing:"3月・9月",note:"利息付与は年2回（3月・9月）"},
+    "定期":{rate:0.025,timing:"満期",note:"通常貯金"},
+    "貯蓄":{rate:0.025,timing:"3月・9月",note:"財形貯蓄等により異なります"}
+  },
+  "三菱UFJ銀行":{
+    "普通":{rate:0.02,timing:"3月・9月",note:"利息付与は年2回"},
+    "定期":{rate:0.025,timing:"満期",note:"スーパー定期"},
+    "貯蓄":{rate:0.02,timing:"3月・9月",note:""}
+  },
+  "三井住友銀行":{
+    "普通":{rate:0.02,timing:"3月・9月",note:"利息付与は年2回"},
+    "定期":{rate:0.025,timing:"満期",note:""},
+    "貯蓄":{rate:0.02,timing:"3月・9月",note:""}
+  },
+  "みずほ銀行":{
+    "普通":{rate:0.02,timing:"3月・9月",note:"利息付与は年2回"},
+    "定期":{rate:0.025,timing:"満期",note:""},
+    "貯蓄":{rate:0.02,timing:"3月・9月",note:""}
+  },
+  "イオン銀行":{
+    "普通":{rate:0.10,timing:"毎月",note:"イオンカードセレクト保有・ゴールドステージ以上で年0.10%"},
+    "定期":{rate:0.25,timing:"満期",note:""},
+    "貯蓄":{rate:0.10,timing:"毎月",note:""}
+  },
+  "au じぶん銀行":{
+    "普通":{rate:0.20,timing:"毎月",note:"auマネ活プラン加入で最大年0.20%。通常は年0.02%"},
+    "定期":{rate:0.35,timing:"満期",note:""},
+    "貯蓄":{rate:0.20,timing:"毎月",note:""}
+  },
+  "セブン銀行":{
+    "普通":{rate:0.02,timing:"3月・9月",note:"利息付与は年2回"},
+    "定期":{rate:0.025,timing:"満期",note:""},
+    "貯蓄":{rate:0.02,timing:"3月・9月",note:""}
+  }
+};
+
+function getBankInterest(bankName,accountType){
+  const bank=BANK_INTEREST_MASTER[bankName];
+  if(!bank) return null;
+  return bank[accountType]||bank['普通']||null;
+}
+
+// デビットカードかどうか（即時引き落とし扱い）
+const DEBIT_METHODS=['住信SBI - デビット'];
+function isDebitMethod(method){return DEBIT_METHODS.includes(method);}
+
+// ============================================================
+// 定期自動転送
+// ============================================================
+function applyRecurringTransfers(){
+  if(!S.recurringTransfers||!S.accounts) return;
+  const today=new Date();
+  const y=today.getFullYear(), m=today.getMonth()+1, d=today.getDate();
+  const monthKey=`${y}-${String(m).padStart(2,'0')}`;
+
+  S.recurringTransfers.forEach(rt=>{
+    if(!rt.executedMonths) rt.executedMonths=[];
+    if(rt.executedMonths.includes(monthKey)) return; // 今月分処理済み
+    if(d<rt.day) return; // まだ実行日前
+
+    const fromAcc=(S.accounts||[]).find(a=>a.id===rt.fromId);
+    const toAcc=(S.accounts||[]).find(a=>a.id===rt.toId);
+    if(fromAcc) fromAcc.balance=Math.max(0,(fromAcc.balance||0)-rt.amount);
+    if(toAcc) toAcc.balance=(toAcc.balance||0)+rt.amount;
+
+    // 送金履歴に追加
+    const dateStr=`${y}/${String(m).padStart(2,'0')}/${String(rt.day).padStart(2,'0')}`;
+    if(!S.transfers) S.transfers=[];
+    S.transfers.push({id:uid(),fromId:rt.fromId,toId:rt.toId,amount:rt.amount,
+      date:dateStr,type:rt.type,memo:(rt.memo||'')+'（定期自動転送）'});
+
+    // 支出扱いの場合Finbooの取引にも追加
+    if(rt.type==='expense'&&fromAcc){
+      S.transactions.push({date:dateStr,
+        shop:`${fromAcc.bankName}→${toAcc?toAcc.bankName:'送金先'}`,
+        categoryMajor:'その他',categoryMinor:'',method:'現金',
+        amount:rt.amount,type:'expense',source:'manual',
+        memo:rt.memo||'定期自動転送'});
+      saveTx(); recalc(); renderAll();
+    }
+    rt.executedMonths.push(monthKey);
+    toast(`定期自動転送: ${fromAcc?fromAcc.bankName:'?'}→${toAcc?toAcc.bankName:'?'} ¥${rt.amount.toLocaleString()} を実行しました`,'success');
+  });
+  saveSettings();
+}
+
+let editingRecurringId=null;
+
+function openRecurringModal(id){
+  editingRecurringId=id||null;
+  const rt=id?((S.recurringTransfers||[]).find(r=>r.id===id)):null;
+  setText('rec-modal-title',rt?'定期自動転送を編集':'定期自動転送を追加');
+
+  const fromSel=$('rec-from'), toSel=$('rec-to');
+  fromSel.innerHTML=''; toSel.innerHTML='';
+  (S.accounts||[]).forEach(a=>{
+    const label=a.bankName+' '+(a.accountType==='目的別'?`目的別「${a.purpose||''}」`:a.accountType);
+    [fromSel,toSel].forEach(sel=>{
+      const o=document.createElement('option');o.value=a.id;o.textContent=label;sel.appendChild(o);
+    });
+  });
+
+  const daySel=$('rec-day');
+  daySel.innerHTML='';
+  for(let i=1;i<=28;i++){const o=document.createElement('option');o.value=i;o.textContent=`毎月${i}日`;daySel.appendChild(o);}
+
+  if(rt){
+    fromSel.value=rt.fromId||'';
+    toSel.value=rt.toId||'';
+    $('rec-amount').value=rt.amount||'';
+    daySel.value=rt.day||1;
+    $('rec-type').value=rt.type||'transfer';
+    $('rec-memo').value=rt.memo||'';
+  }else{
+    $('rec-amount').value='';
+    daySel.value=25;
+    $('rec-type').value='transfer';
+    $('rec-memo').value='';
+  }
+  $('rec-delete-btn').style.display=rt?'inline-flex':'none';
+  showModal('recurring-modal-overlay');
+}
+
+function saveRecurringModal(){
+  const fromId=$('rec-from').value, toId=$('rec-to').value;
+  const amount=parseInt($('rec-amount').value)||0;
+  const day=parseInt($('rec-day').value)||1;
+  if(!fromId||!toId){toast('口座を選択してください','error');return;}
+  if(fromId===toId){toast('送金元と送金先が同じです','error');return;}
+  if(amount<=0){toast('金額を入力してください','error');return;}
+  const data={fromId,toId,amount,day,
+    type:$('rec-type').value,
+    memo:$('rec-memo').value.trim()};
+  if(editingRecurringId){
+    const idx=(S.recurringTransfers||[]).findIndex(r=>r.id===editingRecurringId);
+    if(idx>=0){
+      // 編集時はexecutedMonthsを引き継ぐ
+      S.recurringTransfers[idx]=Object.assign(S.recurringTransfers[idx],data);
+    }
+  }else{
+    if(!S.recurringTransfers)S.recurringTransfers=[];
+    S.recurringTransfers.push(Object.assign({id:uid(),executedMonths:[]},data));
+  }
+  saveSettings(); hideModal('recurring-modal-overlay');
+  renderAssetsTab(); toast('定期自動転送を保存しました','success');
+}
+
+function deleteRecurring(){
+  if(!editingRecurringId) return;
+  if(!confirm('この定期自動転送を削除しますか？')) return;
+  S.recurringTransfers=(S.recurringTransfers||[]).filter(r=>r.id!==editingRecurringId);
+  saveSettings(); hideModal('recurring-modal-overlay');
+  renderAssetsTab(); toast('削除しました','success');
+}
+
+function renderRecurringList(){
+  const list=$('recurring-list'), empty=$('recurring-list-empty');
+  if(!list) return;
+  const items=S.recurringTransfers||[];
+  list.innerHTML='';
+  empty.style.display=items.length===0?'block':'none';
+
+  const today=new Date();
+  const y=today.getFullYear(), m=today.getMonth()+1;
+  const monthKey=`${y}-${String(m).padStart(2,'0')}`;
+
+  items.forEach(rt=>{
+    const fromAcc=(S.accounts||[]).find(a=>a.id===rt.fromId);
+    const toAcc=(S.accounts||[]).find(a=>a.id===rt.toId);
+    const executed=(rt.executedMonths||[]).includes(monthKey);
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;cursor:pointer;';
+    row.onclick=()=>openRecurringModal(rt.id);
+    row.innerHTML=`
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:12px;font-weight:700;color:var(--text);">${fromAcc?fromAcc.bankName:'?'} → ${toAcc?toAcc.bankName:'?'}</span>
+          <span style="font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700;background:${rt.type==='expense'?'var(--red-light)':'var(--green-light)'};color:${rt.type==='expense'?'var(--red)':'var(--green)'};">${rt.type==='expense'?'支出扱い':'移動扱い'}</span>
+          ${executed?'<span style="font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700;background:var(--card2);color:var(--text3);">✅ 今月実行済</span>':''}
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">毎月${rt.day}日 / ¥${rt.amount.toLocaleString()}${rt.memo?' ・ '+rt.memo:''}</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`;
+    list.appendChild(row);
+  });
+}
+
+
+
+// 指定決済手段の今月の確定支出額を集計（ポイント払い除外）
+function calcMethodMonthlyTotal(method, year, month){
+  const isCurrentMonth=(year===S.viewYear&&month===S.viewMonth);
+  const txs=isCurrentMonth ? S.transactions : (loadTx(year,month)||[]);
+  return txs
+    .filter(t=>t.method===method && t.type!=='income' && !isPointPayment(t) && !isKaetate(t))
+    .reduce((sum,t)=>sum+t.amount,0);
+}
+
+// 休日スキップ（簡易版: 土日のみ判定）
+function adjustForHoliday(date, rule){
+  const d=new Date(date);
+  const dow=d.getDay(); // 0=日,6=土
+  if(dow===0||dow===6){
+    if(rule==='prev'){
+      d.setDate(d.getDate()-(dow===0?2:1));
+    }else{
+      d.setDate(d.getDate()+(dow===0?1:2));
+    }
+  }
+  return d;
+}
+
+// クレジットカードの今月引き落とし日を取得
+function getCreditDebitDate(cs, year, month){
+  const raw=new Date(year,month-1,Math.min(cs.debitDay,28));
+  return adjustForHoliday(raw,cs.holidayRule||'prev');
+}
+
+// クレジットカードの今月引き落とし対象月（締め日から計算）
+function getCreditBillingMonth(cs, year, month){
+  // 引き落とし月(year/month)に対応する「利用月」を返す
+  // クレジットカードは利用月の翌月に引き落とし → 利用月 = 引き落とし月の前月
+  let by=year, bm=month-1;
+  if(bm<1){bm=12;by--;}
+  return {year:by, month:bm};
+}
+
+// 来月の引き落とし予定を返す（今月の利用分）
+function getNextMonthDebitInfo(cs){
+  const today=new Date();
+  const y=today.getFullYear(), m=today.getMonth()+1;
+  // 来月 = 引き落とし月
+  let dy=y, dm=m+1;
+  if(dm>12){dm=1;dy++;}
+  const debitDate=getCreditDebitDate(cs,dy,dm);
+  // 利用月 = 今月
+  const total=calcMethodMonthlyTotal(cs.method,y,m);
+  return {debitDate,total,debitMonth:dm,debitYear:dy};
+}
+
+// デビットカード: 取引登録時に口座残高を即時減額
+function applyDebitToAccount(method, amount){
+  const cs=S.cardSettings&&S.cardSettings.find(c=>c.method===method&&isDebitMethod(c.method));
+  if(!cs) return;
+  const acc=S.accounts&&S.accounts.find(a=>a.id===cs.accountId);
+  if(!acc) return;
+  acc.balance=Math.max(0,(acc.balance||0)-amount);
+  saveSettings();
+}
+
+// クレジットカード: 月次引き落とし処理（今日の日付が引き落とし日以降なら残高から差し引く）
+function applyCreditDeductions(){
+  if(!S.cardSettings||!S.accounts) return;
+  const today=new Date();
+  const y=today.getFullYear(), m=today.getMonth()+1;
+
+  S.cardSettings.forEach(cs=>{
+    if(isDebitMethod(cs.method)) return;
+    const debitDate=getCreditDebitDate(cs,y,m);
+    if(today<debitDate) return;
+
+    const logKey=`credit_deducted_${cs.id}_${y}-${String(m).padStart(2,'0')}`;
+    if(S.subscriptionAutoLog&&S.subscriptionAutoLog[logKey]) return;
+
+    // 利用月 = 今月の前月
+    const {year:by,month:bm}=getCreditBillingMonth(cs,y,m);
+    const total=calcMethodMonthlyTotal(cs.method,by,bm);
+    if(total<=0) return;
+
+    const acc=S.accounts.find(a=>a.id===cs.accountId);
+    if(!acc) return;
+    acc.balance=Math.max(0,(acc.balance||0)-total);
+    S.subscriptionAutoLog=S.subscriptionAutoLog||{};
+    S.subscriptionAutoLog[logKey]=true;
+    saveSettings();
+    toast(`${cs.method}の引き落とし ¥${total.toLocaleString()} を口座残高に反映しました`,'success');
+  });
+}
+
+// ============================================================
+// 残高不足チェック
+// ============================================================
+function checkBalanceAlerts(){
+  const alerts=[];
+  if(!S.cardSettings||!S.accounts) return alerts;
+
+  S.cardSettings.forEach(cs=>{
+    const acc=S.accounts.find(a=>a.id===cs.accountId);
+    if(!acc) return;
+
+    let total=0;
+    if(isDebitMethod(cs.method)){
+      // デビット: 今月の残り利用分を現残高と比較
+      const today=new Date();
+      total=calcMethodMonthlyTotal(cs.method,today.getFullYear(),today.getMonth()+1);
+    }else{
+      // クレジット: 来月の引き落とし予定（今月の利用合計）と残高を比較
+      const {total:t}=getNextMonthDebitInfo(cs);
+      total=t;
+    }
+    if(total>0&&(acc.balance||0)<total){
+      alerts.push({
+        method:cs.method,
+        accountId:cs.accountId,
+        accountName:acc.accountType==='目的別'?acc.bankName+'目的別「'+(acc.purpose||'')+'」':acc.bankName+' '+acc.accountType,
+        balance:acc.balance||0,
+        total,
+        shortage:(acc.balance||0)-total
+      });
+    }
+  });
+  return alerts;
+}
+
+// ============================================================
+// 投資信託・株式（基準価額は手入力、評価額・損益は自動計算）
+// ============================================================
+let editingHoldingId=null;
+
+function renderHoldings(){
+  const list=$('holding-list'), empty=$('holding-list-empty');
+  if(!list) return;
+  const holdings=S.holdings||[];
+  list.innerHTML='';
+  empty.style.display=holdings.length===0?'block':'none';
+
+  let totalCost=0, totalValue=0;
+
+  holdings.forEach(h=>{
+    const cost=h.cost||0, value=h.value||0;
+    const pl=value-cost;
+    const plPct=cost>0?(pl/cost*100):0;
+    totalCost+=cost; totalValue+=value;
+    const plColor=pl>0?'var(--red,#dc2626)':(pl<0?'var(--green)':'var(--text3)');
+    const plSign=pl>0?'+':'';
+
+    const row=document.createElement('div');
+    row.style.cssText='background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;';
+    row.onclick=()=>openHoldingModal(h.id);
+    row.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <span style="font-size:9px;font-weight:700;background:var(--primary-light,var(--card));color:var(--primary);padding:1px 6px;border-radius:4px;">${h.category||'特定口座'}</span>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-top:4px;word-break:break-all;line-height:1.4;">${h.name}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px;">
+        <div style="font-size:9px;color:var(--text3);">${h.updatedAt?h.updatedAt.replace(/-/g,'/')+' 更新':'未更新'}</div>
+        <div style="text-align:right;">
+          <div style="font-size:15px;font-weight:800;font-family:monospace;color:var(--text);">¥${value.toLocaleString()}</div>
+          <div style="font-size:11px;font-weight:700;font-family:monospace;color:${plColor};">${plSign}¥${Math.abs(pl).toLocaleString()}（${plSign}${Math.abs(plPct).toFixed(2)}%）</div>
+        </div>
+      </div>`;
+    list.appendChild(row);
+  });
+
+  const totalPl=totalValue-totalCost;
+  const totalPlPct=totalCost>0?(totalPl/totalCost*100):0;
+  const totalPlColor=totalPl>0?'#dc2626':(totalPl<0?'var(--green)':'var(--text3)');
+  setText('holding-total-value',`¥${totalValue.toLocaleString()}`);
+  const plEl=$('holding-total-pl');
+  if(plEl){
+    plEl.style.color=totalPlColor;
+    plEl.textContent=`${totalPl>0?'+':''}¥${Math.abs(totalPl).toLocaleString()}（${totalPl>0?'+':''}${Math.abs(totalPlPct).toFixed(2)}%）`;
+  }
+}
+
+function openHoldingModal(id){
+  editingHoldingId=id||null;
+  const h=id?((S.holdings||[]).find(x=>x.id===id)):null;
+  setText('hold-modal-title',h?'投資信託・株式を編集':'投資信託・株式を追加');
+  $('hold-name').value=h?h.name:'';
+  $('hold-category').value=h?(h.category||'NISA成長'):'NISA成長';
+  $('hold-cost').value=h?(h.cost||''):'';
+  $('hold-value').value=h?(h.value||''):'';
+  $('hold-updated').value=h?(h.updatedAt||''):new Date().toISOString().slice(0,10);
+  $('hold-delete-btn').style.display=h?'inline-flex':'none';
+  showModal('holding-modal-overlay');
+}
+
+function saveHoldingModal(){
+  const name=$('hold-name').value.trim();
+  const cost=parseInt($('hold-cost').value)||0;
+  const value=parseInt($('hold-value').value)||0;
+  if(!name){toast('銘柄名を入力してください','error');return;}
+  const data={name,category:$('hold-category').value,cost,value,updatedAt:$('hold-updated').value||new Date().toISOString().slice(0,10)};
+  if(editingHoldingId){
+    const idx=(S.holdings||[]).findIndex(x=>x.id===editingHoldingId);
+    if(idx>=0) S.holdings[idx]=Object.assign(S.holdings[idx],data);
+  }else{
+    if(!S.holdings)S.holdings=[];
+    S.holdings.push(Object.assign({id:uid()},data));
+  }
+  saveSettings(); hideModal('holding-modal-overlay');
+  renderHoldings(); toast('保存しました','success');
+}
+
+function deleteHolding(){
+  if(!editingHoldingId) return;
+  if(!confirm('この銘柄を削除しますか？')) return;
+  S.holdings=(S.holdings||[]).filter(x=>x.id!==editingHoldingId);
+  saveSettings(); hideModal('holding-modal-overlay');
+  renderHoldings(); toast('削除しました','success');
+}
+
+
+let editingAccountId=null, editingCardSettingId=null;
+
+function renderAssetsTab(){
+  applyRecurringTransfers();
+  applyCreditDeductions();
+
+  // 総残高
+  const total=(S.accounts||[]).reduce((s,a)=>s+(a.balance||0),0);
+  setText('asset-total-balance',`¥${total.toLocaleString()}`);
+  setText('asset-account-count',`${(S.accounts||[]).length}口座`);
+
+  // 今月の引き落とし予定合計（クレジット=今月利用→来月引き落とし、デビット=今月即時）
+  const today2=new Date();
+  const y=today2.getFullYear(),m=today2.getMonth()+1;
+  const debitTotal=(S.cardSettings||[]).reduce((s,cs)=>{
+    if(isDebitMethod(cs.method)) return s+calcMethodMonthlyTotal(cs.method,y,m);
+    const {total}=getNextMonthDebitInfo(cs);
+    return s+total;
+  },0);
+  setText('asset-debit-total',`¥${debitTotal.toLocaleString()}`);
+
+
+  // 残高不足チェック（口座カードに直接反映）
+  const alerts=checkBalanceAlerts();
+  const alertsByAccId={};
+  alerts.forEach(a=>{
+    if(!alertsByAccId[a.accountId])alertsByAccId[a.accountId]=[];
+    alertsByAccId[a.accountId].push(a);
+  });
+  // 別カードは非表示
+  const alertCard=$('balance-alert-card');
+  if(alertCard)alertCard.style.display='none';
+
+  // 口座一覧（銀行ごとにグループ化、プルダウン折りたたみ）
+  const list=$('account-list'); const empty=$('account-list-empty');
+  list.innerHTML='';
+  const accounts=S.accounts||[];
+
+  // 銀行名でグループ化
+  const groups={};
+  accounts.forEach(acc=>{
+    const key=acc.bankName;
+    if(!groups[key]) groups[key]={bankName:acc.bankName,accounts:[]};
+    groups[key].accounts.push(acc);
+  });
+
+  Object.values(groups).forEach((grp,gi)=>{
+    const groupTotal=grp.accounts.reduce((s,a)=>s+(a.balance||0),0);
+    const isSBI=grp.bankName==='住信SBIネット銀行';
+    const hasSub=grp.accounts.length>1||isSBI;
+    const groupId=`acc-group-${gi}`;
+
+    const groupAlerts=grp.accounts.filter(a=>alertsByAccId[a.id]);
+    const hasGroupAlert=groupAlerts.length>0;
+
+    const wrapper=document.createElement('div');
+    wrapper.style.cssText=`border:1px solid ${hasGroupAlert?'var(--red)':'var(--border)'};border-radius:12px;overflow:hidden;${hasGroupAlert?'box-shadow:0 0 0 2px rgba(239,68,68,.15);':''}`;
+
+    // グループヘッダー
+    const header=document.createElement('div');
+    header.style.cssText=`display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:${hasGroupAlert?'var(--red-light)':'var(--card2)'};cursor:pointer;`;
+    header.innerHTML=`
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);">${hasGroupAlert?'⚠️ ':''}${grp.bankName}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px;">${grp.accounts.length}口座</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="text-align:right;">
+          <div style="font-size:16px;font-weight:800;font-family:monospace;color:var(--text);">¥${groupTotal.toLocaleString()}</div>
+          <div style="font-size:9px;color:var(--text3);">合計</div>
+        </div>
+        <svg id="${groupId}-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>
+      </div>`;
+
+    // グループ内口座リスト（折りたたみ）
+    const body=document.createElement('div');
+    body.id=groupId;
+    body.style.cssText='display:none;background:var(--card);';
+
+    grp.accounts.forEach((acc,ai)=>{
+      const interest=getBankInterest(acc.bankName,acc.accountType);
+      const monthlyInterest=interest?Math.floor((acc.balance||0)*interest.rate/100/12):null;
+      const isLast=ai===grp.accounts.length-1;
+      const accTypeLabel=acc.accountType==='目的別'?`目的別「${acc.purpose||''}」`:(acc.accountType==='SBIハイブリッド'?'SBIハイブリッド預金':acc.accountType+'預金');
+
+      const accAlerts=alertsByAccId[acc.id]||[];
+      const hasAccAlert=accAlerts.length>0;
+      // 複数カードの不足額を合算して1行にまとめる
+      const totalShortage=accAlerts.reduce((s,a)=>s+Math.abs(a.shortage),0);
+      const totalDebit=accAlerts.reduce((s,a)=>s+a.total,0);
+      const alertMethods=accAlerts.map(a=>a.method).join('・');
+
+      const row=document.createElement('div');
+      row.style.cssText=`display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;${!isLast?'border-bottom:1px solid var(--border);':''}${hasAccAlert?'background:rgba(239,68,68,.04);':''}`;
+      row.onclick=()=>openAccountModal(acc.id);
+      row.innerHTML=`
+        <div style="min-width:0;flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${acc.accountType==='目的別'?'<span style="font-size:9px;font-weight:700;background:var(--primary-light,var(--card2));color:var(--primary);padding:1px 6px;border-radius:4px;">目的別</span>':''}
+            ${acc.accountType==='SBIハイブリッド'?'<span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;">ハイブリッド</span>':''}
+            <span style="font-size:12px;font-weight:600;color:var(--text);">${acc.accountType==='目的別'?(acc.purpose||'（名前未設定）'):accTypeLabel}</span>
+          </div>
+          ${acc.memo?`<div style="font-size:9.5px;color:var(--text3);margin-top:1px;">${acc.memo}</div>`:''}
+          ${interest?`<div style="font-size:9px;color:var(--primary);margin-top:2px;">年${interest.rate}% / ${interest.timing}付与${monthlyInterest>0?' ・ 月利息目安 ¥'+monthlyInterest.toLocaleString():''}</div>`:''}
+          ${hasAccAlert?`<div style="font-size:9px;color:var(--red);font-weight:700;margin-top:4px;">⚠️ 翌月引き落とし予定 ¥${totalDebit.toLocaleString()} に対して ¥${totalShortage.toLocaleString()} 不足（${alertMethods}）</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+          <div style="font-size:14px;font-weight:800;font-family:monospace;color:${hasAccAlert?'var(--red)':'var(--text)'};">¥${(acc.balance||0).toLocaleString()}</div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:3px;"><path d="M9 18l6-6-6-6"/></svg>
+        </div>`;
+      body.appendChild(row);
+    });
+
+    // ＋口座追加（そのグループ銀行に）
+    const addRow=document.createElement('div');
+    addRow.style.cssText='padding:10px 14px;border-top:1px solid var(--border);cursor:pointer;';
+    addRow.innerHTML=`<span style="font-size:11px;color:var(--primary);font-weight:600;">＋ ${grp.bankName}の口座を追加</span>`;
+    addRow.onclick=()=>openAccountModal(null,grp.bankName);
+    body.appendChild(addRow);
+
+    // 開閉トグル
+    const isOpen=grp.accounts.length===1;
+    if(isOpen){body.style.display='block';}
+    header.onclick=()=>{
+      const open=body.style.display!=='none';
+      body.style.display=open?'none':'block';
+      const chev=document.getElementById(`${groupId}-chevron`);
+      if(chev)chev.style.transform=open?'':'rotate(180deg)';
+    };
+    // 1口座のみの場合は最初から開いておく
+    if(isOpen){const chev=document.getElementById(`${groupId}-chevron`);if(chev)chev.style.transform='rotate(180deg)';}
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(body);
+    list.appendChild(wrapper);
+  });
+
+  empty.style.display=accounts.length===0?'block':'none';
+
+  // 引き落とし設定
+  const csl=$('card-setting-list'); const cse=$('card-setting-empty');
+  csl.innerHTML='';
+  (S.cardSettings||[]).forEach(cs=>{
+    const acc=S.accounts&&S.accounts.find(a=>a.id===cs.accountId);
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;cursor:pointer;';
+    row.onclick=()=>openCardSettingModal(cs.id);
+    const debitLabel=isDebitMethod(cs.method)?'即時引き落とし':`毎月${cs.debitDay}日引き落とし（${cs.holidayRule==='prev'?'休前日':'休翌日'}）`;
+    row.innerHTML=`
+      ${getMethodLogoHtml(cs.method,{size:28,brandSize:14})}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:700;color:var(--text);">${cs.method}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px;">${acc?(acc.accountType==='目的別'?acc.bankName+'目的別「'+(acc.purpose||'')+'」':acc.bankName+' '+acc.accountType):'口座未設定'} / ${debitLabel}</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+    `;
+    csl.appendChild(row);
+  });
+  cse.style.display=(S.cardSettings||[]).length===0?'block':'none';
+
+  // 送金履歴
+  const tfl=$('transfer-list'); const tfe=$('transfer-list-empty');
+  tfl.innerHTML='';
+  const transfers=[...(S.transfers||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,20);
+  transfers.forEach(tf=>{
+    const fromAcc=S.accounts&&S.accounts.find(a=>a.id===tf.fromId);
+    const toAcc=S.accounts&&S.accounts.find(a=>a.id===tf.toId);
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;';
+    row.innerHTML=`
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:700;color:var(--text);">${fromAcc?fromAcc.bankName:'?'} → ${toAcc?toAcc.bankName:'?'}</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:2px;">${tf.date||''} / ${tf.type==='expense'?'支出扱い':'残高移動のみ'}${tf.memo?' / '+tf.memo:''}</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;font-family:monospace;color:var(--text);flex-shrink:0;">¥${(tf.amount||0).toLocaleString()}</div>
+    `;
+    tfl.appendChild(row);
+  });
+  tfe.style.display=transfers.length===0?'block':'none';
+  renderRecurringList();
+  renderHoldings();
+}
+
+// ============================================================
+// 口座モーダル
+// ============================================================
+function openAccountModal(id, prefillBank){
+  editingAccountId=id||null;
+  const acc=id?((S.accounts||[]).find(a=>a.id===id)):null;
+  setText('account-modal-title',acc?'口座を編集':'口座を追加');
+  $('acc-bank').value=acc?acc.bankName:(prefillBank||'');
+  $('acc-type').value=acc?(acc.accountType||'普通'):'普通';
+  $('acc-purpose').value=acc?(acc.purpose||''):'';
+  $('acc-balance').value=acc?(acc.balance||0):'';
+  $('acc-memo').value=acc?(acc.memo||''):'';
+  $('acc-delete-btn').style.display=acc?'inline-flex':'none';
+  onAccTypeChange();
+  showModal('account-modal-overlay');
+}
+
+function onAccTypeChange(){
+  const t=($('acc-type')||{}).value||'';
+  const row=$('acc-purpose-row');
+  if(row) row.style.display=t==='目的別'?'block':'none';
+}
+
+function saveAccountModal(){
+  try{
+  const bankName=$('acc-bank').value.trim();
+  const accountType=$('acc-type').value;
+  const balance=parseInt($('acc-balance').value)||0;
+  const purpose=accountType==='目的別'?$('acc-purpose').value.trim():'';
+  if(!bankName){toast('銀行名を入力してください','error');return;}
+  if(accountType==='目的別'&&!purpose){toast('目的別口座の名前を入力してください','error');return;}
+  const data={bankName,accountType,balance,purpose,memo:$('acc-memo').value.trim()};
+  if(editingAccountId){
+    const idx=(S.accounts||[]).findIndex(a=>a.id===editingAccountId);
+    if(idx>=0) S.accounts[idx]=Object.assign(S.accounts[idx],data);
+  }else{
+    if(!S.accounts)S.accounts=[];
+    S.accounts.push(Object.assign({id:uid()},data));
+  }
+  saveSettings(); hideModal('account-modal-overlay');
+  renderAssetsTab(); toast('口座を保存しました','success');
+  }catch(e){toast('エラー: '+e.message,'error');console.error('saveAccountModal error:',e);}
+}
+
+function deleteAccount(){
+  if(!editingAccountId)return;
+  const id=editingAccountId;
+  if(!confirm('この口座を削除しますか？'))return;
+  S.accounts=(S.accounts||[]).filter(a=>a.id!==id);
+  saveSettings(); hideModal('account-modal-overlay');
+  renderAssetsTab(); toast('削除しました','success');
+}
+
+// ============================================================
+// 引き落とし設定モーダル
+// ============================================================
+function openCardSettingModal(id){
+  editingCardSettingId=id||null;
+  const cs=id?((S.cardSettings||[]).find(c=>c.id===id)):null;
+
+  setText('cs-modal-title',cs?'引き落とし設定を編集':'引き落とし設定');
+
+  // 決済手段リスト
+  const methodSel=$('cs-method');
+  methodSel.innerHTML='';
+  const allMethods=Object.keys(DEFAULT_METHOD_COLORS).filter(m=>m!=='収入');
+  allMethods.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;methodSel.appendChild(o);});
+  if(cs) methodSel.value=cs.method;
+
+  // 口座リスト
+  const accSel=$('cs-account');
+  accSel.innerHTML='<option value="">-- 口座を選択 --</option>';
+  (S.accounts||[]).forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.bankName+' '+(a.accountType==='目的別'?`目的別「${a.purpose||''}」`:a.accountType);accSel.appendChild(o);});
+  if(cs) accSel.value=cs.accountId||'';
+
+  // 締め日・引き落とし日セレクト
+  const closingSel=$('cs-closing-day'), debitSel=$('cs-debit-day');
+  closingSel.innerHTML=''; debitSel.innerHTML='';
+  for(let i=1;i<=28;i++){
+    const oc=document.createElement('option');oc.value=i;oc.textContent=i+'日（末日締め）';closingSel.appendChild(oc);
+    const od=document.createElement('option');od.value=i;od.textContent=i+'日';debitSel.appendChild(od);
+  }
+  const endC=document.createElement('option');endC.value=31;endC.textContent='末日';closingSel.appendChild(endC);
+
+  closingSel.value=cs?cs.closingDay:27;
+  debitSel.value=cs?cs.debitDay:27;
+  $('cs-holiday-rule').value=cs?(cs.holidayRule||'prev'):'prev';
+
+  // デビットカードは締め日不要
+  const isDebit=isDebitMethod(methodSel.value);
+  $('cs-credit-fields').style.display=isDebit?'none':'block';
+  methodSel.onchange=()=>{$('cs-credit-fields').style.display=isDebitMethod(methodSel.value)?'none':'block';};
+
+  $('cs-delete-btn').style.display=cs?'inline-flex':'none';
+  showModal('card-setting-modal-overlay');
+}
+
+function saveCardSettingModal(){
+  try{
+  const method=$('cs-method').value;
+  const accountId=$('cs-account').value;
+  if(!accountId){toast('口座を選択してください','error');return;}
+  const isDebit=isDebitMethod(method);
+  const data={method,accountId,isDebit,
+    closingDay:isDebit?null:parseInt($('cs-closing-day').value),
+    debitDay:isDebit?null:parseInt($('cs-debit-day').value),
+    holidayRule:isDebit?null:$('cs-holiday-rule').value};
+  if(editingCardSettingId){
+    const idx=(S.cardSettings||[]).findIndex(c=>c.id===editingCardSettingId);
+    if(idx>=0) S.cardSettings[idx]=Object.assign(S.cardSettings[idx],data);
+  }else{
+    if(!S.cardSettings)S.cardSettings=[];
+    S.cardSettings.push(Object.assign({id:uid()},data));
+  }
+  saveSettings(); hideModal('card-setting-modal-overlay');
+  renderAssetsTab(); toast('引き落とし設定を保存しました','success');
+  }catch(e){toast('エラー: '+e.message,'error');console.error('saveCardSettingModal error:',e);}
+}
+
+function deleteCardSetting(){
+  if(!editingCardSettingId)return;
+  if(!confirm('この引き落とし設定を削除しますか？'))return;
+  S.cardSettings=(S.cardSettings||[]).filter(c=>c.id!==editingCardSettingId);
+  saveSettings(); hideModal('card-setting-modal-overlay');
+  renderAssetsTab(); toast('削除しました','success');
+}
+
+// ============================================================
+// 口座間送金モーダル
+// ============================================================
+function openTransferModal(){
+  const fromSel=$('tf-from'), toSel=$('tf-to');
+  fromSel.innerHTML=''; toSel.innerHTML='';
+  (S.accounts||[]).forEach(a=>{
+    [fromSel,toSel].forEach(sel=>{
+      const o=document.createElement('option');o.value=a.id;
+      o.textContent=a.bankName+' '+(a.accountType==='目的別'?`目的別「${a.purpose||''}」`:a.accountType);
+      sel.appendChild(o);
+    });
+  });
+  if((S.accounts||[]).length<2){toast('口座が2つ以上必要です','error');return;}
+  $('tf-amount').value='';
+  $('tf-date').value=new Date().toISOString().slice(0,10);
+  $('tf-type').value='transfer';
+  $('tf-memo').value='';
+  showModal('transfer-modal-overlay');
+}
+
+function saveTransferModal(){
+  const fromId=$('tf-from').value, toId=$('tf-to').value;
+  const amount=parseInt($('tf-amount').value)||0;
+  if(fromId===toId){toast('送金元と送金先が同じです','error');return;}
+  if(amount<=0){toast('金額を入力してください','error');return;}
+  const date=$('tf-date').value;
+  const type=$('tf-type').value;
+  const memo=$('tf-memo').value.trim();
+
+  // 残高更新
+  const fromAcc=(S.accounts||[]).find(a=>a.id===fromId);
+  const toAcc=(S.accounts||[]).find(a=>a.id===toId);
+  if(fromAcc) fromAcc.balance=Math.max(0,(fromAcc.balance||0)-amount);
+  if(toAcc) toAcc.balance=(toAcc.balance||0)+amount;
+
+  // 送金記録
+  if(!S.transfers)S.transfers=[];
+  S.transfers.push({id:uid(),fromId,toId,amount,date,type,memo});
+
+  // 支出扱いの場合Finbooの取引にも追加
+  if(type==='expense'&&fromAcc){
+    const dateFormatted=date.replace(/-/g,'/');
+    S.transactions.push({date:dateFormatted,shop:`${fromAcc.bankName}→${toAcc?toAcc.bankName:'送金'}`,
+      categoryMajor:'その他',categoryMinor:'',method:'現金',amount,type:'expense',source:'manual',memo});
+    saveTx(); recalc(); renderAll();
+  }
+
+  saveSettings(); hideModal('transfer-modal-overlay');
+  renderAssetsTab(); toast('送金を登録しました','success');
+}
+
+function renderSubGlance(){
+  const rows=$('sub-glance-rows');
+  const empty=$('sub-glance-empty');
+  if(!rows) return;
+  const subs=getSubScanSubscriptions();
+  const monthSubs=subscriptionsForMonth(subs,S.viewYear,S.viewMonth).sort((a,b)=>a.billingDay-b.billingDay);
+
+  rows.innerHTML='';
+  empty.style.display = monthSubs.length===0 ? 'block' : 'none';
+
+  let total=0;
+  monthSubs.forEach(sub=>{
+    total+=sub.price;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;';
+    row.innerHTML=`
+      <span style="font-size:10px;color:var(--text3);width:28px;flex-shrink:0;">${S.viewMonth}/${sub.billingDay}</span>
+      ${subAvatarHtml(sub,30)}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sub.name}</div>
+        <div style="font-size:9px;color:var(--text3);">${sub.paymentMethod||'決済方法未設定'}</div>
+      </div>
+      <span style="font-size:12px;font-weight:700;font-family:monospace;color:var(--text);">¥${sub.price.toLocaleString()}</span>
+    `;
+    rows.appendChild(row);
+  });
+  setText('ui-sub-month-total',`¥${total.toLocaleString()}`);
+}
 
 // ============================================================
 // 今月の固定費（過去の取引履歴から、繰り返し発生している決済を自動検出）
@@ -3483,6 +4565,7 @@ function switchTab(id){
   if(id==='calendar'){renderCalendar();if(selDate)selectDay(selDate);}
   if(id==='points')renderPtTab();
   if(id==='campaign')renderCampaignSummary();
+  if(id==='assets')renderAssetsTab();
   window.scrollTo({top:0,behavior:'smooth'});
   if(id==='sync'){renderCatList();renderMinorCatSettings();renderMethodList();renderBrandList();renderShopLogoList();}
 }
@@ -4531,11 +5614,6 @@ ${catSummary||'（データなし）'}
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  // タブ操作は最優先で登録する。後続の描画処理でエラーが起きても画面遷移を維持する。
-  document.querySelectorAll('[data-tab]').forEach(btn=>{
-    btn.addEventListener('click',()=>switchTab(btn.dataset.tab));
-  });
-
   load();
   buildSelectors();
   applyDark(S.darkMode||false);
@@ -4550,6 +5628,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   switchTab('dashboard');
   renderBudgetCard();
   updateCampaignTab();
+
+  // タブ
+  document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
 
   // 年月切り替え
   $('sel-year').addEventListener('change',function(){switchMonth(parseInt(this.value),S.viewMonth);});
@@ -4677,6 +5758,35 @@ document.addEventListener('DOMContentLoaded',()=>{
     const ta=$('gemini-prompt');if(ta){ta.select();try{document.execCommand('copy');toast('プロンプトをコピーしました！','success');}catch(e){toast('長押しして手動コピーしてください');}}
   });
 
+  // 資産タブ ボタン類（onclick属性の代わりにaddEventListenerで確実に登録）
+  const btnAddAcc=document.querySelector('#pane-assets .btn-primary');
+  document.querySelectorAll('#pane-assets button').forEach(btn=>{
+    const oc=btn.getAttribute('onclick');
+    if(!oc) return;
+    btn.removeAttribute('onclick');
+    btn.addEventListener('click',()=>{ try{eval(oc);}catch(e){console.error('asset btn error',e,oc);} });
+  });
+  document.querySelectorAll('#account-modal-overlay button, #card-setting-modal-overlay button, #transfer-modal-overlay button').forEach(btn=>{
+    const oc=btn.getAttribute('onclick');
+    if(!oc) return;
+    btn.removeAttribute('onclick');
+    btn.addEventListener('click',()=>{ try{eval(oc);}catch(e){console.error('modal btn error',e,oc);} });
+  });
+  // モーダル内select変化
+  const accTypeSel=$('acc-type');
+  if(accTypeSel)accTypeSel.addEventListener('change',onAccTypeChange);
+  const csMethSel=$('cs-method');
+  if(csMethSel)csMethSel.addEventListener('change',()=>{$('cs-credit-fields').style.display=isDebitMethod(csMethSel.value)?'none':'block';});
+  // 定期自動転送モーダルボタン
+  const recSave=$('rec-save-btn');if(recSave)recSave.addEventListener('click',saveRecurringModal);
+  const recDel=$('rec-delete-btn');if(recDel)recDel.addEventListener('click',deleteRecurring);
+  const recCancel=$('rec-cancel-btn');if(recCancel)recCancel.addEventListener('click',()=>hideModal('recurring-modal-overlay'));
+  const recClose=$('rec-modal-close');if(recClose)recClose.addEventListener('click',()=>hideModal('recurring-modal-overlay'));
+  // 投資信託・株式モーダルボタン
+  const holdSave=$('hold-save-btn');if(holdSave)holdSave.addEventListener('click',saveHoldingModal);
+  const holdDel=$('hold-delete-btn');if(holdDel)holdDel.addEventListener('click',deleteHolding);
+  const holdCancel=$('hold-cancel-btn');if(holdCancel)holdCancel.addEventListener('click',()=>hideModal('holding-modal-overlay'));
+  const holdClose=$('hold-modal-close');if(holdClose)holdClose.addEventListener('click',()=>hideModal('holding-modal-overlay'));
   // 固定費モーダルボタン
   const fcSave=$('fc-save-btn');if(fcSave)fcSave.addEventListener('click',saveFixedCostModal);
   const fcDel=$('fc-delete-btn');if(fcDel)fcDel.addEventListener('click',deleteFixedCost);
@@ -4684,78 +5794,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   const fcClose=$('fc-modal-close');if(fcClose)fcClose.addEventListener('click',()=>hideModal('fixed-cost-modal-overlay'));
 });
 </script>
-
-<script id="finboo-tab-repair">
-(function(){
-  function navigate(id, ev){
-    if(ev){ ev.preventDefault(); ev.stopPropagation(); }
-    var target=document.getElementById('pane-'+id);
-    if(!target) return false;
-
-    document.querySelectorAll('.tab-pane').forEach(function(p){
-      var active=p===target;
-      p.classList.toggle('active',active);
-      p.style.display=active?'block':'none';
-      p.setAttribute('aria-hidden',active?'false':'true');
-    });
-
-    document.querySelectorAll('[data-tab]').forEach(function(btn){
-      var active=btn.getAttribute('data-tab')===id;
-      btn.classList.toggle('active',active);
-      btn.setAttribute('aria-current',active?'page':'false');
-      if(btn.classList.contains('tab-b')){
-        btn.style.color=active?'var(--primary)':'var(--text3)';
-        var label=btn.querySelector('span');
-        if(label) label.style.fontWeight=active?'700':'400';
-      }
-    });
-
-    try{
-      if(id==='dashboard'){
-        if(typeof renderPayChart==='function') renderPayChart();
-        if(typeof renderCatChart==='function') renderCatChart();
-      }else if(id==='calendar'){
-        if(typeof renderCalendar==='function') renderCalendar();
-        if(typeof selDate!=='undefined' && selDate && typeof selectDay==='function') selectDay(selDate);
-      }else if(id==='points' && typeof renderPtTab==='function') renderPtTab();
-      else if(id==='campaign' && typeof renderCampaignSummary==='function') renderCampaignSummary();
-      else if(id==='sync'){
-        ['renderCatList','renderMinorCatSettings','renderMethodList','renderBrandList','renderShopLogoList'].forEach(function(name){
-          try{ if(typeof window[name]==='function') window[name](); }catch(e){}
-        });
-      }
-    }catch(e){ console.warn('タブ内描画の一部をスキップしました',e); }
-
-    try{ window.scrollTo(0,0); }catch(e){}
-    return false;
-  }
-
-  window.finbooNavigate=navigate;
-
-  // inline onclickが無効化される環境向けの予備ルート
-  document.addEventListener('click',function(ev){
-    var btn=ev.target && ev.target.closest ? ev.target.closest('[data-tab]') : null;
-    if(!btn) return;
-    navigate(btn.getAttribute('data-tab'),ev);
-  },true);
-
-  function init(){
-    document.querySelectorAll('.tab-pane').forEach(function(p){
-      p.style.display=p.classList.contains('active')?'block':'none';
-    });
-    document.querySelectorAll('.tab-b').forEach(function(btn){
-      btn.style.pointerEvents='auto';
-      btn.style.touchAction='manipulation';
-      btn.style.position='relative';
-      btn.style.zIndex='2';
-    });
-    var nav=document.querySelector('nav.bottom-nav');
-    if(nav){ nav.style.pointerEvents='auto'; nav.style.zIndex='9999'; }
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
-  else init();
-})();
-</script>
-
 </body>
 </html>
