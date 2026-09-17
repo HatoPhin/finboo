@@ -29,6 +29,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
@@ -945,6 +946,18 @@ header{padding-top:var(--sat);}
       </div>
     </div>
 
+    <!-- Supabase 新システム(テスト中・既存のDrive同期とは独立して併存) -->
+    <div style="border-top:1px solid var(--border);padding-top:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🧪 Supabase 新システム（テスト中）</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">複数端末のリアルタイム同期に移行するための新しい仕組みです。今はまだ既存のGoogle Drive同期とは独立して動作確認中で、有効にしても今のデータ保存には影響しません。</div>
+      <div id="sb-status" style="font-size:11px;color:var(--text2);margin-bottom:10px;padding:8px 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;">未ログイン</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="sb-login-btn" onclick="sbLogin()" class="btn btn-primary" style="font-size:11px;">Googleでログイン（新システム）</button>
+        <button id="sb-logout-btn" onclick="sbLogout()" class="btn" style="font-size:11px;display:none;">ログアウト</button>
+        <button id="sb-import-btn" onclick="sbImportCurrentData()" class="btn" style="font-size:11px;display:none;">今のデータをSupabaseへインポート</button>
+      </div>
+    </div>
+
     <!-- JCBカードW 優待店・入会キャンペーン設定 -->
     <div style="border-top:1px solid var(--border);padding-top:20px;">
       <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">💳 JCBカードW J-POINTパートナー優待店</div>
@@ -1785,6 +1798,135 @@ let toastTmr=null;
 const $=id=>document.getElementById(id);
 function setText(id,v){const el=$(id);if(el)el.textContent=v;}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+
+// ==================== Supabase 新システム（テスト中） ====================
+// 目的: リアルタイム複数端末同期の土台。既存のlocalStorage/Google Drive処理には触れず、
+// 独立した関数・テーブルとして併存させる（フェーズ3）。
+const SB_URL = 'https://mwdfrhfypkuszsldozfq.supabase.co';
+const SB_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13ZGZyaGZ5cGt1c3pzbGRvemZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2NDMxNzUsImV4cCI6MjEwNTIxOTE3NX0.hMEf0xYQHCbaT2gpuIB_svOVWiJMYtwGbC_-oOxkEMs';
+let sbClient=null, sbUser=null, sbRealtimeChannel=null;
+
+function sbInit(){
+  if(typeof supabase==='undefined'){console.warn('Supabase SDK読み込み失敗');return;}
+  sbClient=supabase.createClient(SB_URL, SB_ANON_KEY);
+  // ページ読込時に既存セッションがあれば復元
+  sbClient.auth.getSession().then(({data})=>{
+    sbUser=data.session?data.session.user:null;
+    sbRenderStatus();
+    if(sbUser) sbStartRealtime();
+  });
+  sbClient.auth.onAuthStateChange((event, session)=>{
+    sbUser=session?session.user:null;
+    sbRenderStatus();
+    if(sbUser) sbStartRealtime(); else sbStopRealtime();
+  });
+}
+
+function sbRenderStatus(){
+  const statusEl=$('sb-status'), loginBtn=$('sb-login-btn'), logoutBtn=$('sb-logout-btn'), importBtn=$('sb-import-btn');
+  if(!statusEl)return; // まだ同期タブが描画されていない
+  if(sbUser){
+    statusEl.textContent=`ログイン中: ${sbUser.email||sbUser.id}`;
+    if(loginBtn)loginBtn.style.display='none';
+    if(logoutBtn)logoutBtn.style.display='';
+    if(importBtn)importBtn.style.display='';
+  }else{
+    statusEl.textContent='未ログイン';
+    if(loginBtn)loginBtn.style.display='';
+    if(logoutBtn)logoutBtn.style.display='none';
+    if(importBtn)importBtn.style.display='none';
+  }
+}
+
+function sbLogin(){
+  if(!sbClient)return;
+  sbClient.auth.signInWithOAuth({provider:'google', options:{redirectTo:window.location.href}});
+}
+
+function sbLogout(){
+  if(!sbClient)return;
+  sbStopRealtime();
+  sbClient.auth.signOut().then(()=>{sbUser=null; sbRenderStatus();});
+}
+
+// transactions 1件をSupabaseへ保存（新規/更新どちらも upsert）
+async function sbUpsertTransaction(t){
+  if(!sbClient||!sbUser)return;
+  const row={
+    id:t.id, user_id:sbUser.id, date:t.date, amount:t.amount,
+    category_major:t.categoryMajor||null, category_minor:t.categoryMinor||null,
+    payment_method:t.method||null, shop:t.shop||null, memo:t.memo||null,
+    source:t.source||'manual', extra:t
+  };
+  const {error}=await sbClient.from('transactions').upsert(row);
+  if(error)console.error('sbUpsertTransaction error:',error);
+  return !error;
+}
+
+async function sbDeleteTransaction(id){
+  if(!sbClient||!sbUser)return;
+  await sbClient.from('transactions').delete().eq('id',id).eq('user_id',sbUser.id);
+  await sbClient.from('deleted_transactions').upsert({id, user_id:sbUser.id});
+}
+
+async function sbSaveSettingsSnapshot(){
+  if(!sbClient||!sbUser)return;
+  const {error}=await sbClient.from('settings').upsert({user_id:sbUser.id, data:S});
+  if(error)console.error('sbSaveSettingsSnapshot error:',error);
+}
+
+async function sbLoadAllTransactions(){
+  if(!sbClient||!sbUser)return [];
+  const {data,error}=await sbClient.from('transactions').select('*').eq('user_id',sbUser.id).order('date',{ascending:false});
+  if(error){console.error('sbLoadAllTransactions error:',error);return [];}
+  return data;
+}
+
+// 他端末での変更をリアルタイムに受信（今は動作確認のためコンソール出力のみ、UI反映は次フェーズ）
+function sbStartRealtime(){
+  if(!sbClient||!sbUser||sbRealtimeChannel)return;
+  sbRealtimeChannel=sbClient.channel('sb-sync-'+sbUser.id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'transactions',filter:`user_id=eq.${sbUser.id}`},
+      payload=>{console.log('[Supabase Realtime] transactions changed:',payload);})
+    .on('postgres_changes',{event:'*',schema:'public',table:'settings',filter:`user_id=eq.${sbUser.id}`},
+      payload=>{console.log('[Supabase Realtime] settings changed:',payload);})
+    .subscribe();
+}
+
+function sbStopRealtime(){
+  if(sbRealtimeChannel){sbClient.removeChannel(sbRealtimeChannel); sbRealtimeChannel=null;}
+}
+
+// 今のlocalStorageデータ(直近13ヶ月分の取引＋設定)をSupabaseへ一括インポート（ワンショット、既存データは上書きされない=upsert）
+async function sbImportCurrentData(){
+  if(!sbClient||!sbUser){toast('先にログインしてください','error');return;}
+  if(!confirm('現在のFinbooデータ（設定＋直近の取引）をSupabaseへアップロードします。よろしいですか？'))return;
+  const btn=$('sb-import-btn'); if(btn){btn.disabled=true; btn.textContent='インポート中...';}
+  try{
+    await sbSaveSettingsSnapshot();
+    // 直近13ヶ月分の取引をlocalStorageから収集
+    const now=new Date();
+    let allTx=[];
+    for(let i=0;i<13;i++){
+      const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+      allTx=allTx.concat(loadTx(d.getFullYear(), d.getMonth()+1));
+    }
+    let ok=0, ng=0;
+    for(const t of allTx){
+      if(!t.id)continue; // 旧レガシー未対応データはスキップ
+      const success=await sbUpsertTransaction(t);
+      if(success)ok++; else ng++;
+    }
+    toast(`インポート完了: 取引${ok}件成功${ng>0?`、${ng}件失敗`:''}`, ng>0?'error':'success');
+  }catch(e){
+    console.error('sbImportCurrentData error:',e);
+    toast('インポート中にエラーが発生しました','error');
+  }finally{
+    if(btn){btn.disabled=false; btn.textContent='今のデータをSupabaseへインポート';}
+  }
+}
+// ==================== /Supabase 新システム ====================
+
 
 function cleanDate(raw){
   if(!raw)return null;
@@ -4745,7 +4887,7 @@ function switchTab(id){
   if(id==='points')renderPtTab();
   if(id==='campaign')renderCampaignSummary();
   window.scrollTo({top:0,behavior:'smooth'});
-  if(id==='sync'){renderCatList();renderMinorCatSettings();renderMethodList();renderChargePairList();renderJcbPartnerList();renderJcbCampaignSettings();renderBrandList();renderShopLogoList();renderCardSettingList();}
+  if(id==='sync'){renderCatList();renderMinorCatSettings();renderMethodList();renderChargePairList();renderJcbPartnerList();renderJcbCampaignSettings();renderBrandList();renderShopLogoList();renderCardSettingList();sbRenderStatus();}
 }
 
 // ============================================================
@@ -6348,6 +6490,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   buildSelectors();
   applyDark(S.darkMode||false);
   gdriveInit(); // Google Drive トークン復元
+  sbInit(); // Supabase 新システム（テスト中・独立動作）
 
   // タブを閉じる/バックグラウンドに回す直前に、保留中のアップロードがあれば即実行してデータ消失を防ぐ
   function flushPendingUpload(){
