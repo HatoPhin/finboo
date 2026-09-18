@@ -2046,7 +2046,7 @@ async function sbImportCurrentData(){
 // ==================== /Supabase 新システム ====================
 
 // ==================== AI家計分析チャット ====================
-const GEMINI_FUNCTION_URL = SB_URL + '/functions/v1/gemini-analyze';
+const GEMINI_FUNCTION_URL = SB_URL + '/functions/v1/hyper-api'; // Supabase Edge Function実体名(表示名はgemini-analyzeだがURLはhyper-api)
 let aiChatHistory=[]; // [{role:'user'|'model', text}] セッション内のみ保持（保存はしない）
 
 function onAiChatRangeChange(){
