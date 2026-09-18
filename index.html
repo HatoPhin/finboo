@@ -1911,13 +1911,24 @@ async function sbImportCurrentData(){
       const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
       allTx=allTx.concat(loadTx(d.getFullYear(), d.getMonth()+1));
     }
-    let ok=0, ng=0;
+    let ok=0, ng=0, firstErr=null;
     for(const t of allTx){
       if(!t.id)continue; // 旧レガシー未対応データはスキップ
-      const success=await sbUpsertTransaction(t);
-      if(success)ok++; else ng++;
+      const {error}=await sbClient.from('transactions').upsert({
+        id:t.id, user_id:sbUser.id, date:t.date, amount:t.amount,
+        category_major:t.categoryMajor||null, category_minor:t.categoryMinor||null,
+        payment_method:t.method||null, shop:t.shop||null, memo:t.memo||null,
+        source:t.source||'manual', extra:t
+      });
+      if(error){ng++; if(!firstErr)firstErr=error;}
+      else ok++;
     }
-    toast(`インポート完了: 取引${ok}件成功${ng>0?`、${ng}件失敗`:''}`, ng>0?'error':'success');
+    if(firstErr)console.error('sbImportCurrentData first error:',firstErr);
+    toast(`インポート完了: 取引${ok}件成功${ng>0?`、${ng}件失敗（${firstErr?.message||''}）`:''}`, ng>0?'error':'success');
+    const statusEl=$('sb-status');
+    if(statusEl&&firstErr){
+      statusEl.innerHTML += `<div style="color:var(--red);margin-top:6px;word-break:break-all;">失敗理由: ${firstErr.message||JSON.stringify(firstErr)}${firstErr.code?` (code: ${firstErr.code})`:''}</div>`;
+    }
   }catch(e){
     console.error('sbImportCurrentData error:',e);
     toast('インポート中にエラーが発生しました','error');
