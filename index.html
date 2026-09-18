@@ -1915,8 +1915,25 @@ function sbLogout(){
 }
 
 // transactions 1件をSupabaseへ保存（新規/更新どちらも upsert）
+// 書き込み前に必ず呼ぶ: トークンの期限切れが近ければ自動更新し、有効なセッションかを確認する
+// （バックグラウンド長時間放置などでsupabase-jsの内部タイマーが働かず、見た目は「ログイン中」でも
+// 　実際はトークン切れで全書き込みが拒否される、というケースを防ぐため）
+async function sbEnsureFreshSession(){
+  if(!sbClient)return false;
+  const {data,error}=await sbClient.auth.getSession();
+  if(error||!data.session){
+    console.warn('Supabaseセッション切れ:再ログインが必要です');
+    sbUser=null; sbRenderStatus(); sbStopRealtime();
+    toast('Supabaseのログインが切れました。再ログインしてください','error');
+    return false;
+  }
+  sbUser=data.session.user;
+  return true;
+}
+
 async function sbUpsertTransaction(t){
   if(!sbClient||!sbUser)return;
+  if(!(await sbEnsureFreshSession()))return false;
   const row={
     id:t.id, user_id:sbUser.id, date:t.date, amount:t.amount,
     category_major:t.categoryMajor||null, category_minor:t.categoryMinor||null,
@@ -1930,12 +1947,14 @@ async function sbUpsertTransaction(t){
 
 async function sbDeleteTransaction(id){
   if(!sbClient||!sbUser)return;
+  if(!(await sbEnsureFreshSession()))return false;
   await sbClient.from('transactions').delete().eq('id',id).eq('user_id',sbUser.id);
   await sbClient.from('deleted_transactions').upsert({id, user_id:sbUser.id});
 }
 
 async function sbSaveSettingsSnapshot(){
   if(!sbClient||!sbUser)return;
+  if(!(await sbEnsureFreshSession()))return false;
   const {error}=await sbClient.from('settings').upsert({user_id:sbUser.id, data:S});
   if(error)console.error('sbSaveSettingsSnapshot error:',error);
 }
