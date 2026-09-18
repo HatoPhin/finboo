@@ -1840,7 +1840,10 @@ function sbRenderStatus(){
 
 function sbLogin(){
   if(!sbClient)return;
-  sbClient.auth.signInWithOAuth({provider:'google', options:{redirectTo:window.location.href}});
+  // FinbooはタブUIの状態をURLハッシュ(#sync等)で管理しているため、
+  // ハッシュを含めずorigin+pathnameのみを戻り先に指定する(Supabase自身の認証ハッシュと衝突するのを防ぐため)
+  const redirectTo=window.location.origin+window.location.pathname;
+  sbClient.auth.signInWithOAuth({provider:'google', options:{redirectTo}});
 }
 
 function sbLogout(){
