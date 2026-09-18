@@ -1813,13 +1813,42 @@ function sbInit(){
   sbClient.auth.getSession().then(({data})=>{
     sbUser=data.session?data.session.user:null;
     sbRenderStatus();
-    if(sbUser) sbStartRealtime();
+    if(sbUser){ sbStartRealtime(); sbSyncDownAll(); }
   });
   sbClient.auth.onAuthStateChange((event, session)=>{
+    const wasLoggedOut=!sbUser;
     sbUser=session?session.user:null;
     sbRenderStatus();
-    if(sbUser) sbStartRealtime(); else sbStopRealtime();
+    if(sbUser){ sbStartRealtime(); if(wasLoggedOut)sbSyncDownAll(); } else sbStopRealtime();
   });
+}
+
+// ログイン直後、Supabase上の全取引をローカルへ取り込む（id+updatedAtでマージ、ローカルの方が新しければ保持）
+async function sbSyncDownAll(){
+  if(!sbClient||!sbUser)return;
+  const rows=await sbLoadAllTransactions();
+  const byMonth={};
+  rows.forEach(r=>{
+    const t=r.extra||{};
+    if(!t.date)return;
+    const cd=cleanDate(t.date); if(!cd)return;
+    const [y,m]=cd.split('/');
+    const key=txKey_monthly(parseInt(y),parseInt(m));
+    (byMonth[key]=byMonth[key]||[]).push(t);
+  });
+  Object.keys(byMonth).forEach(key=>{
+    let local=[];
+    try{local=JSON.parse(localStorage.getItem(key)||'[]');}catch(e){}
+    const map=new Map();
+    local.forEach(t=>map.set(t.id,t));
+    byMonth[key].forEach(t=>{
+      const cur=map.get(t.id);
+      if(!cur||new Date(t.updatedAt||0)>=new Date(cur.updatedAt||0))map.set(t.id,t);
+    });
+    localStorage.setItem(key,JSON.stringify(Array.from(map.values())));
+  });
+  S.transactions=loadTx(S.viewYear,S.viewMonth);
+  recalc();renderAll();renderFixedCosts();
 }
 
 function sbRenderStatus(){
@@ -1885,14 +1914,56 @@ async function sbLoadAllTransactions(){
   return data;
 }
 
-// 他端末での変更をリアルタイムに受信（今は動作確認のためコンソール出力のみ、UI反映は次フェーズ）
+// Realtimeで受信した取引1件をローカル(localStorage/メモリ)に反映して再描画
+function sbApplyRemoteTx(txObj, isDelete, txId){
+  if(isDelete){
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith('finboo_tx_')){
+        try{
+          const arr=JSON.parse(localStorage.getItem(k)||'[]');
+          const idx=arr.findIndex(t=>t.id===txId);
+          if(idx>=0){arr.splice(idx,1); localStorage.setItem(k,JSON.stringify(arr)); break;}
+        }catch(e){}
+      }
+    }
+    S.transactions=S.transactions.filter(t=>t.id!==txId);
+  }else{
+    const t=txObj;
+    if(!t||!t.date)return;
+    const cd=cleanDate(t.date); if(!cd)return;
+    const [y,m]=cd.split('/').map(Number);
+    const key=txKey_monthly(y,m);
+    let arr=[];
+    try{arr=JSON.parse(localStorage.getItem(key)||'[]');}catch(e){}
+    const idx=arr.findIndex(x=>x.id===t.id);
+    if(idx>=0)arr[idx]=t; else arr.push(t);
+    localStorage.setItem(key,JSON.stringify(arr));
+    if(y===S.viewYear&&m===S.viewMonth){
+      const midx=S.transactions.findIndex(x=>x.id===t.id);
+      if(midx>=0)S.transactions[midx]=t; else S.transactions.push(t);
+    }
+  }
+  recalc();renderAll();renderFixedCosts();
+}
+
+// 他端末での変更をリアルタイムに受信し、ローカルへ反映して再描画
 function sbStartRealtime(){
   if(!sbClient||!sbUser||sbRealtimeChannel)return;
   sbRealtimeChannel=sbClient.channel('sb-sync-'+sbUser.id)
     .on('postgres_changes',{event:'*',schema:'public',table:'transactions',filter:`user_id=eq.${sbUser.id}`},
-      payload=>{console.log('[Supabase Realtime] transactions changed:',payload);})
+      payload=>{
+        if(payload.eventType==='DELETE') sbApplyRemoteTx(null,true,payload.old.id);
+        else sbApplyRemoteTx(payload.new.extra,false);
+      })
     .on('postgres_changes',{event:'*',schema:'public',table:'settings',filter:`user_id=eq.${sbUser.id}`},
-      payload=>{console.log('[Supabase Realtime] settings changed:',payload);})
+      payload=>{
+        if(payload.eventType!=='DELETE'&&payload.new&&payload.new.data){
+          Object.assign(S,payload.new.data);
+          localStorage.setItem(SETTINGS_KEY,JSON.stringify(payload.new.data));
+          renderAll();
+        }
+      })
     .subscribe();
 }
 
@@ -2446,6 +2517,11 @@ function saveSettings(){
     if(typeof gdriveToken!=='undefined'&&gdriveToken){
       clearTimeout(saveSettings._driveTimer);
       saveSettings._driveTimer=setTimeout(()=>gdriveUpload(),1000);
+    }
+    // Supabaseログイン中は設定スナップショットも自動同期（debounce: 1秒後）
+    if(sbUser){
+      clearTimeout(saveSettings._sbTimer);
+      saveSettings._sbTimer=setTimeout(()=>sbSaveSettingsSnapshot(),1000);
     }
   }catch(e){console.warn('saveSettings error:',e);}
 }
@@ -4660,6 +4736,7 @@ function bulkDeleteTx(){
   }
   selectedTxIds.clear();
   recalc();save();renderAll();renderFixedCosts();
+  if(sbUser) ids.forEach(id=>sbDeleteTransaction(id).catch(e=>console.warn('Supabase削除同期失敗:',id,e)));
   toast(`${ids.length}件の取引を削除しました${fcIdsToRemove.length>0?'（一部の固定費は今後自動登録されません）':''}`,'success');
 }
 
@@ -5597,6 +5674,7 @@ function saveTxModal(){
   }
 
   recalc();save();renderAll();renderFixedCosts();
+  if(sbUser) sbUpsertTransaction(newTx).then(ok=>{ if(!ok) console.warn('Supabase同期失敗（ローカル保存は成功）:',newTx.id); });
   hideModal('tx-modal-overlay');
   toast(txModalMode==='edit'?'取引を更新しました！':'取引を追加しました！','success');
 }
@@ -5678,6 +5756,7 @@ function deleteTx(key){
     }
   });
   recalc();save();renderAll();renderFixedCosts();
+  if(sbUser) idsToRemove.forEach(id=>sbDeleteTransaction(id).catch(e=>console.warn('Supabase削除同期失敗:',id,e)));
   toast(fcRemoved?'取引を削除しました（この固定費は今後自動登録されません）':(pairPartner?'チャージ払いのペア取引もあわせて削除しました':'取引を削除しました'),'success');
 }
 
