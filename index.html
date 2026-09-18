@@ -955,6 +955,7 @@ header{padding-top:var(--sat);}
         <button id="sb-login-btn" onclick="sbLogin()" class="btn btn-primary" style="font-size:11px;">Googleでログイン（新システム）</button>
         <button id="sb-logout-btn" onclick="sbLogout()" class="btn" style="font-size:11px;display:none;">ログアウト</button>
         <button id="sb-import-btn" onclick="sbImportCurrentData()" class="btn" style="font-size:11px;display:none;">今のデータをSupabaseへインポート</button>
+        <button id="ai-chat-open-btn" onclick="openAiChatModal()" class="btn btn-primary" style="font-size:11px;display:none;">🤖 AIに家計相談</button>
       </div>
     </div>
 
@@ -1451,6 +1452,36 @@ header{padding-top:var(--sat);}
   </div>
 </div>
 
+<!-- ==================== AI家計分析チャット モーダル ==================== -->
+<div id="ai-chat-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8300;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--card);border-radius:20px;width:min(520px,100%);height:min(680px,90vh);max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="font-size:14px;font-weight:700;color:var(--text);">🤖 AIに家計相談</div>
+      <button onclick="hideModal('ai-chat-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:10px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <select id="ai-chat-range" onchange="onAiChatRangeChange()" style="width:100%;font-size:12px;padding:6px 8px;">
+        <option value="thisMonth">今月の取引</option>
+        <option value="lastMonth">先月の取引</option>
+        <option value="3m">直近3ヶ月</option>
+        <option value="6m">直近6ヶ月</option>
+        <option value="all">全期間</option>
+        <option value="custom">期間を指定...</option>
+      </select>
+      <div id="ai-chat-custom-range" style="display:none;gap:6px;margin-top:6px;">
+        <input id="ai-chat-from" type="date" style="flex:1;font-size:11px;padding:6px 8px;">
+        <input id="ai-chat-to" type="date" style="flex:1;font-size:11px;padding:6px 8px;">
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;">この範囲の取引データがAIに送信されます。</div>
+    </div>
+    <div id="ai-chat-messages" style="flex:1;overflow-y:auto;padding:14px 20px;display:flex;flex-direction:column;gap:10px;"></div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;">
+      <input id="ai-chat-input" type="text" placeholder="例: 今月の食費は多い？" style="flex:1;font-size:13px;padding:9px 12px;" onkeydown="if(event.key==='Enter')aiChatSend();">
+      <button id="ai-chat-send-btn" onclick="aiChatSend()" class="btn btn-primary" style="font-size:12px;padding:9px 16px;">送信</button>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== 取引詳細モーダル ==================== -->
 <div id="tx-detail-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8200;align-items:center;justify-content:center;padding:16px;">
   <div style="background:var(--card);border-radius:20px;width:min(420px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);">
@@ -1852,18 +1883,20 @@ async function sbSyncDownAll(){
 }
 
 function sbRenderStatus(){
-  const statusEl=$('sb-status'), loginBtn=$('sb-login-btn'), logoutBtn=$('sb-logout-btn'), importBtn=$('sb-import-btn');
+  const statusEl=$('sb-status'), loginBtn=$('sb-login-btn'), logoutBtn=$('sb-logout-btn'), importBtn=$('sb-import-btn'), aiBtn=$('ai-chat-open-btn');
   if(!statusEl)return; // まだ同期タブが描画されていない
   if(sbUser){
     statusEl.textContent=`ログイン中: ${sbUser.email||sbUser.id}`;
     if(loginBtn)loginBtn.style.display='none';
     if(logoutBtn)logoutBtn.style.display='';
     if(importBtn)importBtn.style.display='';
+    if(aiBtn)aiBtn.style.display='';
   }else{
     statusEl.textContent='未ログイン';
     if(loginBtn)loginBtn.style.display='';
     if(logoutBtn)logoutBtn.style.display='none';
     if(importBtn)importBtn.style.display='none';
+    if(aiBtn)aiBtn.style.display='none';
   }
 }
 
@@ -2011,6 +2044,97 @@ async function sbImportCurrentData(){
   }
 }
 // ==================== /Supabase 新システム ====================
+
+// ==================== AI家計分析チャット ====================
+const GEMINI_FUNCTION_URL = SB_URL + '/functions/v1/gemini-analyze';
+let aiChatHistory=[]; // [{role:'user'|'model', text}] セッション内のみ保持（保存はしない）
+
+function onAiChatRangeChange(){
+  const v=$('ai-chat-range').value;
+  const customEl=$('ai-chat-custom-range');
+  if(customEl) customEl.style.display=(v==='custom')?'flex':'none';
+}
+
+// 選択中のプリセットから {from, to}（YYYY-MM-DD文字列 or null）を計算
+function aiChatGetRange(){
+  const v=$('ai-chat-range').value;
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  if(v==='thisMonth'){
+    return {from:fmt(new Date(now.getFullYear(),now.getMonth(),1)), to:fmt(new Date(now.getFullYear(),now.getMonth()+1,0))};
+  }else if(v==='lastMonth'){
+    return {from:fmt(new Date(now.getFullYear(),now.getMonth()-1,1)), to:fmt(new Date(now.getFullYear(),now.getMonth(),0))};
+  }else if(v==='3m'){
+    return {from:fmt(new Date(now.getFullYear(),now.getMonth()-2,1)), to:fmt(now)};
+  }else if(v==='6m'){
+    return {from:fmt(new Date(now.getFullYear(),now.getMonth()-5,1)), to:fmt(now)};
+  }else if(v==='custom'){
+    const from=$('ai-chat-from').value||null, to=$('ai-chat-to').value||null;
+    return {from,to};
+  }
+  return {from:null,to:null}; // 全期間
+}
+
+function openAiChatModal(){
+  if(!sbUser){toast('先にSupabaseへログインしてください','error');return;}
+  showModal('ai-chat-overlay');
+  if(aiChatHistory.length===0){
+    aiChatRenderMessage('model','こんにちは！家計データについて何でも聞いてください。上のプルダウンで、AIに渡すデータの期間を選べます（デフォルトは今月分）。');
+  }
+}
+
+function aiChatRenderMessage(role,text){
+  const el=$('ai-chat-messages'); if(!el)return;
+  const bubble=document.createElement('div');
+  const isUser=role==='user';
+  bubble.style.cssText=`align-self:${isUser?'flex-end':'flex-start'};max-width:85%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;background:${isUser?'var(--primary)':'var(--card2)'};color:${isUser?'#fff':'var(--text)'};border:${isUser?'none':'1px solid var(--border)'};`;
+  bubble.textContent=text;
+  el.appendChild(bubble);
+  el.scrollTop=el.scrollHeight;
+  return bubble;
+}
+
+async function aiChatSend(){
+  const input=$('ai-chat-input'); if(!input)return;
+  const message=input.value.trim();
+  if(!message)return;
+  if(!sbUser){toast('先にログインしてください','error');return;}
+  input.value='';
+  aiChatRenderMessage('user',message);
+  const loadingBubble=aiChatRenderMessage('model','考え中…');
+  const sendBtn=$('ai-chat-send-btn'); if(sendBtn)sendBtn.disabled=true;
+  try{
+    const {from,to}=aiChatGetRange();
+    const {data:{session}}=await sbClient.auth.getSession();
+    if(!session){toast('セッションが切れました。再ログインしてください','error');loadingBubble.remove();return;}
+    const res=await fetch(GEMINI_FUNCTION_URL,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+session.access_token,
+        'apikey':SB_ANON_KEY
+      },
+      body:JSON.stringify({from,to,message,history:aiChatHistory})
+    });
+    const json=await res.json();
+    if(!res.ok||json.error){
+      loadingBubble.textContent='エラー: '+(json.error||'応答を取得できませんでした');
+      loadingBubble.style.color='var(--red)';
+      return;
+    }
+    loadingBubble.textContent=json.reply;
+    aiChatHistory.push({role:'user',text:message});
+    aiChatHistory.push({role:'model',text:json.reply});
+  }catch(e){
+    console.error('aiChatSend error:',e);
+    loadingBubble.textContent='通信エラーが発生しました';
+    loadingBubble.style.color='var(--red)';
+  }finally{
+    if(sendBtn)sendBtn.disabled=false;
+  }
+}
+// ==================== /AI家計分析チャット ====================
 
 
 function cleanDate(raw){
