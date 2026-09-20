@@ -955,7 +955,6 @@ header{padding-top:var(--sat);}
         <button id="sb-login-btn" onclick="sbLogin()" class="btn btn-primary" style="font-size:11px;">Googleでログイン（新システム）</button>
         <button id="sb-logout-btn" onclick="sbLogout()" class="btn" style="font-size:11px;display:none;">ログアウト</button>
         <button id="sb-import-btn" onclick="sbImportCurrentData()" class="btn" style="font-size:11px;display:none;">今のデータをSupabaseへインポート</button>
-        <button id="ai-chat-open-btn" onclick="openAiChatModal()" class="btn btn-primary" style="font-size:11px;display:none;">🤖 AIに家計相談</button>
       </div>
     </div>
 
@@ -1120,6 +1119,21 @@ header{padding-top:var(--sat);}
     <div id="campaign-summary" style="font-size:11px;color:var(--text3);">データを読み込み中...</div>
   </div>
 </div>
+
+<button id="ai-chat-open-btn" onclick="openAiChatModal()" style="display:none;position:fixed;right:16px;bottom:calc(78px + var(--sab, 0px));width:52px;height:52px;border-radius:50%;background:#fff;border:none;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:60;cursor:pointer;align-items:center;justify-content:center;padding:0;">
+  <svg viewBox="0 0 960 960" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="ai-fab-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#F6C244"/>
+        <stop offset="30%" stop-color="#E8515A"/>
+        <stop offset="55%" stop-color="#9168C0"/>
+        <stop offset="80%" stop-color="#4285F4"/>
+        <stop offset="100%" stop-color="#1AA260"/>
+      </linearGradient>
+    </defs>
+    <path d="M480 10 C480 280 300 430 10 480 C300 530 480 680 480 950 C480 680 660 530 950 480 C660 430 480 280 480 10 Z" fill="url(#ai-fab-grad)"/>
+  </svg>
+</button>
 
 <nav class="md:hidden bottom-nav" style="background:var(--nav-bg);border-top:1px solid var(--nav-border);position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;justify-content:space-around;align-items:flex-start;padding-top:8px;">
   <button class="tab-b" data-tab="dashboard" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
@@ -1890,7 +1904,7 @@ function sbRenderStatus(){
     if(loginBtn)loginBtn.style.display='none';
     if(logoutBtn)logoutBtn.style.display='';
     if(importBtn)importBtn.style.display='';
-    if(aiBtn)aiBtn.style.display='';
+    if(aiBtn)aiBtn.style.display='flex';
   }else{
     statusEl.textContent='未ログイン';
     if(loginBtn)loginBtn.style.display='';
