@@ -3945,12 +3945,17 @@ function renderCardSettingList(){
   const csl=$('card-setting-list'); const cse=$('card-setting-empty');
   if(!csl||!cse) return;
   csl.innerHTML='';
-  (S.cardSettings||[]).forEach(cs=>{
+  const list=S.cardSettings||[];
+  list.forEach((cs,idx)=>{
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;cursor:pointer;';
     row.onclick=()=>openCardSettingModal(cs.id);
     const debitLabel=isDebitMethod(cs.method)?'即時引き落とし（対象外）':`毎月${cs.debitDay}日引き落とし（${cs.holidayRule==='prev'?'休前日':'休翌日'}）・${cs.closingDay===31?'末日':cs.closingDay+'日'}締め`;
     row.innerHTML=`
+      <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;" onclick="event.stopPropagation();">
+        <button onclick="moveCardSetting('${cs.id}',-1)" ${idx===0?'disabled':''} style="width:22px;height:18px;border:1px solid var(--border);background:var(--card);border-radius:4px;font-size:10px;line-height:1;cursor:pointer;color:var(--text2);${idx===0?'opacity:.3;cursor:default;':''}">▲</button>
+        <button onclick="moveCardSetting('${cs.id}',1)" ${idx===list.length-1?'disabled':''} style="width:22px;height:18px;border:1px solid var(--border);background:var(--card);border-radius:4px;font-size:10px;line-height:1;cursor:pointer;color:var(--text2);${idx===list.length-1?'opacity:.3;cursor:default;':''}">▼</button>
+      </div>
       ${getMethodLogoHtml(cs.method,{size:28,brandSize:14})}
       <div style="flex:1;min-width:0;">
         <div style="font-size:12px;font-weight:700;color:var(--text);">${cs.method}</div>
@@ -3960,7 +3965,19 @@ function renderCardSettingList(){
     `;
     csl.appendChild(row);
   });
-  cse.style.display=(S.cardSettings||[]).length===0?'block':'none';
+  cse.style.display=list.length===0?'block':'none';
+}
+
+// カード表示順（S.cardSettingsの並び＝ウォレットタブのカルーセル順）を1つ上下に入れ替える
+function moveCardSetting(id,dir){
+  const list=S.cardSettings||[];
+  const idx=list.findIndex(c=>c.id===id);
+  const newIdx=idx+dir;
+  if(idx<0||newIdx<0||newIdx>=list.length)return;
+  [list[idx],list[newIdx]]=[list[newIdx],list[idx]];
+  saveSettings();
+  renderCardSettingList();
+  renderWalletCards();
 }
 
 // クレジットカードの請求サイクル範囲（利用月の締め日ベース）を取得
