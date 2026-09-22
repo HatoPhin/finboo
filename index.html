@@ -3592,30 +3592,47 @@ async function downloadPDF(){
 function openPtBreakdownModal(){
   const pc=calcAllPts();
   const body=$('pt-breakdown-body'); if(!body)return;
-  const rows=[
-    {method:'三井住友カード(Olive)', label:'Vポイント', pt:pc.vPts+pc.vCouponPts, note:'三井住友カード(Olive)・月間合算＋U25特約＋Vクーポン'},
-    {method:'PayPayクレジット', label:'PayPayポイント', pt:pc.pp, note:'PayPayカード・都度計算'},
-    {method:'楽天カード', label:'楽天ポイント', pt:pc.rk, note:'楽天カード・都度計算'},
-    {method:'住信SBI - デビット', label:'dポイント', pt:pc.sbi, note:'住信SBI - デビット・都度計算(基本0.8%)'},
-    {method:'JCBカードW', label:'J-POINT', pt:pc.jcb, note:'JCBカードW・月間合算(1.0%)＋優待店ボーナス'}
-  ];
-  // 独自還元率の決済手段は「ポイントの種類」ごとにグループ分けして追加（同期タブで設定可能）
+
+  // ポイント名(ラベル)ごとに集計をまとめる：異なる決済手段でも同じ名称のポイントなら1行に統合する
+  const byLabel={};
+  function addEntry(label, pt, method, note, isType){
+    if(!byLabel[label]) byLabel[label]={pt:0, methods:[]};
+    byLabel[label].pt+=pt;
+    byLabel[label].methods.push({method,note,isType});
+  }
+  addEntry('Vポイント', pc.vPts+pc.vCouponPts, '三井住友カード(Olive)', '三井住友カード(Olive)・月間合算＋U25特約＋Vクーポン', false);
+  addEntry('PayPayポイント', pc.pp, 'PayPayクレジット', 'PayPayカード・都度計算', false);
+  addEntry('楽天ポイント', pc.rk, '楽天カード', '楽天カード・都度計算', false);
+  addEntry('dポイント', pc.sbi, '住信SBI - デビット', '住信SBI - デビット・都度計算(基本0.8%)', false);
+  addEntry('J-POINT', pc.jcb, 'JCBカードW', 'JCBカードW・月間合算(1.0%)＋優待店ボーナス', false);
+  // 独自還元率の決済手段は「ポイントの種類」名で追加（既存の上記5種と同名ならそのまま統合される）
   const miscByType=pc.miscByType||{};
   Object.keys(miscByType).forEach(typeName=>{
-    rows.push({method:typeName, label:typeName, pt:miscByType[typeName], note:'決済手段ごとの独自還元率設定分', isType:true});
+    addEntry(typeName, miscByType[typeName], typeName, '決済手段ごとの独自還元率設定分', true);
   });
+
+  const rows=Object.keys(byLabel).map(label=>{
+    const g=byLabel[label];
+    return {label, pt:g.pt, methods:g.methods, merged:g.methods.length>1};
+  }).sort((a,b)=>b.pt-a.pt);
+
   body.innerHTML=`
     <div style="display:flex;flex-direction:column;gap:6px;">
-      ${rows.map(r=>`
+      ${rows.map(r=>{
+        const icon=(r.merged||r.methods[0].isType)
+          ?`<span style="width:20px;height:20px;border-radius:50%;background:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;">${r.label[0]}</span>`
+          :getMethodLogoHtml(r.methods[0].method,{size:20,brandSize:11});
+        const noteText=r.merged?`統合: ${r.methods.map(m=>m.method).join(' + ')}`:r.methods[0].note;
+        return `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:8px;">${r.isType?`<span style="width:20px;height:20px;border-radius:50%;background:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;">${r.method[0]}</span>`:getMethodLogoHtml(r.method,{size:20,brandSize:11})}
+        <div style="display:flex;align-items:center;gap:8px;">${icon}
           <div>
             <div style="font-size:12px;font-weight:700;color:var(--text);">${r.label}</div>
-            <div style="font-size:9px;color:var(--text3);">${r.note}</div>
+            <div style="font-size:9px;color:var(--text3);">${noteText}</div>
           </div>
         </div>
         <span style="font-size:13px;font-weight:800;color:var(--primary);font-family:monospace;">${r.pt.toLocaleString()} pt</span>
-      </div>`).join('')}
+      </div>`;}).join('')}
       <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:2px;">
         <span style="font-size:12.5px;font-weight:700;color:var(--text);">合計</span>
         <span style="font-size:16px;font-weight:800;color:var(--primary);font-family:monospace;">${pc.total.toLocaleString()} pt</span>
