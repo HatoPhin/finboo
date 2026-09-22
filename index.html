@@ -933,6 +933,13 @@ header{padding-top:var(--sat);}
       <div style="font-size:10px;color:var(--text3);">色・ロゴをタップして変更。グラフ・明細・カレンダーに即時反映されます。還元率は三井住友(Olive)・PayPay・楽天カード・住信SBIデビット以外の決済手段に設定できます（未設定の取引にのみ適用され、取引ごとの個別入力があればそちらが優先されます）。</div>
     </div>
 
+    <!-- ポイントブランド画像 -->
+    <div style="border-top:1px solid var(--border);padding-top:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🏷️ ポイントブランド画像</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">Vポイント・PayPayポイントなど、ポイント名ごとのブランド画像を登録できます。「今月の獲得予定ポイント」の内訳モーダルで、決済手段のロゴの代わりに表示されます。</div>
+      <div id="point-logo-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
     <!-- チャージ払いペア設定 -->
     <div style="border-top:1px solid var(--border);padding-top:20px;">
       <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">⚡ チャージ払いペア設定</div>
@@ -1828,6 +1835,7 @@ const INIT={
   customMethods:[],      // ユーザーが追加登録した決済手段名の配列（デフォルト8種以外）
   methodPointRates:{},   // 決済手段名 → デフォルト還元率(%)。専用計算式のある4手段（Olive/PayPay/楽天/住信SBIデビット）には適用されない
   methodPointType:{},    // 決済手段名 → ポイントの種類名（例:「Tポイント」）。独自還元率の決済手段のポイント内訳をグループ分けするための表示用ラベル
+  pointLogos:{},          // ポイント名(Vポイント等のラベル) → Base64画像。ポイント内訳モーダルのブランド画像表示用
   chargePairs:[],        // チャージ払いペア設定 [{id, source, target}]。sourceからtargetへチャージして払う運用を1回の入力で登録するための設定
   jcbPartnerShops:[],    // JCBカードW: J-POINTパートナー優待店リスト [{id, name(前方一致), rates:[{id, rate(%), from(YYYY-MM-DD or '')}]}]
   jcbCampaign:null       // JCBカードW: 新規入会キャンペーン設定 {joinDate:'YYYY-MM-DD', cap:12000}
@@ -2666,6 +2674,7 @@ function saveSettings(){
       customMethods:S.customMethods||[],
       methodPointRates:S.methodPointRates||{},
       methodPointType:S.methodPointType||{},
+      pointLogos:S.pointLogos||{},
       chargePairs:S.chargePairs||[],
       jcbPartnerShops:S.jcbPartnerShops||[],
       jcbCampaign:S.jcbCampaign||null
@@ -2746,6 +2755,7 @@ function load(){
       if(cfg.customMethods) S.customMethods   = cfg.customMethods;
       if(cfg.methodPointRates) S.methodPointRates = cfg.methodPointRates;
       if(cfg.methodPointType) S.methodPointType = cfg.methodPointType;
+      if(cfg.pointLogos) S.pointLogos = cfg.pointLogos;
       if(cfg.chargePairs)   S.chargePairs     = cfg.chargePairs;
       if(cfg.jcbPartnerShops) S.jcbPartnerShops = cfg.jcbPartnerShops;
       if(cfg.jcbCampaign!==undefined) S.jcbCampaign = cfg.jcbCampaign;
@@ -3619,9 +3629,11 @@ function openPtBreakdownModal(){
   body.innerHTML=`
     <div style="display:flex;flex-direction:column;gap:6px;">
       ${rows.map(r=>{
-        const icon=(r.merged||r.methods[0].isType)
-          ?`<span style="width:20px;height:20px;border-radius:50%;background:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;">${r.label[0]}</span>`
-          :getMethodLogoHtml(r.methods[0].method,{size:20,brandSize:11});
+        const icon=(S.pointLogos&&S.pointLogos[r.label])
+          ?getPointLogoHtml(r.label,{size:20})
+          :(r.merged||r.methods[0].isType)
+            ?`<span style="width:20px;height:20px;border-radius:50%;background:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;">${r.label[0]}</span>`
+            :getMethodLogoHtml(r.methods[0].method,{size:20,brandSize:11});
         const noteText=r.merged?`統合: ${r.methods.map(m=>m.method).join(' + ')}`:r.methods[0].note;
         return `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
@@ -5184,7 +5196,7 @@ function switchTab(id){
   if(id==='points')renderPtTab();
   if(id==='campaign')renderCampaignSummary();
   window.scrollTo({top:0,behavior:'smooth'});
-  if(id==='sync'){renderCatList();renderMinorCatSettings();renderMethodList();renderChargePairList();renderJcbPartnerList();renderJcbCampaignSettings();renderBrandList();renderShopLogoList();renderCardSettingList();sbRenderStatus();}
+  if(id==='sync'){renderCatList();renderMinorCatSettings();renderMethodList();renderPointLogoList();renderChargePairList();renderJcbPartnerList();renderJcbCampaignSettings();renderBrandList();renderShopLogoList();renderCardSettingList();sbRenderStatus();}
 }
 
 // ============================================================
@@ -6616,6 +6628,69 @@ function removeMethodLogo(name){
   delete S.methodLogos[name];
   save(); renderMethodList(); renderTable(); renderAll();
   toast(`「${name}」のロゴを削除しました`,'success');
+}
+
+// ポイントブランド画像（Vポイント等のラベル単位で登録。ポイント内訳モーダルに表示）
+function getPointLogoHtml(label, opts={}){
+  const size=opts.size||20;
+  const logo=S.pointLogos&&S.pointLogos[label];
+  if(logo){
+    return `<img src="${logo}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;display:inline-block;vertical-align:middle;" alt="">`;
+  }
+  const color=shopIconColor(label||'?');
+  return `<span style="width:${size}px;height:${size}px;border-radius:50%;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:${Math.floor(size*0.45)}px;font-weight:700;color:#fff;flex-shrink:0;vertical-align:middle;">${(label||'?')[0]}</span>`;
+}
+
+async function uploadPointLogo(label, input){
+  const file=input.files[0]; if(!file)return;
+  if(file.size>500*1024){toast('画像は500KB以下にしてください','error');return;}
+  try{
+    const b64=await fileToBase64(file);
+    if(!S.pointLogos)S.pointLogos={};
+    S.pointLogos[label]=b64;
+    save(); renderPointLogoList();
+    toast(`「${label}」のブランド画像を登録しました`,'success');
+  }catch(e){toast('画像の読み込みに失敗しました','error');}
+}
+
+function removePointLogo(label){
+  if(!S.pointLogos)return;
+  delete S.pointLogos[label];
+  save(); renderPointLogoList();
+  toast(`「${label}」のブランド画像を削除しました`,'success');
+}
+
+// ポイント内訳モーダルに出てくる可能性のあるポイント名一覧（固定5種＋独自登録分＋既に画像登録済みの分）
+function allPointLabels(){
+  const fixed=['Vポイント','PayPayポイント','楽天ポイント','dポイント','J-POINT'];
+  const custom=Object.values(S.methodPointType||{});
+  const logoKeys=Object.keys(S.pointLogos||{});
+  return [...new Set([...fixed,...custom,...logoKeys])];
+}
+
+function renderPointLogoList(){
+  const el=$('point-logo-list'); if(!el)return;
+  el.innerHTML='';
+  allPointLabels().forEach(label=>{
+    const hasLogo=S.pointLogos&&S.pointLogos[label];
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;';
+    row.innerHTML=`
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:120px;">
+        ${getPointLogoHtml(label,{size:24})}
+        <span style="font-size:12px;font-weight:600;color:var(--text);">${label}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <label style="cursor:pointer;display:inline-flex;align-items:center;gap:3px;font-size:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:3px 7px;color:var(--text2);">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          ${hasLogo?'画像変更':'画像追加'}
+          <input type="file" accept="image/*" style="display:none;" onchange="uploadPointLogo('${label}',this)">
+        </label>
+        ${hasLogo?`<button onclick="removePointLogo('${label}')" style="font-size:10px;background:var(--red-light);color:var(--red);border:1px solid var(--border);border-radius:6px;padding:3px 7px;cursor:pointer;">画像削除</button>`:''}
+      </div>
+    `;
+    el.appendChild(row);
+  });
 }
 
 // 利用先(店舗)アイコンのアップロード・削除
