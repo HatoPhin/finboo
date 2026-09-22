@@ -1337,7 +1337,7 @@ header{padding-top:var(--sat);}
       <!-- 利用先 -->
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">利用先 / 収入源 *</label>
-        <input id="tx-shop" type="text" placeholder="例: セブンイレブン、給与 など" oninput="refreshTxShopLogoPreview();updateJcbTxInfo();" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
+        <input id="tx-shop" type="text" placeholder="例: セブンイレブン、給与 など" oninput="refreshTxShopLogoPreview();updateJcbTxInfo();updateOliveTxInfo();" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
         <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
           <div id="tx-shop-logo-preview" style="width:30px;height:30px;flex-shrink:0;"></div>
           <label class="btn btn-ghost" style="font-size:10px;cursor:pointer;padding:5px 9px;">
@@ -1409,6 +1409,8 @@ header{padding-top:var(--sat);}
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">Vクーポン還元率（任意・追加分・%）</label>
         <input id="tx-vcoupon" type="number" step="0.1" placeholder="未入力なら加算なし" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
         <div style="font-size:9px;color:var(--text3);margin-top:3px;">特約店還元率はそのまま維持し、この分だけ追加で加算されます</div>
+        <div id="tx-olive-target-note" style="display:none;font-size:10.5px;font-weight:700;color:var(--primary);margin-top:8px;padding:6px 8px;background:var(--card2);border-radius:8px;"></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:8px;padding:6px 8px;background:var(--card2);border-radius:8px;line-height:1.5;">☕ スターバックスは特約店対象外・別制度です。Starbucksアプリまたは App Clip 経由の Apple Pay 決済のみが対象（スターバックス カードへのチャージは対象外）。Apple Pay はAndroid端末では利用できないため、Android端末では実質対象外になります。</div>
       </div>
 
       <!-- 金額 -->
@@ -4448,7 +4450,7 @@ function renderSubGlance(){
       ${getShopLogoHtml(t.shop,{size:30})}
       <div style="flex:1;min-width:0;">
         <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.shop}</div>
-        <div style="font-size:9px;color:var(--text3);">${t.method||'決済方法未設定'}</div>
+        <div style="font-size:9px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.method||'決済方法未設定'}${t.memo?` ・ 📝 ${t.memo}`:''}</div>
       </div>
       <span style="font-size:12px;font-weight:700;font-family:monospace;color:var(--text);">¥${(t.amount||0).toLocaleString()}</span>
     `;
@@ -4493,7 +4495,7 @@ function detectFixedCostsForMonth(y,m){
     const thisMonthEntries=g.entries.filter(e=>e._y===y&&e._m===m);
     if(thisMonthEntries.length===0) return; // 今月の記録が無ければ表示しない
     thisMonthEntries.forEach(e=>{
-      thisMonthFixed.push({shop:g.shop,method:g.method,amount:e.amount,date:e.date,monthsDetected:distinctMonths.size,categoryMajor:e.categoryMajor});
+      thisMonthFixed.push({shop:g.shop,method:g.method,amount:e.amount,date:e.date,monthsDetected:distinctMonths.size,categoryMajor:e.categoryMajor,txId:e.id});
     });
   });
 
@@ -4593,8 +4595,20 @@ function addFixedCostFromCandidate(f){
   const already=S.fixedCostItems.some(x=>(x.shop||'').toLowerCase()+'|'+(x.method||'')===key);
   if(already){toast('すでに登録済みです','error');return;}
   const dayMatch=(f.date||'').match(/\/(\d{1,2})$/);
-  S.fixedCostItems.push({id:uid(),shop:f.shop,method:f.method,amount:f.amount,
-    day:dayMatch?parseInt(dayMatch[1]):null,categoryMajor:f.categoryMajor||'その他',addedFrom:'auto'});
+  const newItem={id:uid(),shop:f.shop,method:f.method,amount:f.amount,
+    day:dayMatch?parseInt(dayMatch[1]):null,categoryMajor:f.categoryMajor||'その他',addedFrom:'auto'};
+  S.fixedCostItems.push(newItem);
+  // 候補の元になった取引（今月分）は既に登録済みの実績なので、自動生成側に紐付けて重複生成を防ぐ
+  const [fy,fm]=(f.date||'').split('/');
+  if(f.txId&&fy&&fm){
+    const existingTx=S.transactions.find(t=>t.id===f.txId);
+    if(existingTx){
+      existingTx.fixedCostItemId=newItem.id;
+      S.fixedCostAutoLog=S.fixedCostAutoLog||{};
+      S.fixedCostAutoLog[`${newItem.id}_${fy}-${fm}`]=true;
+      saveTx();
+    }
+  }
   saveSettings(); renderFixedCosts();
   toast(`「${f.shop}」を固定費に登録しました`,'success');
 }
@@ -5054,7 +5068,7 @@ function renderTable(){
         tr.onclick=()=>openTxDetailModal(t.id);
         tr.innerHTML=`
           <td style="padding:10px 8px 10px 16px;" onclick="event.stopPropagation();"><input type="checkbox" class="tx-row-checkbox" data-id="${t.id}" onclick="toggleTxSelect('${t.id}',this.checked)" ${selectedTxIds.has(t.id)?'checked':''} style="width:15px;height:15px;accent-color:var(--primary);cursor:pointer;"></td>
-          <td style="padding:10px 16px;font-weight:600;color:var(--text);"><span style="display:inline-flex;align-items:center;gap:7px;">${getShopLogoHtml(t.shop||'?',{size:22})}${t.shop||'-'}</span></td>
+          <td style="padding:10px 16px;font-weight:600;color:var(--text);"><span style="display:inline-flex;align-items:center;gap:7px;">${getShopLogoHtml(t.shop||'?',{size:22})}${t.shop||'-'}</span>${t.memo?`<div style="font-size:10px;font-weight:400;color:var(--text3);margin-top:3px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📝 ${t.memo}</div>`:''}</td>
           <td style="padding:10px 16px;"><span style="font-size:10px;background:${getCatColor(t.categoryMajor||'その他')}22;color:${getCatColor(t.categoryMajor||'その他')};border:1px solid ${getCatColor(t.categoryMajor||'その他')}44;border-radius:99px;padding:2px 8px;font-weight:600;">${t.categoryMajor||'その他'}</span>${t.categoryMinor?`<span style="display:block;font-size:9.5px;color:var(--text3);margin-top:3px;">${t.categoryMinor}</span>`:''}</td>
           <td style="padding:10px 16px;font-size:11px;color:var(--text3);">
             <span style="display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;">
@@ -5082,6 +5096,7 @@ function renderTable(){
         <div style="flex-shrink:0;margin-top:2px;">${getShopLogoHtml(t.shop||'?',{size:44})}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:700;color:var(--text);word-break:break-all;line-height:1.4;">${t.shop||'利用先不明'}</div>
+          ${t.memo?`<div style="font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📝 ${t.memo}</div>`:''}
           <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px;color:var(--text3);flex-wrap:wrap;">
             ${getMethodLogoHtml(t.method||'',{size:19,brandSize:13})}
             <span style="color:${getMethodColor(t.method||'')};">${t.method||'-'}</span>
@@ -5677,6 +5692,7 @@ function onMethodChange(){
   if(rateLabel) rateLabel.textContent=isPayPay?'PayPayクーポン還元率（任意・%）':(isJcb?'還元率（任意・総還元率・%）':'還元率（任意・%）');
   if(vcWrap) vcWrap.style.display=isOlive?'block':'none';
   updateJcbTxInfo();
+  updateOliveTxInfo();
   // チャージ払い欄の出し分け：新規登録時のみ、選択中の決済手段が登録済みチャージペアの「チャージ先」に一致する場合に表示
   const cpWrap=document.getElementById('tx-chargepair-wrap');
   if(cpWrap){
@@ -5705,6 +5721,24 @@ function onChargePairCheckChange(){
   const cb=document.getElementById('tx-chargepair-check');
   const tgtWrap=document.getElementById('tx-chargepair-target-wrap');
   if(tgtWrap)tgtWrap.style.display=(cb&&cb.checked)?'block':'none';
+}
+
+// Olive(三井住友カード): 特約店ボーナスの自動表示（登録済み特約店リストに一致した場合のみ）
+function updateOliveTxInfo(){
+  const methodEl=document.getElementById('tx-method');
+  const method=methodEl?methodEl.value:'';
+  const noteEl=document.getElementById('tx-olive-target-note');
+  if(!noteEl) return;
+  if(method!=='三井住友カード(Olive)'){ noteEl.style.display='none'; return; }
+  const shopEl=document.getElementById('tx-shop');
+  const matched=isVTarget(shopEl?shopEl.value:'');
+  if(matched){
+    const rate=(0.5+S.pointSettings.vProgramRate).toFixed(1);
+    noteEl.style.display='block';
+    noteEl.textContent=`⚡ 特約店ボーナス適用中（総還元率${rate}%）`;
+  }else{
+    noteEl.style.display='none';
+  }
 }
 
 // JCBカードW: 優待店ボーナスの自動表示＋新規入会キャンペーン期間中のスマホ決済チェック欄の出し分け
