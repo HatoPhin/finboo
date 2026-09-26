@@ -648,6 +648,11 @@ header{padding-top:var(--sat);}
           <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">Vポイントアッププログラム加算</span><span id="ui-vprog-rate" style="font-weight:700;color:var(--primary);">+8.0%</span></div>
           <input id="slider-vprog" type="range" min="0" max="15" step="0.5" value="8" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
         </div>
+        <div class="space-y-1.5">
+          <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">🍙 セブン-イレブン特約加算</span><span id="ui-seven-rate" style="font-weight:700;color:var(--primary);">+2.5%</span></div>
+          <input id="slider-seven" type="range" min="0" max="15" step="0.5" value="2.5" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
+          <div style="font-size:9px;color:var(--text3);">セブン-イレブンのみ独自の加算率（上の特約店とは別枠）</div>
+        </div>
         <div class="pt-2 space-y-2" style="border-top:1px solid var(--border);">
           <div style="font-size:11px;font-weight:700;color:var(--text3);">✨ U25特別特約</div>
           <div style="background:var(--primary-light);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;">
@@ -1413,6 +1418,10 @@ header{padding-top:var(--sat);}
 
       <!-- Vクーポン還元率（任意・追加分）：Oliveのみ -->
       <div id="tx-vcoupon-wrap" style="display:none;margin-bottom:14px;">
+        <label style="cursor:pointer;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;">
+          <input id="tx-mobile-order" type="checkbox" onchange="updateOliveTxInfo();" style="width:15px;height:15px;">
+          モバイルオーダーで支払った（タッチ決済と同じ還元率）
+        </label>
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">Vクーポン還元率（任意・追加分・%）</label>
         <input id="tx-vcoupon" type="number" step="0.1" placeholder="未入力なら加算なし" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
         <div style="font-size:9px;color:var(--text3);margin-top:3px;">特約店還元率はそのまま維持し、この分だけ追加で加算されます</div>
@@ -1814,6 +1823,7 @@ const INIT={
   darkMode:false,
   pointSettings:{
     vProgramRate:8.0,
+    sevenElevenRate:2.5,
     vTargetShops:["セブン","セブンイレブン","マクドナルド","マック","ローソン","ファミリーマート","ファミマ","サイゼリヤ","ドトール"],
     mobileKeywords:["povo","uq","uq mobile","au","linemo","docomo","softbank","y!mobile","ahamo","lineモバイル","rakuten","楽天モバイル"]
   },
@@ -2350,6 +2360,7 @@ function mergeDeletedIds(a,b){
 // ポイント計算
 // ============================================================
 function isVTarget(shop){return S.pointSettings.vTargetShops.some(k=>(shop||'').includes(k));}
+function isSeven(shop){return(shop||'').includes('セブン');}
 function isMobile(shop){const l=(shop||'').toLowerCase();return S.pointSettings.mobileKeywords.some(k=>l.includes(k));}
 function isPayPayShop(shop){return(shop||'').includes('PayPay');}
 
@@ -2479,7 +2490,9 @@ function calcPt(t){
   if(t.method==='三井住友カード(Olive)'){
     // Olive基本還元は月末合算付与のため明細には表示しない（種別ラベルのみ・calcAllPtsで月合算計算）
     let baseRule;
-    if(isVTarget(t.shop))baseRule=`月合算 特約店(${(0.5+S.pointSettings.vProgramRate).toFixed(1)}%)`;
+    if(t.mobileOrder)baseRule=`月合算 モバイルオーダー(${(0.5+S.pointSettings.vProgramRate).toFixed(1)}%)`;
+    else if(isSeven(t.shop))baseRule=`月合算 セブン-イレブン特約(${(0.5+S.pointSettings.sevenElevenRate).toFixed(1)}%)`;
+    else if(isVTarget(t.shop))baseRule=`月合算 特約店(${(0.5+S.pointSettings.vProgramRate).toFixed(1)}%)`;
     else if(isMobile(t.shop))baseRule='月合算 U25携帯(2.0%)';
     else if(isPayPayShop(t.shop))baseRule='月合算 U25 PayPay(1.0%)';
     else baseRule='月合算 通常(200円毎1pt)';
@@ -2560,7 +2573,7 @@ function calcPt(t){
 }
 
 function calcAllPts(){
-  let oT=0,oM=0,oP=0,oN=0,pp=0,rk=0,sbi=0,ov=0,vCouponPts=0,oJ=0,jcbBonus=0;
+  let oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,pp=0,rk=0,sbi=0,ov=0,vCouponPts=0,oJ=0,jcbBonus=0;
   const miscByType={}; // 独自還元率の決済手段のポイントを「ポイントの種類」ごとにグループ分けした合計
   const txs=S.transactions.map(t=>{
     const{pt,rule}=calcPt(t);
@@ -2568,7 +2581,9 @@ function calcAllPts(){
     // 立替も決済自体は行っているためポイント集計に含める（支出集計とは別軸）
     if(t.type!=='income'){
       if(t.method==='三井住友カード(Olive)'){
-        if(isVTarget(t.shop))oT+=t.amount;
+        if(t.mobileOrder)oOrder+=t.amount;
+        else if(isSeven(t.shop))oS+=t.amount;
+        else if(isVTarget(t.shop))oT+=t.amount;
         else if(isMobile(t.shop))oM+=t.amount;
         else if(isPayPayShop(t.shop))oP+=t.amount;
         else oN+=t.amount;
@@ -2593,7 +2608,8 @@ function calcAllPts(){
       if(t.chargeBonusMethod){
         const bm=t.chargeBonusMethod;
         if(bm==='三井住友カード(Olive)'){
-          if(isVTarget(t.shop))oT+=t.amount;
+          if(isSeven(t.shop))oS+=t.amount;
+          else if(isVTarget(t.shop))oT+=t.amount;
           else if(isMobile(t.shop))oM+=t.amount;
           else if(isPayPayShop(t.shop))oP+=t.amount;
           else oN+=t.amount;
@@ -2618,18 +2634,22 @@ function calcAllPts(){
     return{...t,cp:pt,rule};
   });
   // Olive月間合算ポイント計算（切り捨て）
-  // 特約店: (0.5 + vProgramRate)% = 200円あたり round(200 × r)pt を200円ブロック数分
+  // 特約店(セブン-イレブンを除く): (0.5 + vProgramRate)% = 200円あたり round(200 × r)pt を200円ブロック数分
   const r=(0.5+S.pointSettings.vProgramRate)/100;
+  // セブン-イレブン: 独自レート。ただしvProgramRateとは別スライダーで管理
+  const rs=(0.5+S.pointSettings.sevenElevenRate)/100;
   const ptT = Math.floor(oT/200) * Math.round(200*r);   // 特約店
+  const ptS = Math.floor(oS/200) * Math.round(200*rs);  // セブン-イレブン特約
+  const ptOrder = Math.floor(oOrder/200) * Math.round(200*r); // モバイルオーダー：タッチ決済(特約店)と同じ還元率
   const ptM = Math.floor(oM/200) * Math.round(200*0.02);// U25携帯(2.0%)
   const ptP = Math.floor(oP/200) * Math.round(200*0.01);// U25 PayPay(1.0%)
   const ptN = Math.floor(oN/200) * 1;                   // 通常還元(0.5% = 200円で1pt)
-  const vPts = ptT + ptM + ptP + ptN;
+  const vPts = ptT + ptS + ptOrder + ptM + ptP + ptN;
   // JCBカードW月間合算ポイント計算（200円毎2pt=1.0%、切り捨て）＋優待店ボーナス
   const ptJ = Math.floor(oJ/200) * 2;
   const jcb = ptJ + jcbBonus;
   const total = vPts + vCouponPts + pp + rk + sbi + ov + jcb;
-  return{txs,vPts,pp,rk,sbi,ov,miscByType,vCouponPts,jcb,ptJ,jcbBonus,total,oT,oM,oP,oN,oJ,ptT,ptM,ptP,ptN};
+  return{txs,vPts,pp,rk,sbi,ov,miscByType,vCouponPts,jcb,ptJ,jcbBonus,total,oT,oM,oP,oN,oS,oOrder,oJ,ptT,ptS,ptOrder,ptM,ptP,ptN};
 }
 
 // チャージ払いのチャージ元（ボーナス側）ポイントを計算する。明細行としては存在しないため、
@@ -2743,6 +2763,7 @@ function load(){
       S.catMinors = cfg.catMinors && Object.keys(cfg.catMinors).length ? cfg.catMinors : S.catMinors;
       S.darkMode        = cfg.darkMode        || false;
       if(cfg.pointSettings) S.pointSettings  = cfg.pointSettings;
+      if(S.pointSettings.sevenElevenRate==null) S.pointSettings.sevenElevenRate=2.5;
       if(cfg.customCats)    S.customCats      = cfg.customCats;
       if(cfg.catColors)     S.catColors       = cfg.catColors;
       if(cfg.methodColors)  S.methodColors    = cfg.methodColors;
@@ -3611,6 +3632,15 @@ function openPtBreakdownModal(){
     byLabel[label].methods.push({method,note,isType});
   }
   addEntry('Vポイント', pc.vPts+pc.vCouponPts, '三井住友カード(Olive)', '三井住友カード(Olive)・月間合算＋U25特約＋Vクーポン', false);
+  // Vポイントのみ、実際のOlive明細名に合わせた内訳を保持しておく（後で展開表示する）
+  const vSubItems=[
+    {label:'コンビニ・飲食店 スマホのタッチ決済Olive', pt:pc.ptT},
+    {label:`セブン-イレブン スマホのタッチ決済+${S.pointSettings.sevenElevenRate.toFixed(1)}%Olive`, pt:pc.ptS},
+    {label:'コンビニ・飲食店 モバイルオーダーOlive', pt:pc.ptOrder},
+    {label:'リワードアップU25ご利用特典Olive', pt:pc.ptM+pc.ptP},
+    {label:'通常のお支払いOlive', pt:pc.ptN},
+    {label:'Vクーポン加算分Olive', pt:pc.vCouponPts}
+  ].filter(x=>x.pt>0);
   addEntry('PayPayポイント', pc.pp, 'PayPayクレジット', 'PayPayカード・都度計算', false);
   addEntry('楽天ポイント', pc.rk, '楽天カード', '楽天カード・都度計算', false);
   addEntry('dポイント', pc.sbi, '住信SBI - デビット', '住信SBI - デビット・都度計算(基本0.8%)', false);
@@ -3636,7 +3666,7 @@ function openPtBreakdownModal(){
             :getMethodLogoHtml(r.methods[0].method,{size:20,brandSize:11});
         const noteText=r.merged?`統合: ${r.methods.map(m=>m.method).join(' + ')}`:r.methods[0].note;
         return `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${r.label==='Vポイント'?'':'border-bottom:1px solid var(--border);'}">
         <div style="display:flex;align-items:center;gap:8px;">${icon}
           <div>
             <div style="font-size:12px;font-weight:700;color:var(--text);">${r.label}</div>
@@ -3644,7 +3674,15 @@ function openPtBreakdownModal(){
           </div>
         </div>
         <span style="font-size:13px;font-weight:800;color:var(--primary);font-family:monospace;">${r.pt.toLocaleString()} pt</span>
-      </div>`;}).join('')}
+      </div>
+      ${r.label==='Vポイント'&&vSubItems.length?`
+      <div style="display:flex;flex-direction:column;gap:0;margin:0 0 4px 28px;padding-bottom:6px;border-bottom:1px solid var(--border);">
+        ${vSubItems.map(s=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+          <span style="font-size:10.5px;color:var(--text2);">${s.label}</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text2);font-family:monospace;">${s.pt.toLocaleString()} pt</span>
+        </div>`).join('')}
+      </div>`:''}`;}).join('')}
       <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:2px;">
         <span style="font-size:12.5px;font-weight:700;color:var(--text);">合計</span>
         <span style="font-size:16px;font-weight:800;color:var(--primary);font-family:monospace;">${pc.total.toLocaleString()} pt</span>
@@ -3685,6 +3723,7 @@ function renderStats(){
   renderFixedCosts();
   setText('ui-vprog-rate',`+${S.pointSettings.vProgramRate.toFixed(1)}%`);
   setText('ui-vtotal-rate',`${(0.5+S.pointSettings.vProgramRate).toFixed(1)}%`);
+  setText('ui-seven-rate',`+${S.pointSettings.sevenElevenRate.toFixed(1)}%`);
 
   // 立替バナー
   const kt=S.summary.totalKaetate||0;
@@ -5574,6 +5613,8 @@ function openAddModal(){
   if(rateInputA) rateInputA.value='';
   const vcInputA=document.getElementById('tx-vcoupon');
   if(vcInputA) vcInputA.value='';
+  const moElA=document.getElementById('tx-mobile-order');
+  if(moElA) moElA.checked=false;
   const scratchElR=document.getElementById('tx-scratch');
   if(scratchElR) scratchElR.value='';
   const memoElA=document.getElementById('tx-memo');
@@ -5607,6 +5648,8 @@ function openEditModal(key){
   // スクラッチくじ復元
   const scratchEl2=document.getElementById('tx-scratch');
   if(scratchEl2) scratchEl2.value=t.scratchGrade||'';
+  const moElE=document.getElementById('tx-mobile-order');
+  if(moElE) moElE.checked=!!t.mobileOrder;
   onMethodChange();
   const rateInputE=document.getElementById('tx-rate-override');
   if(rateInputE) rateInputE.value=(t.pointRateOverride!=null)?t.pointRateOverride:'';
@@ -5759,9 +5802,18 @@ function updateOliveTxInfo(){
   const noteEl=document.getElementById('tx-olive-target-note');
   if(!noteEl) return;
   if(method!=='三井住友カード(Olive)'){ noteEl.style.display='none'; return; }
+  const moEl=document.getElementById('tx-mobile-order');
   const shopEl=document.getElementById('tx-shop');
-  const matched=isVTarget(shopEl?shopEl.value:'');
-  if(matched){
+  const shop=shopEl?shopEl.value:'';
+  if(moEl&&moEl.checked){
+    const rate=(0.5+S.pointSettings.vProgramRate).toFixed(1);
+    noteEl.style.display='block';
+    noteEl.textContent=`⚡ モバイルオーダー（タッチ決済と同じ還元率・総還元率${rate}%）`;
+  }else if(isSeven(shop)){
+    const rate=(0.5+S.pointSettings.sevenElevenRate).toFixed(1);
+    noteEl.style.display='block';
+    noteEl.textContent=`⚡ セブン-イレブン特約ボーナス適用中（総還元率${rate}%）`;
+  }else if(isVTarget(shop)){
     const rate=(0.5+S.pointSettings.vProgramRate).toFixed(1);
     noteEl.style.display='block';
     noteEl.textContent=`⚡ 特約店ボーナス適用中（総還元率${rate}%）`;
@@ -5831,6 +5883,8 @@ function saveTxModal(){
   const vcWrap=document.getElementById('tx-vcoupon-wrap');
   const vcInput=document.getElementById('tx-vcoupon');
   const vCoupon=(vcWrap&&vcWrap.style.display!=='none'&&vcInput&&vcInput.value!=='')?parseFloat(vcInput.value):null;
+  const moEl2=document.getElementById('tx-mobile-order');
+  const mobileOrder=!!(vcWrap&&vcWrap.style.display!=='none'&&moEl2&&moEl2.checked);
 
   if(!dateRaw||!shop||isNaN(amount)||amount<=0){
     toast('日付・利用先・金額は必須です','error');return;
@@ -5857,6 +5911,7 @@ function saveTxModal(){
   if(scratchGrade) newTx.scratchGrade=scratchGrade;
   if(rateOverride!=null) newTx.pointRateOverride=rateOverride;
   if(vCoupon!=null) newTx.vCoupon=vCoupon;
+  if(mobileOrder) newTx.mobileOrder=true;
   if(memo) newTx.memo=memo;
   if(excludeFromAggregate) newTx.excludeFromAggregate=true;
   // JCBカードW 新規入会キャンペーン：スマホ決済チェック（欄が表示されている＝期間内の場合のみ判定）
@@ -6903,6 +6958,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // スライダー
   const sl=$('slider-vprog');if(sl)sl.value=S.pointSettings.vProgramRate;
+  const sl2=$('slider-seven');if(sl2)sl2.value=S.pointSettings.sevenElevenRate;
 
   renderAll();
   switchTab('dashboard');
@@ -6940,6 +6996,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // Vポイントスライダー
   $('slider-vprog').addEventListener('input',function(){S.pointSettings.vProgramRate=parseFloat(this.value);recalc();save();renderAll();});
+  $('slider-seven').addEventListener('input',function(){S.pointSettings.sevenElevenRate=parseFloat(this.value);recalc();save();renderAll();});
 
   // 予算変更
   $('btn-edit-budget').addEventListener('click', openBudgetModal);
