@@ -1290,6 +1290,15 @@ header{padding-top:var(--sat);}
     </div>
     <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;">
 
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;">
+          <input id="budget-month-only" type="checkbox" style="width:16px;height:16px;accent-color:var(--primary);">
+          <span id="budget-modal-month-label">今月</span>だけ変更する
+        </label>
+        <button id="budget-month-clear-btn" onclick="clearMonthBudgetOverride()" style="display:none;font-size:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text2);cursor:pointer;">この月の設定を解除</button>
+      </div>
+      <div id="budget-modal-base-hint" style="font-size:9px;color:var(--text3);margin-top:-10px;"></div>
+
       <div id="budget-modal-total">
         <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">月間予算合計</label>
         <div style="display:flex;gap:8px;align-items:center;">
@@ -1740,8 +1749,19 @@ function getKeySpent(key){
   if(isFoodMinorKey(key)) return (S.foodBreakdown&&S.foodBreakdown[key])||0;
   return (S.categories&&S.categories[key])||0;
 }
-function getKeyBudget(key){
-  return (S.catBudgets&&S.catBudgets[key])||0;
+function budgetMonthKey(y,m){return `${y}-${String(m).padStart(2,'0')}`;}
+// 月ごとの予算上書き(S.monthlyBudgets[YYYY-MM]={total,cat})があればそちらを、無ければ基本予算(S.budgetLimit/S.catBudgets)を返す
+function getEffectiveBudgetLimit(y,m){
+  const ov=S.monthlyBudgets&&S.monthlyBudgets[budgetMonthKey(y,m)];
+  return (ov&&ov.total!=null)?ov.total:S.budgetLimit;
+}
+function getEffectiveCatBudgets(y,m){
+  const ov=S.monthlyBudgets&&S.monthlyBudgets[budgetMonthKey(y,m)];
+  return (ov&&ov.cat)?ov.cat:(S.catBudgets||{});
+}
+function getKeyBudget(key,y,m){
+  y=y||S.viewYear; m=m||S.viewMonth;
+  return (getEffectiveCatBudgets(y,m)[key])||0;
 }
 function getKeyColor(key){
   if(isFoodMinorKey(key)) return getCatColor('食費');
@@ -1807,6 +1827,7 @@ const INIT={
   budgetLimit:10000,
   budgetMode:'total',   // 'total' | 'category'
   catBudgets:{},        // カテゴリ名(または食費内訳キー) → 予算額(0=未設定)
+  monthlyBudgets:{},    // "YYYY-MM" → {total, cat:{...}} 月ごとの予算上書き(未設定の月は基本予算を使用)
   pinnedCats:["昼食（大学）"], // ホーム画面に大きく表示するカテゴリ/内訳キー
   schoolDays:{},        // "YYYY/MM/DD" -> true（登校日として設定した日。昼食（大学）の使用可能額計算に使用）
   fixedCostAutoLog:{}, // 固定費自動生成: 'itemId_YYYY-MM' -> true（その月に自動生成済みかの記録）
@@ -2674,6 +2695,7 @@ function saveSettings(){
       budgetLimit:S.budgetLimit,
       budgetMode:S.budgetMode||'total',
       catBudgets:S.catBudgets||{},
+      monthlyBudgets:S.monthlyBudgets||{},
       pinnedCats:S.pinnedCats||[],
       schoolDays:S.schoolDays||{},
       fixedCostAutoLog:S.fixedCostAutoLog||{},
@@ -2755,6 +2777,7 @@ function load(){
       S.budgetLimit     = cfg.budgetLimit     || S.budgetLimit;
       S.budgetMode      = cfg.budgetMode      || 'total';
       S.catBudgets      = cfg.catBudgets      || {};
+      S.monthlyBudgets  = cfg.monthlyBudgets  || {};
       S.pinnedCats      = cfg.pinnedCats      || ["昼食（大学）"];
       S.schoolDays      = cfg.schoolDays      || {};
       S.fixedCostAutoLog = cfg.fixedCostAutoLog || {};
@@ -3511,13 +3534,14 @@ async function downloadPDF(){
     let by=imgY+chartH+10;
 
     // 予算進捗（テキスト表）
-    const pct=S.budgetLimit>0?Math.min(exp/S.budgetLimit*100,100):0;
-    const over=exp>S.budgetLimit;
+    const effBudget=getEffectiveBudgetLimit(y,m);
+    const pct=effBudget>0?Math.min(exp/effBudget*100,100):0;
+    const over=exp>effBudget;
     by=sectionTitle('予算進捗',by);
     doc.autoTable({
       startY:by, margin:{left:MX,right:MX},
       head:[['項目','支出','予算','達成率']],
-      body:[['全体', `¥${exp.toLocaleString()}`, `¥${S.budgetLimit.toLocaleString()}`, `${Math.round(pct)}%${over?'（超過）':''}`]],
+      body:[['全体', `¥${exp.toLocaleString()}`, `¥${effBudget.toLocaleString()}`, `${Math.round(pct)}%${over?'（超過）':''}`]],
       styles:{font:'MPLUS1p',fontSize:9.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:3},
       headStyles:{fillColor:'#e9edf0',textColor:C.ink,fontStyle:'bold'},
       columnStyles:{1:{halign:'right'},2:{halign:'right'},3:{halign:'right',textColor:over?C.red:C.green,fontStyle:'bold'}},
@@ -3745,15 +3769,16 @@ function renderStats(){
 // ============================================================
 function renderBudgetCard(){
   const exp = S.summary.totalExpense;
-  const pct = S.budgetLimit>0 ? Math.min((exp/S.budgetLimit)*100,100) : 0;
+  const lim = getEffectiveBudgetLimit(S.viewYear,S.viewMonth);
+  const pct = lim>0 ? Math.min((exp/lim)*100,100) : 0;
   setText('ui-expense',`¥${exp.toLocaleString()}`);
-  setText('ui-budget-lim',`¥${S.budgetLimit.toLocaleString()}`);
+  setText('ui-budget-lim',`¥${lim.toLocaleString()}`);
   const bar=$('ui-budget-bar');if(bar)bar.style.width=pct.toFixed(1)+'%';
   setText('ui-b-spent',`支出: ¥${exp.toLocaleString()}`);
-  setText('ui-b-remain',`残り: ¥${Math.max(S.budgetLimit-exp,0).toLocaleString()}`);
+  setText('ui-b-remain',`残り: ¥${Math.max(lim-exp,0).toLocaleString()}`);
 
   const dailyRow=$('ui-daily-allowance-row');
-  const daily=calcDailyAllowance(exp,S.budgetLimit);
+  const daily=calcDailyAllowance(exp,lim);
   if(dailyRow){
     dailyRow.style.display = daily ? 'flex' : 'none';
     if(daily){
@@ -4708,8 +4733,18 @@ function deleteFixedCost(){
 
 
 function openBudgetModal(){
+  const key=budgetMonthKey(S.viewYear,S.viewMonth);
+  const ov=S.monthlyBudgets&&S.monthlyBudgets[key];
   const inp=$('budget-total-input');
-  if(inp) inp.value=S.budgetLimit;
+  if(inp) inp.value=getEffectiveBudgetLimit(S.viewYear,S.viewMonth);
+  const moChk=$('budget-month-only');
+  if(moChk) moChk.checked=!!ov;
+  const label=$('budget-modal-month-label');
+  if(label) label.textContent=`${S.viewYear}年${S.viewMonth}月`;
+  const baseHint=$('budget-modal-base-hint');
+  if(baseHint) baseHint.textContent=`基本予算（他の月に適用される値）: ¥${S.budgetLimit.toLocaleString()}${ov?'　※この月は上書き設定中':''}`;
+  const clearBtn=$('budget-month-clear-btn');
+  if(clearBtn) clearBtn.style.display=ov?'inline-flex':'none';
   buildCatBudgetInputs();
   showModal('budget-modal-overlay');
 }
@@ -4742,14 +4777,13 @@ function buildCatBudgetInputs(){
 function saveBudgetModal(){
   const v=parseInt(($('budget-total-input')||{value:'0'}).value);
   if(isNaN(v)||v<0){toast('正しい金額を入力してください','error');return;}
-  S.budgetLimit=v;
 
-  if(!S.catBudgets) S.catBudgets={};
+  const catVals={};
   const inputs=document.querySelectorAll('#budget-cat-inputs input[data-cat]');
   inputs.forEach(inp=>{
     const key=inp.getAttribute('data-cat');
     const bv=parseInt(inp.value)||0;
-    S.catBudgets[key]=Math.max(0,bv);
+    catVals[key]=Math.max(0,bv);
   });
 
   const checks=document.querySelectorAll('#budget-cat-inputs input[data-pin]');
@@ -4757,10 +4791,30 @@ function saveBudgetModal(){
   checks.forEach(c=>{ if(c.checked) pinned.push(c.getAttribute('data-pin')); });
   S.pinnedCats=pinned;
 
+  const monthOnly=$('budget-month-only') && $('budget-month-only').checked;
+  if(monthOnly){
+    if(!S.monthlyBudgets) S.monthlyBudgets={};
+    S.monthlyBudgets[budgetMonthKey(S.viewYear,S.viewMonth)]={total:v, cat:catVals};
+  }else{
+    S.budgetLimit=v;
+    if(!S.catBudgets) S.catBudgets={};
+    S.catBudgets=catVals;
+  }
+
   save();
   hideModal('budget-modal-overlay');
   renderBudgetCard();
-  toast('予算を保存しました！','success');
+  toast(monthOnly?`${S.viewMonth}月だけの予算として保存しました！`:'予算を保存しました！','success');
+}
+
+function clearMonthBudgetOverride(){
+  const key=budgetMonthKey(S.viewYear,S.viewMonth);
+  if(!S.monthlyBudgets || !S.monthlyBudgets[key]) return;
+  delete S.monthlyBudgets[key];
+  save();
+  openBudgetModal();
+  renderBudgetCard();
+  toast('この月の予算設定を解除し、基本予算に戻しました','success');
 }
 
 
@@ -5212,7 +5266,7 @@ function renderGemini(){
   const el=$('gemini-prompt');if(!el)return;
   const pc=calcAllPts();
   let catStr='';CATS.forEach(c=>{if((S.categories[c]||0)>0)catStr+=`- ${c}: ¥${S.categories[c].toLocaleString()}\n`;});
-  el.value=`私は学生です。${S.viewYear}年${S.viewMonth}月の家計簿データとポイント獲得状況について、改善点と効果的なアドバイスをお願いします。\n\n### 📊 家計の状況\n- 生活費予算: ¥${S.budgetLimit.toLocaleString()}\n- 収入合計: ¥${S.summary.totalIncome.toLocaleString()}\n- 支出合計: ¥${S.summary.totalExpense.toLocaleString()}\n- 収支結果: ${S.summary.netBalance>=0?'+':''}¥${S.summary.netBalance.toLocaleString()}\n\n### 🏷️ カテゴリ別支出\n${catStr||'（データなし）'}\n### 🪙 ポイント還元シミュレーション\n- 総獲得ポイント: ${pc.total} pt\n  * Vポイント(月間合算＋U25特約): ${pc.vPts} pt\n  * PayPayポイント(都度計算): ${pc.pp} pt\n\n### 🧐 相談事項\n1. 今の支払い方法でポイントをさらに最大化するアドバイスをください。\n2. 楽天モバイルをOliveで払った場合のメリットを教えてください。\n3. ¥${S.budgetLimit.toLocaleString()}予算内でつみたてNISAに回す現実的な貯蓄ステップを教えてください。`;
+  el.value=`私は学生です。${S.viewYear}年${S.viewMonth}月の家計簿データとポイント獲得状況について、改善点と効果的なアドバイスをお願いします。\n\n### 📊 家計の状況\n- 生活費予算: ¥${getEffectiveBudgetLimit(S.viewYear,S.viewMonth).toLocaleString()}\n- 収入合計: ¥${S.summary.totalIncome.toLocaleString()}\n- 支出合計: ¥${S.summary.totalExpense.toLocaleString()}\n- 収支結果: ${S.summary.netBalance>=0?'+':''}¥${S.summary.netBalance.toLocaleString()}\n\n### 🏷️ カテゴリ別支出\n${catStr||'（データなし）'}\n### 🪙 ポイント還元シミュレーション\n- 総獲得ポイント: ${pc.total} pt\n  * Vポイント(月間合算＋U25特約): ${pc.vPts} pt\n  * PayPayポイント(都度計算): ${pc.pp} pt\n\n### 🧐 相談事項\n1. 今の支払い方法でポイントをさらに最大化するアドバイスをください。\n2. 楽天モバイルをOliveで払った場合のメリットを教えてください。\n3. ¥${getEffectiveBudgetLimit(S.viewYear,S.viewMonth).toLocaleString()}予算内でつみたてNISAに回す現実的な貯蓄ステップを教えてください。`;
 }
 
 // ============================================================
