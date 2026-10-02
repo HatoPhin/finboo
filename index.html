@@ -472,11 +472,14 @@ header{padding-top:var(--sat);}
         <div style="font-size:10px;color:#94a3b8;margin-top:2px;">還元率: <span id="ui-avg-rate" style="font-weight:700;color:#bbf7d0;">0.0%</span></div>
       </div>
     </div>
-    <div class="card p-4 flex flex-col" style="min-height:120px;">
+    <div id="budget-card-wrap" class="card p-4 flex flex-col" style="min-height:120px;transition:background .3s;">
       <!-- ヘッダー行 -->
       <div class="flex items-center justify-between" style="margin-bottom:10px;">
         <span style="font-size:11px;font-weight:600;color:var(--text3);">今月の予算</span>
-        <button id="btn-edit-budget" style="font-size:10px;color:var(--primary);font-weight:600;background:none;border:none;cursor:pointer;padding:0;">編集</button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span id="ui-budget-status-badge" style="display:none;font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;"></span>
+          <button id="btn-edit-budget" style="font-size:10px;color:var(--primary);font-weight:600;background:none;border:none;cursor:pointer;padding:0;">編集</button>
+        </div>
       </div>
 
       <div class="flex flex-col justify-between flex-1">
@@ -650,7 +653,7 @@ header{padding-top:var(--sat);}
         </div>
         <div class="space-y-1.5">
           <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">🍙 セブン-イレブン特約加算</span><span id="ui-seven-rate" style="font-weight:700;color:var(--primary);">+2.5%</span></div>
-          <input id="slider-seven" type="range" min="0" max="15" step="0.5" value="2.5" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
+          <input id="slider-seven" type="range" min="0" max="15" step="0.5" value="9.5" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
           <div style="font-size:9px;color:var(--text3);">セブン-イレブンのみ独自の加算率（上の特約店とは別枠）</div>
         </div>
         <div class="pt-2 space-y-2" style="border-top:1px solid var(--border);">
@@ -1763,6 +1766,14 @@ function getKeyBudget(key,y,m){
   y=y||S.viewYear; m=m||S.viewMonth;
   return (getEffectiveCatBudgets(y,m)[key])||0;
 }
+// 予算に対する現在の状態(超過/注意/通常)を判定する共通ヘルパー
+function budgetVisualState(spent,budget){
+  if(!(budget>0)) return{level:'none',color:null};
+  const ratio=spent/budget;
+  if(ratio>1) return{level:'over',color:'var(--red)'};
+  if(ratio>=0.8) return{level:'warn',color:'#f59e0b'};
+  return{level:'ok',color:null};
+}
 function getKeyColor(key){
   if(isFoodMinorKey(key)) return getCatColor('食費');
   return getCatColor(key);
@@ -1828,6 +1839,8 @@ const INIT={
   budgetMode:'total',   // 'total' | 'category'
   catBudgets:{},        // カテゴリ名(または食費内訳キー) → 予算額(0=未設定)
   monthlyBudgets:{},    // "YYYY-MM" → {total, cat:{...}} 月ごとの予算上書き(未設定の月は基本予算を使用)
+  budgetOverToastLog:{}, // "YYYY-MM" → true。予算超過トーストを月に1回だけ出すためのログ
+  budgetOverToastShown:{}, // "YYYY-MM" → true。予算超過トーストをその月にもう表示したかどうか(1ヶ月1回のみ)
   pinnedCats:["昼食（大学）"], // ホーム画面に大きく表示するカテゴリ/内訳キー
   schoolDays:{},        // "YYYY/MM/DD" -> true（登校日として設定した日。昼食（大学）の使用可能額計算に使用）
   fixedCostAutoLog:{}, // 固定費自動生成: 'itemId_YYYY-MM' -> true（その月に自動生成済みかの記録）
@@ -1844,7 +1857,7 @@ const INIT={
   darkMode:false,
   pointSettings:{
     vProgramRate:8.0,
-    sevenElevenRate:2.5,
+    sevenElevenRate:9.5,
     vTargetShops:["セブン","セブンイレブン","マクドナルド","マック","ローソン","ファミリーマート","ファミマ","サイゼリヤ","ドトール"],
     mobileKeywords:["povo","uq","uq mobile","au","linemo","docomo","softbank","y!mobile","ahamo","lineモバイル","rakuten","楽天モバイル"]
   },
@@ -2701,6 +2714,7 @@ function saveSettings(){
       budgetMode:S.budgetMode||'total',
       catBudgets:S.catBudgets||{},
       monthlyBudgets:S.monthlyBudgets||{},
+      budgetOverToastLog:S.budgetOverToastLog||{},
       pinnedCats:S.pinnedCats||[],
       schoolDays:S.schoolDays||{},
       fixedCostAutoLog:S.fixedCostAutoLog||{},
@@ -2783,6 +2797,7 @@ function load(){
       S.budgetMode      = cfg.budgetMode      || 'total';
       S.catBudgets      = cfg.catBudgets      || {};
       S.monthlyBudgets  = cfg.monthlyBudgets  || {};
+      S.budgetOverToastLog = cfg.budgetOverToastLog || {};
       S.pinnedCats      = cfg.pinnedCats      || ["昼食（大学）"];
       S.schoolDays      = cfg.schoolDays      || {};
       S.fixedCostAutoLog = cfg.fixedCostAutoLog || {};
@@ -2791,7 +2806,9 @@ function load(){
       S.catMinors = cfg.catMinors && Object.keys(cfg.catMinors).length ? cfg.catMinors : S.catMinors;
       S.darkMode        = cfg.darkMode        || false;
       if(cfg.pointSettings) S.pointSettings  = cfg.pointSettings;
-      if(S.pointSettings.sevenElevenRate==null) S.pointSettings.sevenElevenRate=2.5;
+      if(S.pointSettings.sevenElevenRate==null) S.pointSettings.sevenElevenRate=9.5;
+      // 以前のデフォルト値が誤っており(2.5%→合計3%)、未編集のまま保存されていたケースを正しい値(9.5%→合計10%)に自動修正
+      if(S.pointSettings.sevenElevenRate===2.5) S.pointSettings.sevenElevenRate=9.5;
       if(cfg.customCats)    S.customCats      = cfg.customCats;
       if(cfg.catColors)     S.catColors       = cfg.catColors;
       if(cfg.methodColors)  S.methodColors    = cfg.methodColors;
@@ -3266,10 +3283,10 @@ function recalc(){
     if((t.categoryMinor||'').includes('昼食（大学）'))univ+=t.amount;
   });
 
-  // 立替回収（収入カテゴリ）の集計
-  S.transactions.forEach(t=>{
-    if(isKaetateRecovery(t)) recoveredKaetate+=t.amount;
-  });
+  // ※ 収入カテゴリ「立替回収」の取引は通常の収入としてtotalIncに既に計上済みのため、
+  // ここでrecoveredKaetateに二重加算しない（以前は加算していたため収支結果が過大な黒字になるバグがあった）。
+  // recoveredKaetateは「立替の回収済みフラグ」をトグルした分（元の立替支出は集計除外されているため
+  // 戻ってきた現金を収支結果に反映するために別途加算が必要）のみを対象とする。
 
   const realExp = totalExp - totalPoint; // ポイント払いを除いた実質支出
 
@@ -3773,15 +3790,55 @@ function renderStats(){
 // ============================================================
 // 予算カード描画（全体予算 + 1日あたりの目安）
 // ============================================================
+function budgetTier(rawPct){ return rawPct>=100?'over':rawPct>=80?'warn':'ok'; }
+
 function renderBudgetCard(){
   const exp = S.summary.totalExpense;
   const lim = getEffectiveBudgetLimit(S.viewYear,S.viewMonth);
-  const pct = lim>0 ? Math.min((exp/lim)*100,100) : 0;
+  const rawPct = lim>0 ? (exp/lim)*100 : 0;
+  const pct = Math.min(rawPct,100);
+  const tier = lim>0 ? budgetTier(rawPct) : 'ok';
   setText('ui-expense',`¥${exp.toLocaleString()}`);
   setText('ui-budget-lim',`¥${lim.toLocaleString()}`);
-  const bar=$('ui-budget-bar');if(bar)bar.style.width=pct.toFixed(1)+'%';
+
+  const bar=$('ui-budget-bar');
+  if(bar){
+    bar.style.width=pct.toFixed(1)+'%';
+    bar.style.background = tier==='over'
+      ? 'repeating-linear-gradient(45deg,var(--red),var(--red) 6px,#b91c1c 6px,#b91c1c 12px)'
+      : tier==='warn' ? 'var(--amber)'
+      : 'linear-gradient(90deg,var(--primary),var(--red))';
+  }
+  const wrap=$('budget-card-wrap');
+  if(wrap) wrap.style.background = tier==='over' ? 'var(--red-light)' : tier==='warn' ? 'var(--amber-light)' : '';
+  const badge=$('ui-budget-status-badge');
+  if(badge){
+    if(tier==='over'){ badge.style.display='inline-block'; badge.textContent='⚠️ 超過'; badge.style.color='var(--red)'; badge.style.background='var(--red-light)'; }
+    else if(tier==='warn'){ badge.style.display='inline-block'; badge.textContent='⚠️ 注意'; badge.style.color='var(--amber)'; badge.style.background='var(--amber-light)'; }
+    else badge.style.display='none';
+  }
   setText('ui-b-spent',`支出: ¥${exp.toLocaleString()}`);
-  setText('ui-b-remain',`残り: ¥${Math.max(lim-exp,0).toLocaleString()}`);
+  const remainEl=$('ui-b-remain');
+  if(remainEl){
+    if(tier==='over'){
+      remainEl.textContent=`超過: ¥${(exp-lim).toLocaleString()}`;
+      remainEl.style.color='var(--red)'; remainEl.style.fontWeight='700';
+    }else{
+      remainEl.textContent=`残り: ¥${Math.max(lim-exp,0).toLocaleString()}`;
+      remainEl.style.color=''; remainEl.style.fontWeight='';
+    }
+  }
+
+  // 予算超過を月に1度だけトースト通知（同じ月で再度超過を検知しても再表示しない）
+  if(tier==='over'){
+    const tKey=budgetMonthKey(S.viewYear,S.viewMonth);
+    if(!S.budgetOverToastLog) S.budgetOverToastLog={};
+    if(!S.budgetOverToastLog[tKey]){
+      S.budgetOverToastLog[tKey]=true;
+      save();
+      toast(`⚠️ ${S.viewMonth}月の予算を超過しました（超過額: ¥${(exp-lim).toLocaleString()}）`,'error');
+    }
+  }
 
   const dailyRow=$('ui-daily-allowance-row');
   const daily=calcDailyAllowance(exp,lim);
@@ -3815,24 +3872,29 @@ function renderCatComparison(){
     const spent  = getKeySpent(key);
     const budget = getKeyBudget(key);
     const color  = getKeyColor(key);
-    const pct    = budget>0 ? Math.min((spent/budget)*100,100) : 0;
-    const over   = budget>0 && spent>budget;
+    const rawPct = budget>0 ? (spent/budget)*100 : 0;
+    const pct    = Math.min(rawPct,100);
+    const tier   = budget>0 ? budgetTier(rawPct) : 'ok';
+    const over   = tier==='over';
+    const barColor = tier==='over'?'var(--red)':tier==='warn'?'var(--amber)':color;
+    const amtColor = tier==='over'?'var(--red)':tier==='warn'?'var(--amber)':'var(--text)';
     const daily  = calcDailyAllowance(spent,budget,key);
 
     const row=document.createElement('div');
-    row.style.cssText='padding:12px;border-radius:12px;background:var(--card2);';
+    row.style.cssText=`padding:12px;border-radius:12px;background:${tier==='over'?'var(--red-light)':tier==='warn'?'var(--amber-light)':'var(--card2)'};`;
     row.innerHTML=`
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:6px;min-width:0;">
           <span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>
           <span style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${key}</span>
+          ${tier==='over'?'<span style="font-size:9px;font-weight:700;color:var(--red);">⚠️超過</span>':tier==='warn'?'<span style="font-size:9px;font-weight:700;color:var(--amber);">⚠️注意</span>':''}
         </div>
-        <span style="font-size:13px;font-family:monospace;font-weight:700;color:${over?'var(--red)':'var(--text)'};white-space:nowrap;flex-shrink:0;margin-left:6px;">
+        <span style="font-size:13px;font-family:monospace;font-weight:700;color:${amtColor};white-space:nowrap;flex-shrink:0;margin-left:6px;">
           ¥${spent.toLocaleString()} / ${budget>0?'¥'+budget.toLocaleString():'未設定'}
         </span>
       </div>
       <div style="width:100%;background:var(--border);border-radius:99px;height:6px;overflow:hidden;">
-        <div style="height:100%;border-radius:99px;width:${pct.toFixed(1)}%;background:${over?'var(--red)':color};transition:width .4s;"></div>
+        <div style="height:100%;border-radius:99px;width:${pct.toFixed(1)}%;background:${barColor};transition:width .4s;"></div>
       </div>
       ${daily?`<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text3);">
         <span>残り${daily.daysLeft}${key==='昼食（大学）'?'登校日':'日'} / 1日あたり</span>
@@ -3849,8 +3911,11 @@ function renderCatComparison(){
     const budget = getKeyBudget(key);
     if(spent===0 && budget===0) return; // データも予算もないものは省略
     const color  = getKeyColor(key);
-    const pct    = budget>0 ? Math.min((spent/budget)*100,100) : 0;
-    const over   = budget>0 && spent>budget;
+    const rawPct = budget>0 ? (spent/budget)*100 : 0;
+    const pct    = Math.min(rawPct,100);
+    const tier   = budget>0 ? budgetTier(rawPct) : 'ok';
+    const barColor = tier==='over'?'var(--red)':tier==='warn'?'var(--amber)':color;
+    const amtColor = tier==='over'?'var(--red)':tier==='warn'?'var(--amber)':'var(--text)';
 
     const row=document.createElement('div');
     row.style.cssText='padding:5px 0;';
@@ -3859,13 +3924,14 @@ function renderCatComparison(){
         <div style="display:flex;align-items:center;gap:5px;min-width:0;">
           <span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block;"></span>
           <span style="font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">${key}</span>
+          ${tier==='over'?'<span style="font-size:8px;font-weight:700;color:var(--red);">⚠️</span>':tier==='warn'?'<span style="font-size:8px;font-weight:700;color:var(--amber);">⚠️</span>':''}
         </div>
-        <span style="font-size:10px;font-family:monospace;font-weight:700;color:${over?'var(--red)':'var(--text)'};white-space:nowrap;flex-shrink:0;margin-left:4px;">
+        <span style="font-size:10px;font-family:monospace;font-weight:700;color:${amtColor};white-space:nowrap;flex-shrink:0;margin-left:4px;">
           ¥${spent.toLocaleString()} / ${budget>0?'¥'+budget.toLocaleString():'未設定'}
         </span>
       </div>
       <div style="width:100%;background:var(--card2);border-radius:99px;height:3px;overflow:hidden;">
-        <div style="height:100%;border-radius:99px;width:${pct.toFixed(1)}%;background:${over?'var(--red)':color};transition:width .4s;"></div>
+        <div style="height:100%;border-radius:99px;width:${pct.toFixed(1)}%;background:${barColor};transition:width .4s;"></div>
       </div>
     `;
     otherContainer.appendChild(row);
