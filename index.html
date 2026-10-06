@@ -323,6 +323,20 @@ header{padding-top:var(--sat);}
 #wallet-cards-list summary{list-style:none;cursor:pointer;}
 #wallet-cards-list summary::-webkit-details-marker{display:none;}
 #wallet-cards-list::-webkit-scrollbar{display:none;}
+/* ウォレットカードの矢印（Netflix風）: マウス操作環境のみ。矢印はカード内の左右余白(44px)に置くので内容に被らない */
+#wallet-cards-wrap{position:relative;}
+.wc-arrow{display:none;}
+@media (hover:hover) and (pointer:fine){
+  #wallet-cards-section.wc-multi .wc-card>div{padding-left:48px!important;padding-right:48px!important;}
+  #wallet-cards-section.wc-multi .wc-arrow{display:flex;position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;align-items:center;justify-content:center;background:color-mix(in srgb,var(--card) 88%,transparent);border:1px solid var(--border);color:var(--text2);box-shadow:0 2px 8px rgba(0,0,0,.14);cursor:pointer;padding:0;z-index:3;opacity:.55;transition:opacity .15s,transform .15s,color .15s,border-color .15s;}
+  #wallet-cards-wrap:hover .wc-arrow{opacity:1;}
+  .wc-arrow:hover{color:var(--primary);border-color:var(--primary);transform:translateY(-50%) scale(1.08);}
+  .wc-arrow:active{transform:translateY(-50%) scale(.94);}
+  .wc-arrow:focus-visible{outline:2px solid var(--primary);outline-offset:2px;opacity:1;}
+  .wc-arrow.wc-prev{left:6px;}
+  .wc-arrow.wc-next{right:6px;}
+  .wc-arrow[hidden]{display:none!important;}
+}
 
 </style>
 </head>
@@ -778,7 +792,11 @@ header{padding-top:var(--sat);}
   <!-- 請求情報（カード別） -->
   <div id="wallet-cards-section">
     <div id="wallet-cards-empty" style="display:none;font-size:11px;color:var(--text3);padding:16px;text-align:center;background:var(--card2);border-radius:14px;">引き落とし設定済みのカードがありません。「同期」タブの「引き落とし設定」から登録できます。</div>
-    <div id="wallet-cards-list" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:12px;scrollbar-width:none;"></div>
+    <div id="wallet-cards-wrap">
+      <div id="wallet-cards-list" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:12px;scrollbar-width:none;"></div>
+      <button type="button" id="wc-prev" class="wc-arrow wc-prev" aria-label="前のカードへ" hidden onclick="walletCardsScrollBy(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button type="button" id="wc-next" class="wc-arrow wc-next" aria-label="次のカードへ" hidden onclick="walletCardsScrollBy(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+    </div>
     <div id="wallet-cards-dots" style="display:none;justify-content:center;gap:6px;margin-top:10px;"></div>
   </div>
 
@@ -939,6 +957,13 @@ header{padding-top:var(--sat);}
         <button onclick="addCustomMethod()" class="btn btn-primary" style="font-size:11px;">追加</button>
       </div>
       <div style="font-size:10px;color:var(--text3);">色・ロゴをタップして変更。グラフ・明細・カレンダーに即時反映されます。還元率は三井住友(Olive)・PayPay・楽天カード・住信SBIデビット以外の決済手段に設定できます（未設定の取引にのみ適用され、取引ごとの個別入力があればそちらが優先されます）。</div>
+    </div>
+
+    <!-- 重複チェック -->
+    <div style="border-top:1px solid var(--border);padding-top:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🧹 重複チェック</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">端末間の同期で重複した可能性のある取引を探します。同じ日に同じ店・同じ金額で複数回利用することは普通にあるため、自動では何も削除せず、候補を見ながら自分で選んで削除します。</div>
+      <button onclick="openDupCheckModal()" class="btn btn-primary" style="font-size:11px;">重複の候補を探す</button>
     </div>
 
     <!-- ポイントブランド画像 -->
@@ -1242,6 +1267,21 @@ header{padding-top:var(--sat);}
       <button onclick="hideModal('card-detail-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
     </div>
     <div id="cd-modal-body" style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;"></div>
+  </div>
+</div>
+
+<!-- ==================== 重複チェックモーダル ==================== -->
+<div id="dup-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(520px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span style="font-size:14px;font-weight:700;color:var(--text);">🧹 重複チェック</span>
+      <button onclick="hideModal('dup-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div id="dup-modal-body" style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;"></div>
+    <div id="dup-modal-footer" style="padding:12px 20px;border-top:1px solid var(--border);display:none;align-items:center;justify-content:space-between;position:sticky;bottom:0;background:var(--card);">
+      <span id="dup-selected-count" style="font-size:11px;color:var(--text3);">0件選択中</span>
+      <button id="dup-delete-btn" onclick="deleteSelectedDups()" class="btn" style="font-size:11px;background:var(--red,#dc2626);color:#fff;">選択した取引を削除</button>
+    </div>
   </div>
 </div>
 
@@ -1842,6 +1882,7 @@ const INIT={
   budgetOverToastLog:{}, // "YYYY-MM" → true。予算超過トーストを月に1回だけ出すためのログ
   budgetOverToastShown:{}, // "YYYY-MM" → true。予算超過トーストをその月にもう表示したかどうか(1ヶ月1回のみ)
   pinnedCats:["昼食（大学）"], // ホーム画面に大きく表示するカテゴリ/内訳キー
+  settingsUpdatedAt:{}, // 設定グループ別の最終ユーザー編集時刻（budget/school）。端末間の設定マージで新しい方を採用するために使用
   schoolDays:{},        // "YYYY/MM/DD" -> true（登校日として設定した日。昼食（大学）の使用可能額計算に使用）
   fixedCostAutoLog:{}, // 固定費自動生成: 'itemId_YYYY-MM' -> true（その月に自動生成済みかの記録）
   cardSettings:[],       // 引き落とし設定 [{id,method,isDebit,closingDay,debitDay,holidayRule}]
@@ -1935,12 +1976,14 @@ async function sbSyncDownAll(){
     const key=txKey_monthly(parseInt(y),parseInt(m));
     (byMonth[key]=byMonth[key]||[]).push(t);
   });
+  const sbDeletedSet=new Set(getDeletedIds().map(d=>d.id)); // 端末側で削除済みのidは取り込まない（復活防止）
   Object.keys(byMonth).forEach(key=>{
     let local=[];
     try{local=JSON.parse(localStorage.getItem(key)||'[]');}catch(e){}
     const map=new Map();
     local.forEach(t=>map.set(t.id,t));
     byMonth[key].forEach(t=>{
+      if(sbDeletedSet.has(t.id))return;
       const cur=map.get(t.id);
       if(!cur||new Date(t.updatedAt||0)>=new Date(cur.updatedAt||0))map.set(t.id,t);
     });
@@ -2051,6 +2094,7 @@ function sbApplyRemoteTx(txObj, isDelete, txId){
   }else{
     const t=txObj;
     if(!t||!t.date)return;
+    if(getDeletedIds().some(d=>d.id===t.id))return; // 削除済みidは復活させない
     const cd=cleanDate(t.date); if(!cd)return;
     const [y,m]=cd.split('/').map(Number);
     const key=txKey_monthly(y,m);
@@ -2265,6 +2309,8 @@ function syncFixedCostTransactions(){
   items.forEach(f=>{
     const logKey=`${f.id}_${y}-${String(m).padStart(2,'0')}`;
     if(S.fixedCostAutoLog[logKey]) return; // 既に生成済み（後から削除されていても再生成しない）
+    // 同じ固定費の取引が既にこの月にある場合（他端末で生成・同期済みなど）は重複生成せず、ログだけ記録する
+    if(S.transactions.some(t=>t.fixedCostItemId===f.id)){ S.fixedCostAutoLog[logKey]=true; changed=true; return; }
     const day=Math.min(f.day,daysInMonth(y,m));
     const date=`${y}/${String(m).padStart(2,'0')}/${String(day).padStart(2,'0')}`;
     const newTx={
@@ -2276,7 +2322,7 @@ function syncFixedCostTransactions(){
     changed=true;
   });
 
-  if(changed){ saveSettings(); saveTx(); }
+  if(changed){ saveSettings({auto:true}); saveTx({auto:true}); }
 }
 
 
@@ -2691,6 +2737,68 @@ function calcAllPts(){
   return{txs,vPts,pp,rk,sbi,ov,miscByType,vCouponPts,jcb,ptJ,jcbBonus,total,oT,oM,oP,oN,oS,oOrder,oLounge,oJ,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN};
 }
 
+// 任意の取引リスト(例: カードの請求サイクル分)からOlive(Vポイント)の区分別ポイントを計算する。
+// calcAllPtsと同じ区分・同じ切り捨てルール(200円ブロック)。Oliveは月末締めのため、渡す取引は1暦月分を想定。
+function calcOliveBreakdown(list){
+  const OL='三井住友カード(Olive)';
+  let oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,vCouponPts=0;
+  (list||[]).forEach(t=>{
+    if(t.type==='income')return;
+    if(t.method===OL){
+      if(isOliveLounge(t.shop))oLounge+=t.amount;
+      else if(t.mobileOrder)oOrder+=t.amount;
+      else if(isSeven(t.shop))oS+=t.amount;
+      else if(isVTarget(t.shop))oT+=t.amount;
+      else if(isMobile(t.shop))oM+=t.amount;
+      else if(isPayPayShop(t.shop))oP+=t.amount;
+      else oN+=t.amount;
+      if(t.vCoupon!=null&&t.vCoupon!=='') vCouponPts+=calcPt(t).pt;
+    }
+    if(t.chargeBonusMethod===OL){
+      if(isOliveLounge(t.shop))oLounge+=t.amount;
+      else if(isSeven(t.shop))oS+=t.amount;
+      else if(isVTarget(t.shop))oT+=t.amount;
+      else if(isMobile(t.shop))oM+=t.amount;
+      else if(isPayPayShop(t.shop))oP+=t.amount;
+      else oN+=t.amount;
+    }
+  });
+  const r=(0.5+S.pointSettings.vProgramRate)/100;
+  const rs=(0.5+S.pointSettings.sevenElevenRate)/100;
+  const ptT=Math.floor(oT/200)*Math.round(200*r);
+  const ptS=Math.floor(oS/200)*Math.round(200*rs);
+  const ptOrder=Math.floor(oOrder/200)*Math.round(200*r);
+  const ptLounge=Math.floor(oLounge/200)*Math.round(200*0.10);
+  const ptM=Math.floor(oM/200)*Math.round(200*0.02);
+  const ptP=Math.floor(oP/200)*Math.round(200*0.01);
+  const ptN=Math.floor(oN/200)*1;
+  const vPts=ptT+ptS+ptOrder+ptLounge+ptM+ptP+ptN;
+  return{vPts,vCouponPts,total:vPts+vCouponPts,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN};
+}
+// Olive区分別ポイントを、実際のOlive明細名で並べた配列にする（0ptは除外）
+function oliveSubItems(b){
+  return [
+    {label:'Olive LOUNGEご利用特典Olive', pt:b.ptLounge},
+    {label:'コンビニ・飲食店 スマホのタッチ決済Olive', pt:b.ptT},
+    {label:`セブン-イレブン スマホのタッチ決済+${S.pointSettings.sevenElevenRate.toFixed(1)}%Olive`, pt:b.ptS},
+    {label:'コンビニ・飲食店 モバイルオーダーOlive', pt:b.ptOrder},
+    {label:'リワードアップU25ご利用特典Olive', pt:b.ptM+b.ptP},
+    {label:'通常のお支払いOlive', pt:b.ptN},
+    {label:'Vクーポン加算分Olive', pt:b.vCouponPts}
+  ].filter(x=>x.pt>0);
+}
+// JCBカードW: 請求サイクル(締め日基準)内の取引で「基本(200円毎2pt)＋優待店ボーナス」を計算。Oliveの区分集計とは完全に分離。
+function calcJcbCycle(list){
+  let oJ=0,bonus=0;
+  (list||[]).forEach(t=>{
+    if(t.type==='income')return;
+    if(t.method==='JCBカードW'){ oJ+=t.amount; bonus+=calcPt(t).pt; }
+    if(t.chargeBonusMethod==='JCBカードW') oJ+=t.amount;
+  });
+  const base=Math.floor(oJ/200)*2;
+  return{base,bonus,total:base+bonus};
+}
+
 // チャージ払いのチャージ元（ボーナス側）ポイントを計算する。明細行としては存在しないため、
 // 同じ金額・日付でチャージ元カードを使ったと仮定した仮想取引を作ってcalcPt()に通す
 function calcBonusPt(t){
@@ -2706,7 +2814,7 @@ function calcBonusPt(t){
 const SETTINGS_KEY='finboo_settings';
 function txKey_monthly(y,m){return`finboo_tx_${y}_${String(m).padStart(2,'0')}`;}
 
-function saveSettings(){
+function saveSettings(opts){
   try{
     const cfg={
       viewYear:S.viewYear, viewMonth:S.viewMonth,
@@ -2717,6 +2825,7 @@ function saveSettings(){
       budgetOverToastLog:S.budgetOverToastLog||{},
       pinnedCats:S.pinnedCats||[],
       schoolDays:S.schoolDays||{},
+      settingsUpdatedAt:S.settingsUpdatedAt||{},
       fixedCostAutoLog:S.fixedCostAutoLog||{},
       cardSettings:S.cardSettings||[],
       fixedCostItems:S.fixedCostItems||[],
@@ -2741,7 +2850,8 @@ function saveSettings(){
       jcbCampaign:S.jcbCampaign||null
     };
     localStorage.setItem(SETTINGS_KEY,JSON.stringify(cfg));
-    localStorage.setItem('finboo_last_local_update', new Date().toISOString());
+    // 起動時・月切替などの自動処理(opts.auto)では更新時刻を進めない（古い端末の設定が「新しい」と誤判定されるのを防ぐ）
+    if(!(opts&&opts.auto)) localStorage.setItem('finboo_last_local_update', new Date().toISOString());
     // Drive連携中は自動アップロード（debound: 1秒後。タブを閉じる際はpagehideで即時フラッシュ）
     if(typeof gdriveToken!=='undefined'&&gdriveToken){
       clearTimeout(saveSettings._driveTimer);
@@ -2755,12 +2865,18 @@ function saveSettings(){
   }catch(e){console.warn('saveSettings error:',e);}
 }
 
-function saveTx(){
+// 設定グループ(budget/school)をユーザーが編集したときに呼ぶ。端末間マージでグループ単位に新しい方を採用する。
+function touchSettingsGroup(g){
+  if(!S.settingsUpdatedAt) S.settingsUpdatedAt={};
+  S.settingsUpdatedAt[g]=new Date().toISOString();
+}
+
+function saveTx(opts){
   try{
     ensureTxIds(S.transactions);
     const key=txKey_monthly(S.viewYear,S.viewMonth);
     localStorage.setItem(key,JSON.stringify(S.transactions));
-    localStorage.setItem('finboo_last_local_update', new Date().toISOString());
+    if(!(opts&&opts.auto)) localStorage.setItem('finboo_last_local_update', new Date().toISOString());
   }catch(e){}
 }
 
@@ -2800,6 +2916,7 @@ function load(){
       S.budgetOverToastLog = cfg.budgetOverToastLog || {};
       S.pinnedCats      = cfg.pinnedCats      || ["昼食（大学）"];
       S.schoolDays      = cfg.schoolDays      || {};
+      S.settingsUpdatedAt = cfg.settingsUpdatedAt || {};
       S.fixedCostAutoLog = cfg.fixedCostAutoLog || {};
       S.cardSettings = cfg.cardSettings || [];
       S.fixedCostItems = cfg.fixedCostItems || [];
@@ -2835,12 +2952,12 @@ function load(){
 
 // 年月切り替え時: 現在月を保存して新しい月を読み込む
 function switchMonth(y,m){
-  saveTx(); // 現在の月データを保存
+  saveTx({auto:true}); // 現在の月データを保存（自動処理のため更新時刻は進めない）
   S.viewYear=y;S.viewMonth=m;
   S.transactions=loadTx(y,m);
   syncFixedCostTransactions();
   recalc();
-  saveSettings();
+  saveSettings({auto:true});
   if(typeof selectedTxIds!=='undefined') selectedTxIds.clear();
   renderAll();
   buildSelectors();
@@ -3679,15 +3796,7 @@ function openPtBreakdownModal(){
   }
   addEntry('Vポイント', pc.vPts+pc.vCouponPts, '三井住友カード(Olive)', '三井住友カード(Olive)・月間合算＋U25特約＋Vクーポン', false);
   // Vポイントのみ、実際のOlive明細名に合わせた内訳を保持しておく（後で展開表示する）
-  const vSubItems=[
-    {label:'Olive LOUNGEご利用特典Olive', pt:pc.ptLounge},
-    {label:'コンビニ・飲食店 スマホのタッチ決済Olive', pt:pc.ptT},
-    {label:`セブン-イレブン スマホのタッチ決済+${S.pointSettings.sevenElevenRate.toFixed(1)}%Olive`, pt:pc.ptS},
-    {label:'コンビニ・飲食店 モバイルオーダーOlive', pt:pc.ptOrder},
-    {label:'リワードアップU25ご利用特典Olive', pt:pc.ptM+pc.ptP},
-    {label:'通常のお支払いOlive', pt:pc.ptN},
-    {label:'Vクーポン加算分Olive', pt:pc.vCouponPts}
-  ].filter(x=>x.pt>0);
+  const vSubItems=oliveSubItems(pc);
   addEntry('PayPayポイント', pc.pp, 'PayPayクレジット', 'PayPayカード・都度計算', false);
   addEntry('楽天ポイント', pc.rk, '楽天カード', '楽天カード・都度計算', false);
   addEntry('dポイント', pc.sbi, '住信SBI - デビット', '住信SBI - デビット・都度計算(基本0.8%)', false);
@@ -4308,9 +4417,11 @@ function renderWalletCards(){
   if(settings.length===0){
     if(empty)empty.style.display='block';
     if(dots)dots.style.display='none';
+    const secE=$('wallet-cards-section'); if(secE) secE.classList.remove('wc-multi');
     return;
   }
   if(empty)empty.style.display='none';
+  const sec=$('wallet-cards-section'); if(sec) sec.classList.toggle('wc-multi',settings.length>1);
   const today=new Date();
   settings.forEach((cs,idx)=>{
     const {debitDate,total}=getThisMonthDebitInfo(cs);
@@ -4327,7 +4438,7 @@ function renderWalletCards(){
     const statusBadge=status?`<span style="display:inline-block;margin-top:6px;padding:2px 10px;font-size:10.5px;font-weight:700;color:#fff;background:${statusMeta[status].color};border-radius:20px;">${statusMeta[status].label}</span>`:'';
     const availableAmt=(cs.limit!=null)?(cs.limit-total-usedThisMonth):null;
     const card=document.createElement('div');
-    card.className='card';
+    card.className='card wc-card';
     card.dataset.walletIdx=idx;
     card.style.cssText='flex:0 0 100%;scroll-snap-align:start;overflow:hidden;cursor:pointer;';
     card.onclick=()=>openCardDetailModal(cs.id);
@@ -4359,34 +4470,50 @@ function renderWalletCards(){
     list.appendChild(card);
   });
 
-  // ドットインジケーター（2枚以上のときのみ表示）
-  if(dots){
-    if(settings.length>1){
+  // ドットインジケーター・矢印（2枚以上のときのみ表示）
+  const updateWalletNav=()=>{
+    const w=list.clientWidth||1;
+    const active=Math.min(settings.length-1,Math.max(0,Math.round(list.scrollLeft/w)));
+    if(dots) dots.querySelectorAll('[data-dot-idx]').forEach(d=>{
+      d.style.background=(parseInt(d.dataset.dotIdx)===active)?'var(--primary)':'var(--border)';
+    });
+    const pv=$('wc-prev'), nx=$('wc-next');
+    if(pv) pv.hidden=!(settings.length>1&&active>0);
+    if(nx) nx.hidden=!(settings.length>1&&active<settings.length-1);
+  };
+  walletCardsUpdateNav=updateWalletNav;
+  if(settings.length>1){
+    if(dots){
       dots.style.display='flex';
       settings.forEach((cs,idx)=>{
         const dot=document.createElement('span');
         dot.dataset.dotIdx=idx;
-        dot.style.cssText=`width:6px;height:6px;border-radius:50%;background:${idx===0?'var(--primary)':'var(--border)'};transition:background .15s;`;
+        dot.style.cssText=`width:6px;height:6px;border-radius:50%;background:${idx===0?'var(--primary)':'var(--border)'};transition:background .15s;cursor:pointer;`;
+        dot.onclick=()=>list.scrollTo({left:idx*list.clientWidth,behavior:'smooth'});
         dots.appendChild(dot);
       });
-      // スクロール位置に応じてドットを更新
-      let scrollTimer=null;
-      list.onscroll=()=>{
-        if(scrollTimer) clearTimeout(scrollTimer);
-        scrollTimer=setTimeout(()=>{
-          const w=list.clientWidth||1;
-          const active=Math.round(list.scrollLeft/w);
-          dots.querySelectorAll('[data-dot-idx]').forEach(d=>{
-            d.style.background=(parseInt(d.dataset.dotIdx)===active)?'var(--primary)':'var(--border)';
-          });
-        },60);
-      };
-    }else{
-      dots.style.display='none';
-      list.onscroll=null;
     }
+    let scrollTimer=null;
+    list.onscroll=()=>{
+      if(scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer=setTimeout(updateWalletNav,60);
+    };
+    updateWalletNav();
+  }else{
+    if(dots) dots.style.display='none';
+    list.onscroll=null;
+    const pv=$('wc-prev'), nx=$('wc-next');
+    if(pv) pv.hidden=true; if(nx) nx.hidden=true;
   }
 }
+
+// ウォレットカードの矢印: 1枚分ずつなめらかにスクロール（既存のスナップ動作は維持）
+let walletCardsUpdateNav=null;
+function walletCardsScrollBy(dir){
+  const list=$('wallet-cards-list'); if(!list) return;
+  list.scrollBy({left:dir*list.clientWidth,behavior:'smooth'});
+}
+window.addEventListener('resize',()=>{ if(walletCardsUpdateNav) walletCardsUpdateNav(); });
 
 // ウォレットタブ: 取引明細一覧の開閉
 function toggleTxListExpand(){
@@ -4424,6 +4551,7 @@ function openCardDetailModal(csId){
   const e=new Date(end); e.setHours(23,59,59,999);
   const pointByMethod={}; linkedMethods.forEach(mtd=>pointByMethod[mtd]=0);
   const txInCycle=[];
+  const cycleAllTxs=[]; // サイクル内の全取引（Olive/JCBのポイント再計算用）
   let chargeBonusAmt=0; // このカードがチャージ元として請求額に含まれている分（明細には出ないが合計には計上）
   let cy=s.getFullYear(), cmo=s.getMonth()+1;
   while(cy<e.getFullYear()||(cy===e.getFullYear()&&cmo<=e.getMonth()+1)){
@@ -4433,6 +4561,7 @@ function openCardDetailModal(csId){
       const td=new Date(t.date);
       if(td<s||td>e) return;
       if(t.type==='income') return;
+      cycleAllTxs.push(t);
       // 紐づけ先の決済手段そのものでの利用分
       if(linkedMethods.includes(t.method)){
         const {pt}=calcPt(t);
@@ -4448,6 +4577,23 @@ function openCardDetailModal(csId){
     cmo++; if(cmo>12){cmo=1;cy++;}
   }
   txInCycle.sort((a,b)=>(a.date||'')<(b.date||'')?1:-1);
+  // Olive: 月末締めのため、サイクル内の取引を区分別に月合算して画像のようなVポイント内訳にする
+  // JCBカードW: 請求サイクル内で基本(200円毎2pt)＋優待店ボーナスを合算（Oliveとは別処理）
+  const pointSub={};
+  const OLIVE_M='三井住友カード(Olive)';
+  if(linkedMethods.includes(OLIVE_M)){
+    const b=calcOliveBreakdown(cycleAllTxs);
+    pointByMethod[OLIVE_M]=b.total;
+    pointSub[OLIVE_M]={name:'Vポイント',items:oliveSubItems(b)};
+  }
+  if(linkedMethods.includes('JCBカードW')){
+    const jc=calcJcbCycle(cycleAllTxs);
+    pointByMethod['JCBカードW']=jc.total;
+    pointSub['JCBカードW']={name:'J-POINT',items:[
+      {label:'通常のお支払い(200円毎2pt)', pt:jc.base},
+      {label:'パートナー優待店ボーナス', pt:jc.bonus}
+    ].filter(x=>x.pt>0)};
+  }
   const totalPts=Object.values(pointByMethod).reduce((a,b)=>a+b,0);
 
   // JCBカードW 新規入会キャンペーン進捗（対象期間はカードの請求サイクルと無関係のため、別途全月を横断して集計）
@@ -4522,11 +4668,21 @@ function openCardDetailModal(csId){
     <div>
       <div style="font-size:11.5px;font-weight:700;color:var(--text2);margin-bottom:8px;">決済手段ごとの獲得ポイント</div>
       <div style="display:flex;flex-direction:column;gap:6px;">
-        ${linkedMethods.map(mtd=>`
+        ${linkedMethods.map(mtd=>{
+          const sub=pointSub[mtd];
+          return `
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="display:flex;align-items:center;gap:6px;">${getMethodLogoHtml(mtd,{size:18,brandSize:10})}<span style="font-size:11.5px;color:var(--text2);">${mtd}</span></div>
+          <div style="display:flex;align-items:center;gap:6px;">${getMethodLogoHtml(mtd,{size:18,brandSize:10})}<span style="font-size:11.5px;color:var(--text2);">${mtd}${sub?`<span style="font-size:9.5px;color:var(--text3);margin-left:6px;">${sub.name}</span>`:''}</span></div>
           <span style="font-size:12px;font-weight:700;color:var(--primary);font-family:monospace;">${(pointByMethod[mtd]||0).toLocaleString()} pt</span>
-        </div>`).join('')}
+        </div>
+        ${sub&&sub.items.length?`
+        <div style="display:flex;flex-direction:column;margin:0 0 2px 24px;">
+          ${sub.items.map(x=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;gap:8px;">
+            <span style="font-size:10.5px;color:var(--text2);">${x.label}</span>
+            <span style="font-size:11px;font-weight:700;color:var(--text2);font-family:monospace;white-space:nowrap;">${x.pt.toLocaleString()} pt</span>
+          </div>`).join('')}
+        </div>`:''}`;}).join('')}
         <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);margin-top:2px;">
           <span style="font-size:11.5px;font-weight:700;color:var(--text);">合計</span>
           <span style="font-size:13px;font-weight:800;color:var(--primary);font-family:monospace;">${totalPts.toLocaleString()} pt</span>
@@ -4546,6 +4702,7 @@ function openCardDetailModal(csId){
             <div style="flex:1;min-width:0;">
               <div style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.shop||'利用先不明'}</div>
               <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}</div>
+              ${(t.method==='三井住友カード(Olive)'||t.method==='JCBカードW')?`<div style="font-size:9px;color:var(--text3);margin-top:1px;">${calcPt(t).rule}</div>`:''}
             </div>
             <span style="font-size:12.5px;font-weight:700;color:var(--text);font-family:monospace;white-space:nowrap;">¥${(t.amount||0).toLocaleString()}</span>
           </div>`;
@@ -4862,6 +5019,7 @@ function saveBudgetModal(){
   const pinned=[];
   checks.forEach(c=>{ if(c.checked) pinned.push(c.getAttribute('data-pin')); });
   S.pinnedCats=pinned;
+  touchSettingsGroup('budget');
 
   const monthOnly=$('budget-month-only') && $('budget-month-only').checked;
   if(monthOnly){
@@ -4883,6 +5041,7 @@ function clearMonthBudgetOverride(){
   const key=budgetMonthKey(S.viewYear,S.viewMonth);
   if(!S.monthlyBudgets || !S.monthlyBudgets[key]) return;
   delete S.monthlyBudgets[key];
+  touchSettingsGroup('budget');
   save();
   openBudgetModal();
   renderBudgetCard();
@@ -4950,6 +5109,7 @@ function toggleSchoolDay(){
   if(!S.schoolDays) S.schoolDays={};
   if(S.schoolDays[selDate]) delete S.schoolDays[selDate];
   else S.schoolDays[selDate]=true;
+  touchSettingsGroup('school');
   saveSettings();
   renderCalendar();
   selectDay(selDate);
@@ -5423,24 +5583,38 @@ let gdriveFileId = null;
 let gdriveUserName = '';
 
 // トークン初期化（ページロード時）→ 連携済みなら自動ダウンロード
+// 起動時の最初のダウンロード＋マージが終わるまで、自動アップロードを保留する（古い端末が古い内容でクラウドを上書きしないため）
+function stableStringify(v){
+  if(Array.isArray(v)) return '['+v.map(stableStringify).join(',')+']';
+  if(v&&typeof v==='object') return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableStringify(v[k])).join(',')+'}';
+  return JSON.stringify(v);
+}
+let gdriveInitDone=false;
+let gdrivePendingUpload=false;
 async function gdriveInit(){
   const saved = localStorage.getItem('finboo_gdrive_token');
   const savedId = localStorage.getItem('finboo_gdrive_fileid');
   const savedName = localStorage.getItem('finboo_gdrive_username');
-  if(saved){
-    gdriveToken=saved; gdriveFileId=savedId||null; gdriveUserName=savedName||'';
-    updateGdriveUI(true);
-    // 起動時に自動でDriveから最新データを取得
-    try{
-      await gdriveDownload();
-    }catch(e){
-      // トークン期限切れなどの場合は連携解除
-      console.warn('Drive自動同期失敗:', e.message);
-      if(e.message&&(e.message.includes('401')||e.message.includes('403'))){
-        updateGdriveUI(false);
-        toast('Drive連携の有効期限が切れました。再度ログインしてください。','error');
+  try{
+    if(saved){
+      gdriveToken=saved; gdriveFileId=savedId||null; gdriveUserName=savedName||'';
+      updateGdriveUI(true);
+      // 起動時に自動でDriveから最新データを取得
+      try{
+        await gdriveDownload();
+      }catch(e){
+        // トークン期限切れなどの場合は連携解除
+        console.warn('Drive自動同期失敗:', e.message);
+        if(e.message&&(e.message.includes('401')||e.message.includes('403'))){
+          updateGdriveUI(false);
+          toast('Drive連携の有効期限が切れました。再度ログインしてください。','error');
+        }
       }
     }
+  }finally{
+    gdriveInitDone=true;
+    // 起動中に保留された保存があれば、マージ済みの内容で改めてアップロード
+    if(gdrivePendingUpload && gdriveToken){ gdrivePendingUpload=false; gdriveUpload(); }
   }
 }
 
@@ -5505,7 +5679,10 @@ async function gdriveFindFile(){
 }
 
 // Drive → ローカルにダウンロード（読み込み）
-async function gdriveDownload(){
+async function gdriveDownload(opts){
+  const silent=!!(opts&&opts.silent), skipUpload=!!(opts&&opts.skipUpload);
+  const setProgress=(...a)=>{ if(!silent) window.setProgress(...a); };
+  const toast=(...a)=>{ if(!silent) window.toast(...a); };
   if(!gdriveToken){ toast('先にDrive連携してください', 'error'); return; }
   try{
     setProgress(10, 'Driveからデータを取得中...', 'Drive検索中...');
@@ -5536,6 +5713,7 @@ async function gdriveDownload(){
       const k=localStorage.key(i);
       if(k&&k.startsWith('finboo_tx_')) allMonthKeys.add(k.replace('finboo_tx_',''));
     }
+    const mergedByMonth={};
     allMonthKeys.forEach(monthKey=>{
       const cloudTxs=(cloudData.months&&cloudData.months[monthKey])||[];
       let localTxs=[];
@@ -5558,27 +5736,66 @@ async function gdriveDownload(){
       // 削除済み（tombstone）idはどちらにあっても除外
       const merged=Array.from(map.values()).filter(t=>!deletedIdSet.has(t.id));
       if(merged.length!==localTxs.length) mergedSomething=true;
-      localStorage.setItem('finboo_tx_'+monthKey, JSON.stringify(merged));
+      mergedByMonth[monthKey]=merged;
+    });
+    // 同じidが複数の月に存在する場合（日付編集で月をまたいだ後に端末間で同期した等）は、updatedAtが新しい1件だけ残す
+    const bestById=new Map();
+    Object.keys(mergedByMonth).forEach(mk=>{
+      mergedByMonth[mk].forEach(t=>{
+        const cur=bestById.get(t.id);
+        if(!cur||new Date(t.updatedAt||0)>new Date(cur.tx.updatedAt||0)) bestById.set(t.id,{mk,tx:t});
+      });
+    });
+    Object.keys(mergedByMonth).forEach(mk=>{
+      const before=mergedByMonth[mk];
+      const after=before.filter(t=>{ const b=bestById.get(t.id); return b&&b.mk===mk&&b.tx===t; });
+      if(after.length!==before.length) mergedSomething=true;
+      localStorage.setItem('finboo_tx_'+mk, JSON.stringify(after));
     });
 
-    // 設定: より新しく更新された方を採用する（ローカルの最終更新時刻とクラウドのupdatedAtを比較）
+    // 設定のマージ:
+    //  ・全体は「ユーザーが最後に編集した時刻」が新しい方を土台にする（起動時の自動処理では時刻を進めない）
+    //  ・予算(budget)・登校日(school)はグループ別の編集時刻で新しい方を採用（片方だけ古い端末で巻き戻らない）
+    //  ・固定費の生成ログ・予算超過トーストログは記録が増えるだけなので和集合
     if(cloudData.settings){
+      const cloudCfg=cloudData.settings;
+      let localCfg={};
+      try{ localCfg=JSON.parse(localStorage.getItem('finboo_settings')||'{}'); }catch(e){}
       const localUpdatedAt=localStorage.getItem('finboo_last_local_update');
       const cloudUpdatedAt=cloudData.updatedAt;
       const cloudIsNewer=!localUpdatedAt||(cloudUpdatedAt&&new Date(cloudUpdatedAt)>new Date(localUpdatedAt));
-      if(cloudIsNewer){
-        localStorage.setItem('finboo_settings', JSON.stringify(cloudData.settings));
-      }
+      const merged=Object.assign({}, cloudIsNewer?cloudCfg:localCfg);
+      const lMeta=localCfg.settingsUpdatedAt||{}, cMeta=cloudCfg.settingsUpdatedAt||{};
+      const groups={
+        budget:['budgetLimit','budgetMode','catBudgets','monthlyBudgets','pinnedCats'],
+        school:['schoolDays']
+      };
+      const meta=Object.assign({}, cMeta);
+      Object.keys(groups).forEach(g=>{
+        const lt=new Date(lMeta[g]||0).getTime(), ct=new Date(cMeta[g]||0).getTime();
+        if(lt===0&&ct===0) return; // 旧データ（時刻なし）は全体ルールに従う
+        const src=(lt>ct)?localCfg:cloudCfg;
+        groups[g].forEach(k=>{ if(src[k]!==undefined) merged[k]=src[k]; });
+        meta[g]=new Date(Math.max(lt,ct)).toISOString();
+      });
+      merged.settingsUpdatedAt=meta;
+      ['fixedCostAutoLog','budgetOverToastLog'].forEach(k=>{
+        merged[k]=Object.assign({}, cloudCfg[k]||{}, localCfg[k]||{});
+      });
+      if(stableStringify(merged)!==stableStringify(localCfg)) mergedSomething=true;
+      localStorage.setItem('finboo_settings', JSON.stringify(merged));
     }
-    // 再読み込み
-    load();
-    buildSelectors();
-    renderAll();
+    // 再読み込み（静かな同期では、差分があったときだけ再描画する）
+    if(!silent||mergedSomething){
+      load();
+      buildSelectors();
+      renderAll();
+    }
     setProgress(100, 'ダウンロード完了！', `✅ Driveから同期しました`);
     saveSyncTime();
     toast('Driveからデータを読み込みました！', 'success');
     // マージにより差分が生じた場合は、統合後の内容をクラウドにも反映しておく
-    if(mergedSomething){ await gdriveUpload(); }
+    if(mergedSomething&&!skipUpload){ await gdriveUpload({merged:true}); }
   }catch(e){
     setProgress(0, 'エラー', '❌ '+e.message);
     toast('Drive読み込みエラー: '+e.message, 'error');
@@ -5587,9 +5804,15 @@ async function gdriveDownload(){
 }
 
 // ローカル → Drive にアップロード（書き込み）
-async function gdriveUpload(){
+async function gdriveUpload(opts){
   if(!gdriveToken){ toast('先にDrive連携してください', 'error'); return; }
+  // 起動時の最初のダウンロード＋マージが終わるまでは保留（古い内容でクラウドを上書きしない）
+  if(!gdriveInitDone){ gdrivePendingUpload=true; return; }
   try{
+    // 上書きの前に必ずクラウドの最新を取り込んでマージする（他端末の変更・削除記録を消さないため）
+    if(!(opts&&opts.merged)){
+      await gdriveDownload({silent:true, skipUpload:true});
+    }
     setProgress(10, 'Driveにアップロード中...', 'データを収集中...');
 
     // 全月データをlocalStorageから収集
@@ -7060,6 +7283,161 @@ ${catSummary||'（データなし）'}
   }finally{
     if(btn)btn.disabled=false;
   }
+}
+
+// ============================================================
+// 重複チェック（候補の提示のみ。削除は必ずユーザーが選んで実行する）
+// 同じ日・同じ店・同じ金額の取引は正当に複数回あり得るため、自動選択や自動削除は一切しない。
+// ============================================================
+let dupGroups=[]; // [{kind,title,note,items:[{id,monthKey,tx}]}]
+function dupIgnoreList(){ try{ return JSON.parse(localStorage.getItem('finboo_dup_ignore')||'[]'); }catch(e){ return []; } }
+function dupAllMonths(){
+  const out={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('finboo_tx_')){
+      const mk=k.replace('finboo_tx_','');
+      try{ out[mk]=JSON.parse(localStorage.getItem(k)||'[]'); }catch(e){}
+    }
+  }
+  return out;
+}
+function dupFindGroups(){
+  const months=dupAllMonths();
+  const ignore=new Set(dupIgnoreList());
+  const all=[];
+  Object.keys(months).forEach(mk=>months[mk].forEach(t=>{ if(t&&t.id) all.push({id:t.id,monthKey:mk,tx:t}); }));
+  const groups=[];
+  const covered=[]; // 確実性の高いグループに含まれたid集合（同内容グループの重複表示を避ける）
+  // A: 同じidが複数の月に存在（日付編集で月をまたいだ後の同期など）
+  const byId=new Map();
+  all.forEach(e=>{ (byId.get(e.id)||byId.set(e.id,[]).get(e.id)).push(e); });
+  byId.forEach((arr,id)=>{
+    if(arr.length>1){
+      const gk='A|'+id;
+      if(ignore.has(gk))return;
+      groups.push({key:gk,kind:'A',title:'同じ取引が複数の月に存在',note:'同じ取引idが別々の月のデータに入っています。新しい方が正しい可能性が高いです。',items:arr});
+      covered.push(new Set(arr.map(e=>e.id+'@'+e.monthKey)));
+    }
+  });
+  // B: 同じ固定費から同じ月に複数生成
+  const byFc=new Map();
+  all.forEach(e=>{ if(e.tx.fixedCostItemId){ const k=e.monthKey+'|'+e.tx.fixedCostItemId; (byFc.get(k)||byFc.set(k,[]).get(k)).push(e); } });
+  byFc.forEach((arr,k)=>{
+    if(arr.length>1){
+      const gk='B|'+k;
+      if(ignore.has(gk))return;
+      groups.push({key:gk,kind:'B',title:'同じ固定費が同月に複数登録',note:'固定費の自動登録は1か月に1件のはずです。金額が違う場合は、現在の固定費設定に合う方を残してください。',items:arr});
+      covered.push(new Set(arr.map(e=>e.id+'@'+e.monthKey)));
+    }
+  });
+  // C: 日付・利用先・金額・決済手段・種別がすべて同じ（正当な複数回利用の可能性あり）
+  const byContent=new Map();
+  all.forEach(e=>{ const k=txKey(e.tx); (byContent.get(k)||byContent.set(k,[]).get(k)).push(e); });
+  byContent.forEach((arr,k)=>{
+    if(arr.length<2)return;
+    // idが同じもの(A)だけで構成されるグループは除外
+    const uniqIds=new Set(arr.map(e=>e.id));
+    if(uniqIds.size<2)return;
+    const keys=arr.map(e=>e.id+'@'+e.monthKey);
+    if(covered.some(c=>keys.every(x=>c.has(x))))return;
+    const gk='C|'+k;
+    if(ignore.has(gk))return;
+    groups.push({key:gk,kind:'C',title:'同じ日・同じ店・同じ金額の取引',note:'実際に複数回利用した可能性もあります。メモや更新日時を見て、本当に重複しているものだけを選んでください。',items:arr});
+  });
+  const order={A:0,B:1,C:2};
+  groups.sort((a,b)=>order[a.kind]-order[b.kind]||(a.items[0].tx.date<b.items[0].tx.date?1:-1));
+  return groups;
+}
+function dupEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function openDupCheckModal(){
+  dupGroups=dupFindGroups();
+  renderDupModal();
+  showModal('dup-modal-overlay');
+}
+function renderDupModal(){
+  const body=$('dup-modal-body'); const footer=$('dup-modal-footer');
+  if(!body)return;
+  if(dupGroups.length===0){
+    body.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:24px 0;">重複の候補は見つかりませんでした 🎉</div>';
+    if(footer)footer.style.display='none';
+    return;
+  }
+  const kindColor={A:'#dc2626',B:'#d97706',C:'#64748b'};
+  body.innerHTML=`<div style="font-size:10.5px;color:var(--text3);line-height:1.6;">${dupGroups.length}グループの候補があります。チェックを入れた取引だけが削除されます（初期状態ではすべて未選択）。</div>`+
+  dupGroups.map((g,gi)=>`
+    <div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--card2);">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <span style="font-size:11.5px;font-weight:700;color:var(--text);"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${kindColor[g.kind]};margin-right:6px;"></span>${g.title}（${g.items.length}件）</span>
+        <span style="display:flex;gap:6px;">
+          <button onclick="dupSelectExtras(${gi})" style="font-size:10px;font-weight:700;color:var(--primary);background:none;border:none;cursor:pointer;white-space:nowrap;">余分を選択</button>
+          <button onclick="dupIgnoreGroup(${gi})" style="font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;white-space:nowrap;">これで正しい</button>
+        </span>
+      </div>
+      <div style="font-size:9.5px;color:var(--text3);margin:4px 0 6px;line-height:1.5;">${g.note}</div>
+      ${g.items.map((e,ii)=>{
+        const t=e.tx;
+        const upd=t.updatedAt?new Date(t.updatedAt).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'-';
+        return `
+      <label style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-top:1px solid var(--border);cursor:pointer;">
+        <input type="checkbox" class="dup-chk" data-g="${gi}" data-i="${ii}" onchange="dupUpdateCount()" style="margin-top:3px;">
+        <span style="flex:1;min-width:0;">
+          <span style="display:flex;justify-content:space-between;gap:8px;"><span style="font-size:11.5px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${dupEsc(t.shop||'利用先不明')}</span><span style="font-size:11.5px;font-weight:700;font-family:monospace;color:var(--text);white-space:nowrap;">¥${(t.amount||0).toLocaleString()}</span></span>
+          <span style="display:block;font-size:9.5px;color:var(--text3);margin-top:1px;">${dupEsc(t.date)}　${dupEsc(t.method||'')}${t.source?`　[${dupEsc(t.source)}]`:''}${t.memo?`　メモ: ${dupEsc(t.memo)}`:''}</span>
+          <span style="display:block;font-size:9px;color:var(--text3);">更新 ${upd}　月データ ${dupEsc(e.monthKey)}${t.fixedCostItemId?'　固定費':''}</span>
+        </span>
+      </label>`;}).join('')}
+    </div>`).join('');
+  if(footer)footer.style.display='flex';
+  dupUpdateCount();
+}
+function dupUpdateCount(){
+  const n=document.querySelectorAll('#dup-modal-body .dup-chk:checked').length;
+  const el=$('dup-selected-count'); if(el)el.textContent=`${n}件選択中`;
+  const b=$('dup-delete-btn'); if(b){ b.disabled=n===0; b.style.opacity=n===0?'.5':'1'; }
+}
+// グループ内で1件（最も新しく更新されたもの）を残し、それ以外を選択する
+function dupSelectExtras(gi){
+  const g=dupGroups[gi]; if(!g)return;
+  let keep=0;
+  g.items.forEach((e,i)=>{ if(new Date(e.tx.updatedAt||0)>new Date(g.items[keep].tx.updatedAt||0)) keep=i; });
+  document.querySelectorAll(`#dup-modal-body .dup-chk[data-g="${gi}"]`).forEach(c=>{ c.checked=(parseInt(c.dataset.i)!==keep); });
+  dupUpdateCount();
+}
+function dupIgnoreGroup(gi){
+  const g=dupGroups[gi]; if(!g)return;
+  const list=dupIgnoreList(); list.push(g.key);
+  try{ localStorage.setItem('finboo_dup_ignore',JSON.stringify(list)); }catch(e){}
+  dupGroups.splice(gi,1);
+  renderDupModal();
+}
+function deleteSelectedDups(){
+  const picked=[];
+  document.querySelectorAll('#dup-modal-body .dup-chk:checked').forEach(c=>{
+    const g=dupGroups[parseInt(c.dataset.g)]; if(!g)return;
+    picked.push(g.items[parseInt(c.dataset.i)]);
+  });
+  if(picked.length===0)return;
+  if(!confirm(`選択した${picked.length}件の取引を削除しますか？この操作は取り消せません。`))return;
+  // 月データ単位で、(id, 月)の組み合わせだけを削除する（同じidが別の月に残る場合は、そちらを残す）
+  const byMonth={};
+  picked.forEach(e=>{ (byMonth[e.monthKey]=byMonth[e.monthKey]||new Set()).add(e.id); });
+  const viewKey=`${S.viewYear}_${String(S.viewMonth).padStart(2,'0')}`;
+  const stillExists=new Set(); // 削除後も別の月に残るid → tombstoneは付けない
+  const all=dupAllMonths();
+  Object.keys(all).forEach(mk=>all[mk].forEach(t=>{ if(!(byMonth[mk]&&byMonth[mk].has(t.id))) stillExists.add(t.id); }));
+  Object.keys(byMonth).forEach(mk=>{
+    const arr=(all[mk]||[]).filter(t=>!byMonth[mk].has(t.id));
+    try{ localStorage.setItem('finboo_tx_'+mk,JSON.stringify(arr)); }catch(e){}
+    if(mk===viewKey) S.transactions=S.transactions.filter(t=>!byMonth[mk].has(t.id));
+  });
+  const ids=[...new Set(picked.map(e=>e.id))].filter(id=>!stillExists.has(id));
+  ids.forEach(id=>addDeletedId(id)); // 他端末で復活しないようにtombstoneを記録
+  recalc();save();renderAll();renderFixedCosts();
+  if(sbUser) ids.forEach(id=>sbDeleteTransaction(id).catch(e=>console.warn('Supabase削除同期失敗:',id,e)));
+  toast(`${picked.length}件の取引を削除しました`,'success');
+  dupGroups=dupFindGroups();
+  renderDupModal();
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
