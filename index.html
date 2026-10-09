@@ -142,6 +142,54 @@ body.dark{
 .tab-pane{display:none;animation:fi .22s cubic-bezier(.22,1,.36,1);}
 .tab-pane.active{display:block;}
 @keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ===== モーション（iPhone風: 素早く立ち上がり、ゆったり減速するカーブ。控えめ） ===== */
+:root{--ease-ios:cubic-bezier(.32,.72,0,1);--ease-out:cubic-bezier(.22,1,.36,1);}
+@media (prefers-reduced-motion:no-preference){
+  /* 押下フィードバック: タップ可能な要素を押すと軽く沈み、離すとなめらかに戻る */
+  [style*="cursor:pointer"]:not(.btn):not(.tab-b):not(.wc-card):not(.wc-arrow),
+  .card[onclick],.wc-card{transition:transform .32s var(--ease-ios),box-shadow .2s ease;}
+  [style*="cursor:pointer"]:not(.btn):not(.tab-b):not(.wc-card):not(.wc-arrow):active{transform:scale(.98);transition-duration:.1s;}
+  .card[onclick]:active,.wc-card:active{transform:scale(.988);transition-duration:.1s;}
+  button:not(.btn):not(.tab-b):not(.wc-arrow):not([disabled]):active{transform:scale(.95);}
+  button[style*="width:100%"]:not(.btn):active{transform:scale(.99);}
+  button:not(.btn):not(.tab-b):not(.wc-arrow){transition:transform .28s var(--ease-ios);}
+  .btn{transition:opacity .15s,transform .28s var(--ease-ios);}
+  .btn:active{transform:scale(.96);transition-duration:.1s;}
+  .tab-b{transition:background-color .25s var(--ease-out),transform .3s var(--ease-ios);}
+  /* 軽い浮き上がり（マウス操作時のみ） */
+  @media (hover:hover) and (pointer:fine){
+    .card[onclick]:hover,.wc-card:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.10);}
+    .card[onclick]:active,.wc-card:active{transform:scale(.988);}
+  }
+  /* ボタンの波紋 */
+  .rip{position:absolute;border-radius:50%;background:currentColor;opacity:.18;transform:scale(0);pointer-events:none;animation:ripple .55s var(--ease-out) forwards;}
+  @keyframes ripple{to{transform:scale(1);opacity:0;}}
+  .btn{position:relative;overflow:hidden;}
+  /* モーダル: 背景フェード＋本体が下からせり上がる（iOSのシート風） */
+  [id$="-overlay"].m-open{animation:ovIn .3s ease both;}
+  [id$="-overlay"].m-open>div{animation:sheetIn .46s var(--ease-ios) both;}
+  [id$="-overlay"].m-close{animation:ovOut .22s ease both;pointer-events:none;}
+  [id$="-overlay"].m-close>div{animation:sheetOut .24s cubic-bezier(.4,0,1,1) both;}
+  @keyframes ovIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes ovOut{from{opacity:1;}to{opacity:0;}}
+  @keyframes sheetIn{from{opacity:0;transform:translateY(28px) scale(.97);}to{opacity:1;transform:none;}}
+  @keyframes sheetOut{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(18px) scale(.98);}}
+  /* トースト: 下からふわっと */
+  #toast{transition:opacity .28s ease,transform .45s var(--ease-ios)!important;}
+  #toast.t-hide{transform:translateX(-50%) translateY(10px)!important;}
+  /* 行・数値・バー */
+  @keyframes rowIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .row-in{animation:rowIn .42s var(--ease-ios) both;}
+  @keyframes barGrow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+  .bar-grow{transform-origin:left center;animation:barGrow .7s var(--ease-ios) both;}
+  @keyframes nudge{0%,100%{transform:translateX(0);}25%{transform:translateX(-3px);}60%{transform:translateX(3px);}}
+  .nudge{animation:nudge .5s var(--ease-ios) 1;}
+  /* タブ切替: 少し大きく・なめらかに */
+  .tab-pane{animation:fi .38s var(--ease-ios);}
+  /* 開閉の矢印は回転をなめらかに */
+  #tx-list-toggle-chevron{transition:transform .36s var(--ease-ios);}
+}
 .noscroll::-webkit-scrollbar{display:none;}
 .noscroll{-ms-overflow-style:none;scrollbar-width:none;}
 .cal-on{outline:2px solid var(--primary);outline-offset:-2px;background:var(--primary-light)!important;}
@@ -502,7 +550,7 @@ header{padding-top:var(--sat);}
           <span style="font-size:11px;color:var(--text3);">/ <span id="ui-budget-lim">¥10,000</span></span>
         </div>
         <div style="width:100%;background:var(--card2);border-radius:99px;height:5px;overflow:hidden;margin-top:10px;">
-          <div id="ui-budget-bar" style="height:100%;background:linear-gradient(90deg,var(--primary),var(--red));border-radius:99px;width:0%;transition:width .5s;"></div>
+          <div id="ui-budget-bar" style="height:100%;background:linear-gradient(90deg,var(--primary),var(--red));border-radius:99px;width:0%;transition:width .7s cubic-bezier(.32,.72,0,1);"></div>
         </div>
         <div class="flex justify-between mt-1.5" style="font-size:9px;color:var(--text3);">
           <span id="ui-b-spent">支出: ¥0</span>
@@ -1001,11 +1049,11 @@ header{padding-top:var(--sat);}
     <!-- JCBカードW 優待店・入会キャンペーン設定 -->
     <div style="border-top:1px solid var(--border);padding-top:20px;">
       <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">💳 JCBカードW J-POINTパートナー優待店</div>
-      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">よく使う優待店を登録しておくと、取引登録時に利用先から自動でボーナス還元率が適用されます（例: マクドナルド 10.5%）。基本還元(1.0%)との差分を自動で加算します。</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">よく使う優待店を登録しておくと、取引登録時に利用先から自動でボーナス還元率が適用されます（例: マクドナルド 11倍）。JCBのサイトに書いてある「○倍」をそのまま入力してください（1倍=0.5%で自動換算。基本2倍=1.0%を含む合計倍率）。基本還元(1.0%)との差分を自動で加算します。</div>
       <div id="jcb-partner-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         <input id="new-jcb-partner-name" type="text" placeholder="店舗名（前方一致、例: マクドナルド）" style="flex:1;min-width:140px;padding:7px 10px;font-size:11px;">
-        <input id="new-jcb-partner-rate" type="number" step="0.1" min="0" placeholder="還元率%" style="width:80px;padding:7px 10px;font-size:11px;">
+        <input id="new-jcb-partner-rate" type="number" step="0.1" min="0" placeholder="倍率（例: 21）" title="JCBのサイトに書いてある「○倍」をそのまま入力" style="width:100px;padding:7px 10px;font-size:11px;">
         <input id="new-jcb-partner-from" type="date" title="適用開始日（空欄可）" style="width:130px;padding:7px 10px;font-size:11px;">
         <button onclick="addJcbPartnerShop()" class="btn btn-primary" style="font-size:11px;">追加</button>
       </div>
@@ -1936,7 +1984,28 @@ let toastTmr=null;
 // ユーティリティ
 // ============================================================
 const $=id=>document.getElementById(id);
-function setText(id,v){const el=$(id);if(el)el.textContent=v;}
+// 金額・ポイントの主要な数値は、値が変わったときにカウントアップ/ダウンで表示する（reduced-motion時は即時）
+const COUNT_UP_IDS=new Set(['ui-expense','ui-expense2','ui-real-expense','ui-income','ui-total-pts','ui-vpts','ui-pppts']);
+function setText(id,v){
+  const el=$(id); if(!el)return;
+  v=String(v);
+  if(!COUNT_UP_IDS.has(id)||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)){ el.textContent=v; return; }
+  const m=v.match(/^([^\d-]*)(-?[\d,]+)([^\d]*)$/);
+  if(!m){ el.textContent=v; el._cv=undefined; return; }
+  const target=parseInt(m[2].replace(/,/g,''),10);
+  const from=(typeof el._cv==='number')?el._cv:null;
+  cancelAnimationFrame(el._cr);
+  el._cv=target;
+  if(from===null||from===target||Math.abs(target-from)<1){ el.textContent=v; return; }
+  const t0=performance.now(), dur=520;
+  const step=now=>{
+    const k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,4);
+    const cur=Math.round(from+(target-from)*e);
+    el.textContent=m[1]+cur.toLocaleString()+m[3];
+    if(k<1) el._cr=requestAnimationFrame(step); else el.textContent=v;
+  };
+  el._cr=requestAnimationFrame(step);
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 
 // ==================== Supabase 新システム（テスト中） ====================
@@ -2532,6 +2601,10 @@ function renderCampaignSummary(){
 }
 
 // JCBカードW優待店データの旧形式({id,name,rate})を新形式({id,name,rates:[{id,rate,from}]})へ移行
+// JCBのサイト表記「○倍」(1倍=200円で1pt=0.5%、カードWの基本2倍を含む合計倍率)と総還元率%の換算。保存は従来どおり総還元率%。
+function jcbMultToRate(m){ return Math.round(m*0.5*1000)/1000; }
+function jcbRateToMult(r){ return Math.round(r/0.5*100)/100; }
+function jcbRateLabel(r){ return `${jcbRateToMult(r)}倍(${r}%)`; }
 function migrateJcbPartnerShops(list){
   return (list||[]).map(p=>{
     if(p&&Array.isArray(p.rates))return p; // 既に新形式
@@ -2597,7 +2670,7 @@ function calcPt(t){
       jLabel=`都度指定(${t.pointRateOverride}%)`;
     }else if(jMatched){
       jBonusRate=Math.max(0, jMatched.rate-1.0);
-      jLabel=`${jMatched.name}優待(${jMatched.rate}%)`;
+      jLabel=`${jMatched.name}優待(${jcbRateLabel(jMatched.rate)})`;
     }
     if(jLabel){
       const jBonusPt=Math.floor(t.amount*jBonusRate/100);
@@ -3922,6 +3995,8 @@ function renderBudgetCard(){
   if(wrap) wrap.style.background = tier==='over' ? 'var(--red-light)' : tier==='warn' ? 'var(--amber-light)' : '';
   const badge=$('ui-budget-status-badge');
   if(badge){
+    if(tier!==renderBudgetCard._lastTier&&(tier==='over'||tier==='warn')){ badge.classList.remove('nudge'); void badge.offsetWidth; badge.classList.add('nudge'); }
+    renderBudgetCard._lastTier=tier;
     if(tier==='over'){ badge.style.display='inline-block'; badge.textContent='⚠️ 超過'; badge.style.color='var(--red)'; badge.style.background='var(--red-light)'; }
     else if(tier==='warn'){ badge.style.display='inline-block'; badge.textContent='⚠️ 注意'; badge.style.color='var(--amber)'; badge.style.background='var(--amber-light)'; }
     else badge.style.display='none';
@@ -5507,6 +5582,15 @@ function renderGemini(){
 function switchTab(id){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   const pane=$('pane-'+id);if(pane)pane.classList.add('active');
+  // 先頭の数ブロックを順に、少しずつ遅らせてせり上げる（控えめ・iPhone風のカーブ）
+  if(pane&&!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)){
+    [...pane.children].slice(0,7).forEach((k,i)=>{
+      k.classList.remove('row-in'); void k.offsetWidth;
+      k.style.animationDelay=(i*40)+'ms';
+      k.classList.add('row-in');
+      k.addEventListener('animationend',function h(ev){ if(ev.target!==k)return; k.classList.remove('row-in'); k.style.animationDelay=''; k.removeEventListener('animationend',h); });
+    });
+  }
   document.querySelectorAll('.tab-t').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.tab===id);
   });
@@ -5563,9 +5647,10 @@ function toast(msg,type='info'){
   const el=$('toast');if(!el)return;
   $('toast-msg').textContent=msg;
   el.style.background=type==='success'?'#059669':type==='error'?'#dc2626':'#1e293b';
+  el.classList.remove('t-hide');
   el.style.opacity='1';
   if(toastTmr)clearTimeout(toastTmr);
-  toastTmr=setTimeout(()=>{el.style.opacity='0';},3000);
+  toastTmr=setTimeout(()=>{el.style.opacity='0';el.classList.add('t-hide');},3000);
 }
 
 // ============================================================
@@ -6193,7 +6278,7 @@ function updateJcbTxInfo(){
     const matched=hasManual?null:matchJcbPartnerShop(shopEl?shopEl.value:'');
     if(matched){
       noteEl.style.display='block';
-      noteEl.textContent=`⚡ ${matched.name} 優待店ボーナス適用中（総還元率${matched.rate}%）`;
+      noteEl.textContent=`⚡ ${matched.name} 優待店ボーナス適用中（${jcbRateLabel(matched.rate)}・総還元率）`;
     }else{
       noteEl.style.display='none';
     }
@@ -6417,11 +6502,22 @@ function toggleRecovered(key){
 
 function showModal(id){
   const el=document.getElementById(id);
-  if(el){el.style.display='flex';}
+  if(el){
+    clearTimeout(el._closeTimer);
+    el.classList.remove('m-close');
+    el.style.display='flex';
+    // 開くたびにアニメーションを再生（reduced-motion時はCSS側で無効）
+    el.classList.remove('m-open'); void el.offsetWidth; el.classList.add('m-open');
+  }
 }
 function hideModal(id){
   const el=document.getElementById(id);
-  if(el){el.style.display='none';}
+  if(!el)return;
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce||el.style.display==='none'){ el.style.display='none'; el.classList.remove('m-open','m-close'); return; }
+  el.classList.remove('m-open'); void el.offsetWidth; el.classList.add('m-close');
+  clearTimeout(el._closeTimer);
+  el._closeTimer=setTimeout(()=>{ el.style.display='none'; el.classList.remove('m-close'); },230);
 }
 
 // ============================================================
@@ -6761,7 +6857,7 @@ function renderJcbPartnerList(){
     row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 10px;';
     row.innerHTML=`
       <div style="flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
-      <div style="font-size:11px;font-weight:700;color:var(--primary);flex-shrink:0;">${eff?eff.rate+'%':'(現在適用なし)'}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--primary);flex-shrink:0;">${eff?jcbRateLabel(eff.rate):'(現在適用なし)'}</div>
       <button onclick="toggleJcbPartnerEdit('${p.id}')" style="font-size:10px;background:var(--card);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;cursor:pointer;flex-shrink:0;">編集</button>
       <button onclick="removeJcbPartnerShop('${p.id}')" style="font-size:10px;background:var(--red-light);color:var(--red);border:1px solid var(--border);border-radius:6px;padding:3px 7px;cursor:pointer;flex-shrink:0;">削除</button>
     `;
@@ -6775,7 +6871,7 @@ function renderJcbPartnerList(){
         rRow.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;';
         rRow.innerHTML=`
           <div style="width:70px;color:var(--text2);">${r.from?r.from+'〜':'（無期限）'}</div>
-          <div style="flex:1;font-weight:700;color:var(--text);">${r.rate}%</div>
+          <div style="flex:1;font-weight:700;color:var(--text);">${jcbRateLabel(r.rate)}</div>
           <button onclick="removeJcbPartnerRate('${p.id}','${r.id}')" style="font-size:9px;background:var(--red-light);color:var(--red);border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;">削除</button>
         `;
         histWrap.appendChild(rRow);
@@ -6783,7 +6879,7 @@ function renderJcbPartnerList(){
       const addRow=document.createElement('div');
       addRow.style.cssText='display:flex;align-items:center;gap:6px;margin-top:4px;';
       addRow.innerHTML=`
-        <input id="jcb-rate-input-${p.id}" type="number" step="0.1" min="0" placeholder="還元率%" style="width:70px;padding:5px 7px;font-size:11px;">
+        <input id="jcb-rate-input-${p.id}" type="number" step="0.1" min="0" placeholder="倍率" title="サイト表記の「○倍」をそのまま入力" style="width:70px;padding:5px 7px;font-size:11px;">
         <input id="jcb-from-input-${p.id}" type="date" style="width:130px;padding:5px 7px;font-size:11px;">
         <button onclick="addJcbPartnerRate('${p.id}')" class="btn btn-primary" style="font-size:10px;padding:5px 10px;">レート追加</button>
       `;
@@ -6803,10 +6899,11 @@ function addJcbPartnerShop(){
   const nameEl=$('new-jcb-partner-name'), rateEl=$('new-jcb-partner-rate'), fromEl=$('new-jcb-partner-from');
   if(!nameEl||!rateEl)return;
   const name=nameEl.value.trim();
-  const rate=parseFloat(rateEl.value);
+  const mult=parseFloat(rateEl.value);
+  const rate=jcbMultToRate(mult);
   const from=fromEl?fromEl.value:'';
   if(!name){toast('店舗名を入力してください','error');return;}
-  if(isNaN(rate)||rate<0){toast('還元率は0以上の数値で入力してください','error');return;}
+  if(isNaN(mult)||mult<0){toast('倍率は0以上の数値で入力してください','error');return;}
   S.jcbPartnerShops=S.jcbPartnerShops||[];
   if(S.jcbPartnerShops.some(p=>p.name===name)){toast('同じ店舗名が既に登録されています','error');return;}
   S.jcbPartnerShops.push({id:uid(),name,rates:[{id:uid(),rate,from}]});
@@ -6819,9 +6916,10 @@ function addJcbPartnerShop(){
 function addJcbPartnerRate(shopId){
   const rateEl=$('jcb-rate-input-'+shopId), fromEl=$('jcb-from-input-'+shopId);
   if(!rateEl)return;
-  const rate=parseFloat(rateEl.value);
+  const mult=parseFloat(rateEl.value);
+  const rate=jcbMultToRate(mult);
   const from=fromEl?fromEl.value:'';
-  if(isNaN(rate)||rate<0){toast('還元率は0以上の数値で入力してください','error');return;}
+  if(isNaN(mult)||mult<0){toast('倍率は0以上の数値で入力してください','error');return;}
   const p=(S.jcbPartnerShops||[]).find(p=>p.id===shopId);
   if(!p)return;
   p.rates=p.rates||[];
@@ -7439,6 +7537,17 @@ function deleteSelectedDups(){
   dupGroups=dupFindGroups();
   renderDupModal();
 }
+
+// ボタンの波紋（押した位置から広がる）
+document.addEventListener('pointerdown',e=>{
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const b=e.target.closest&&e.target.closest('.btn');
+  if(!b||b.disabled)return;
+  const r=b.getBoundingClientRect(), d=Math.max(r.width,r.height)*2;
+  const sp=document.createElement('span'); sp.className='rip';
+  sp.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px;`;
+  b.appendChild(sp); setTimeout(()=>sp.remove(),600);
+},{passive:true});
 
 document.addEventListener('DOMContentLoaded',()=>{
   load();
