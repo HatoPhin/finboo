@@ -144,19 +144,26 @@ body.dark{
 @keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
 
 /* ===== モーション（iPhone風: 素早く立ち上がり、ゆったり減速するカーブ。控えめ） ===== */
-:root{--ease-ios:cubic-bezier(.32,.72,0,1);--ease-out:cubic-bezier(.22,1,.36,1);}
+:root{--ease-ios:cubic-bezier(.32,.72,0,1);--ease-out:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.45,.64,1);}
 @media (prefers-reduced-motion:no-preference){
   /* 押下フィードバック: タップ可能な要素を押すと軽く沈み、離すとなめらかに戻る */
   [style*="cursor:pointer"]:not(.btn):not(.tab-b):not(.wc-card):not(.wc-arrow),
-  .card[onclick],.wc-card{transition:transform .32s var(--ease-ios),box-shadow .2s ease;}
-  [style*="cursor:pointer"]:not(.btn):not(.tab-b):not(.wc-card):not(.wc-arrow):active{transform:scale(.98);transition-duration:.1s;}
-  .card[onclick]:active,.wc-card:active{transform:scale(.988);transition-duration:.1s;}
-  button:not(.btn):not(.tab-b):not(.wc-arrow):not([disabled]):active{transform:scale(.95);}
-  button[style*="width:100%"]:not(.btn):active{transform:scale(.99);}
-  button:not(.btn):not(.tab-b):not(.wc-arrow){transition:transform .28s var(--ease-ios);}
-  .btn{transition:opacity .15s,transform .28s var(--ease-ios);}
-  .btn:active{transform:scale(.96);transition-duration:.1s;}
-  .tab-b{transition:background-color .25s var(--ease-out),transform .3s var(--ease-ios);}
+  .card[onclick],.wc-card{transition:transform .5s var(--spring),box-shadow .25s ease;}
+  [style*="cursor:pointer"]:not(.btn):not(.tab-b):not(.wc-card):not(.wc-arrow):active{transform:scale(.95);transition-duration:.12s;transition-timing-function:var(--ease-out);}
+  .card[onclick]:active,.wc-card:active{transform:scale(.975);transition-duration:.12s;transition-timing-function:var(--ease-out);}
+  button:not(.btn):not(.tab-b):not(.wc-arrow):not([disabled]):active{transform:scale(.9);transition-duration:.12s;transition-timing-function:var(--ease-out);}
+  button[style*="width:100%"]:not(.btn):active{transform:scale(.98);}
+  button:not(.btn):not(.tab-b):not(.wc-arrow){transition:transform .5s var(--spring);}
+  .btn{transition:opacity .15s,transform .5s var(--spring);}
+  .btn:active{transform:scale(.92);transition-duration:.12s;transition-timing-function:var(--ease-out);}
+  .tab-b{transition:background-color .3s var(--ease-out),transform .5s var(--spring);}
+  .tab-b:active{transform:scale(.88);}
+  /* ナビアイコン: 選択時に弾む */
+  @keyframes navPop{0%{transform:scale(1);}35%{transform:scale(.78);}70%{transform:scale(1.18);}100%{transform:scale(1);}}
+  .nav-pop{animation:navPop .55s var(--ease-out);}
+  /* チェックボックス: チェック時に弾む */
+  @keyframes chkPop{0%{transform:scale(1);}40%{transform:scale(1.3);}100%{transform:scale(1);}}
+  input[type=checkbox]:checked,input[type=radio]:checked{animation:chkPop .4s var(--spring);}
   /* 軽い浮き上がり（マウス操作時のみ） */
   @media (hover:hover) and (pointer:fine){
     .card[onclick]:hover,.wc-card:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.10);}
@@ -167,28 +174,30 @@ body.dark{
   @keyframes ripple{to{transform:scale(1);opacity:0;}}
   .btn{position:relative;overflow:hidden;}
   /* モーダル: 背景フェード＋本体が下からせり上がる（iOSのシート風） */
-  [id$="-overlay"].m-open{animation:ovIn .3s ease both;}
-  [id$="-overlay"].m-open>div{animation:sheetIn .46s var(--ease-ios) both;}
-  [id$="-overlay"].m-close{animation:ovOut .22s ease both;pointer-events:none;}
-  [id$="-overlay"].m-close>div{animation:sheetOut .24s cubic-bezier(.4,0,1,1) both;}
-  @keyframes ovIn{from{opacity:0;}to{opacity:1;}}
+  [id$="-overlay"].m-open{animation:ovIn .4s ease both;}
+  [id$="-overlay"].m-open>div{animation:sheetIn .62s cubic-bezier(.32,.78,.18,1.04) both;}
+  [id$="-overlay"].m-close{animation:ovOut .3s ease both;pointer-events:none;}
+  [id$="-overlay"].m-close>div{animation:sheetOut .34s cubic-bezier(.4,0,.9,.4) both;}
+  @keyframes ovIn{from{opacity:0;backdrop-filter:blur(0);}to{opacity:1;}}
   @keyframes ovOut{from{opacity:1;}to{opacity:0;}}
-  @keyframes sheetIn{from{opacity:0;transform:translateY(28px) scale(.97);}to{opacity:1;transform:none;}}
-  @keyframes sheetOut{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(18px) scale(.98);}}
+  @keyframes sheetIn{from{opacity:.4;transform:translateY(55vh) scale(.96);}to{opacity:1;transform:none;}}
+  @keyframes sheetOut{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(45vh) scale(.97);}}
   /* トースト: 下からふわっと */
-  #toast{transition:opacity .28s ease,transform .45s var(--ease-ios)!important;}
-  #toast.t-hide{transform:translateX(-50%) translateY(10px)!important;}
+  #toast{transition:opacity .3s ease,transform .6s var(--spring)!important;}
+  #toast.t-hide{transform:translateX(-50%) translateY(24px) scale(.9)!important;}
   /* 行・数値・バー */
-  @keyframes rowIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
-  .row-in{animation:rowIn .42s var(--ease-ios) both;}
+  @keyframes rowIn{from{opacity:0;transform:translateY(22px) scale(.97);}to{opacity:1;transform:none;}}
+  .row-in{animation:rowIn .62s var(--spring) both;}
   @keyframes barGrow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
-  .bar-grow{transform-origin:left center;animation:barGrow .7s var(--ease-ios) both;}
-  @keyframes nudge{0%,100%{transform:translateX(0);}25%{transform:translateX(-3px);}60%{transform:translateX(3px);}}
-  .nudge{animation:nudge .5s var(--ease-ios) 1;}
+  .bar-grow{transform-origin:left center;animation:barGrow .9s var(--spring) both;}
+  @keyframes nudge{0%,100%{transform:translateX(0) scale(1);}20%{transform:translateX(-5px) scale(1.12);}45%{transform:translateX(5px) scale(1.12);}70%{transform:translateX(-3px);}}
+  .nudge{animation:nudge .6s var(--ease-out) 1;}
   /* タブ切替: 少し大きく・なめらかに */
-  .tab-pane{animation:fi .38s var(--ease-ios);}
+  main{overflow-x:clip;}
+  @keyframes tabIn{from{opacity:0;transform:translateX(calc(var(--dir,0)*36px)) translateY(10px);}to{opacity:1;transform:none;}}
+  .tab-pane{animation:tabIn .55s var(--ease-ios);}
   /* 開閉の矢印は回転をなめらかに */
-  #tx-list-toggle-chevron{transition:transform .36s var(--ease-ios);}
+  #tx-list-toggle-chevron{transition:transform .5s var(--spring);}
 }
 .noscroll::-webkit-scrollbar{display:none;}
 .noscroll{-ms-overflow-style:none;scrollbar-width:none;}
@@ -550,7 +559,7 @@ header{padding-top:var(--sat);}
           <span style="font-size:11px;color:var(--text3);">/ <span id="ui-budget-lim">¥10,000</span></span>
         </div>
         <div style="width:100%;background:var(--card2);border-radius:99px;height:5px;overflow:hidden;margin-top:10px;">
-          <div id="ui-budget-bar" style="height:100%;background:linear-gradient(90deg,var(--primary),var(--red));border-radius:99px;width:0%;transition:width .7s cubic-bezier(.32,.72,0,1);"></div>
+          <div id="ui-budget-bar" style="height:100%;background:linear-gradient(90deg,var(--primary),var(--red));border-radius:99px;width:0%;transition:width .95s cubic-bezier(.34,1.3,.64,1);"></div>
         </div>
         <div class="flex justify-between mt-1.5" style="font-size:9px;color:var(--text3);">
           <span id="ui-b-spent">支出: ¥0</span>
@@ -1997,7 +2006,7 @@ function setText(id,v){
   cancelAnimationFrame(el._cr);
   el._cv=target;
   if(from===null||from===target||Math.abs(target-from)<1){ el.textContent=v; return; }
-  const t0=performance.now(), dur=520;
+  const t0=performance.now(), dur=760;
   const step=now=>{
     const k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,4);
     const cur=Math.round(from+(target-from)*e);
@@ -4599,6 +4608,13 @@ function toggleTxListExpand(){
   if(preview) preview.style.display=isOpen?'flex':'none';
   if(label) label.textContent=isOpen?'もっと見る':'閉じる';
   if(chevron) chevron.style.transform=isOpen?'rotate(0deg)':'rotate(90deg)';
+  if(!isOpen&&!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)){
+    [...document.querySelectorAll('#tbl-body tr, #tbl-mobile > *')].slice(0,14).forEach((r,i)=>{
+      r.classList.remove('row-in'); void r.offsetWidth;
+      r.style.animationDelay=(i*35)+'ms'; r.classList.add('row-in');
+      r.addEventListener('animationend',function h(){ r.classList.remove('row-in'); r.style.animationDelay=''; r.removeEventListener('animationend',h); });
+    });
+  }
 }
 
 // 折りたたみ時: 直近4件の簡易プレビューを表示
@@ -5581,12 +5597,23 @@ function renderGemini(){
 // ============================================================
 function switchTab(id){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-  const pane=$('pane-'+id);if(pane)pane.classList.add('active');
+  const pane=$('pane-'+id);
+  // タブの並び順から遷移方向（右へ/左へ）を決め、ペインを横にスライドさせる
+  const order=[...new Set([...document.querySelectorAll('.tab-b,.tab-t')].map(b=>b.dataset.tab))];
+  const prev=switchTab._cur;
+  const dir=(prev!==undefined&&order.indexOf(id)>=0&&order.indexOf(prev)>=0)?Math.sign(order.indexOf(id)-order.indexOf(prev)):0;
+  switchTab._cur=id;
+  if(pane){ pane.style.setProperty('--dir',dir); pane.classList.add('active'); }
+  if(prev!==id){
+    const tb=document.querySelector('.tab-b[data-tab="'+id+'"]');
+    const ic=tb&&tb.firstElementChild;
+    if(ic){ ic.classList.remove('nav-pop'); void ic.offsetWidth; ic.classList.add('nav-pop'); }
+  }
   // 先頭の数ブロックを順に、少しずつ遅らせてせり上げる（控えめ・iPhone風のカーブ）
   if(pane&&!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)){
-    [...pane.children].slice(0,7).forEach((k,i)=>{
+    [...pane.children].slice(0,9).forEach((k,i)=>{
       k.classList.remove('row-in'); void k.offsetWidth;
-      k.style.animationDelay=(i*40)+'ms';
+      k.style.animationDelay=(60+i*55)+'ms';
       k.classList.add('row-in');
       k.addEventListener('animationend',function h(ev){ if(ev.target!==k)return; k.classList.remove('row-in'); k.style.animationDelay=''; k.removeEventListener('animationend',h); });
     });
