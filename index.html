@@ -396,6 +396,12 @@ header{padding-top:var(--sat);}
 }
 
 </style>
+<style>
+.tx-suggest{margin-top:5px;background:var(--card);border:1px solid var(--border);border-radius:12px;max-height:205px;overflow-y:auto;box-shadow:0 12px 30px #0002;}
+.tx-suggest button{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:0;border-bottom:1px solid var(--border);background:transparent;color:var(--text);padding:10px 12px;text-align:left;font-size:12px;cursor:pointer;}
+.tx-suggest button:last-child{border-bottom:0}.tx-suggest button:hover,.tx-suggest button:focus{background:var(--card2)}
+.sim-result-row{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--card2)}
+</style>
 </head>
 <body class="min-h-screen flex flex-col pb-safe md:pb-0">
 <div id="top-bar"><div id="top-fill"></div></div>
@@ -713,6 +719,18 @@ header{padding-top:var(--sat);}
 
 <!-- ======= ポイント ======= -->
 <div id="pane-points" class="tab-pane space-y-6">
+  <div class="card p-5 space-y-3" id="payment-simulator">
+    <div style="font-weight:800;font-size:16px;">💳 決済方法比較シミュレーター</div>
+    <p style="font-size:11px;color:var(--text2);">カード・支払い方法ごとの獲得見込みポイントを比較します。既存取引の変更は行いません。</p>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <label style="font-size:12px;">利用先<input id="sim-shop" type="text" placeholder="例：すき家" style="width:100%;margin-top:4px;" oninput="renderPaymentSimulation()"></label>
+      <label style="font-size:12px;">利用金額（円）<input id="sim-amount" type="number" min="1" step="1" placeholder="1000" style="width:100%;margin-top:4px;" oninput="renderPaymentSimulation()"></label>
+      <label style="font-size:12px;">利用日<input id="sim-date" type="date" style="width:100%;margin-top:4px;" onchange="renderPaymentSimulation()"></label>
+    </div>
+    <div id="sim-results" aria-live="polite" style="display:grid;gap:8px;"></div>
+    <div style="font-size:10px;color:var(--text3);line-height:1.7;">※ 登録済みのポイント設定による概算です。カード現物・スマホ決済の条件が未登録の場合は条件未確認と表示します。JCB優待店の利用条件・エントリー・キャンペーン上限等は別途確認してください。</div>
+  </div>
+  
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="card p-5 space-y-5">
       <div><div style="font-size:13px;font-weight:700;color:var(--text);">⚙️ 還元プログラム設定</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">U25特別特約が自動反映されます</div></div>
@@ -1458,7 +1476,8 @@ header{padding-top:var(--sat);}
       <!-- 利用先 -->
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">利用先 / 収入源 *</label>
-        <input id="tx-shop" type="text" placeholder="例: セブンイレブン、給与 など" oninput="refreshTxShopLogoPreview();updateJcbTxInfo();updateOliveTxInfo();" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
+        <input id="tx-shop" type="text" placeholder="例: セブンイレブン、給与 など" oninput="refreshTxShopLogoPreview();updateJcbTxInfo();updateOliveTxInfo();renderTxSuggestions();" onfocus="renderTxSuggestions();" onblur="setTimeout(hideTxSuggestions,180);" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
+        <div id="tx-shop-suggestions" class="tx-suggest" role="listbox" style="display:none;"></div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
           <div id="tx-shop-logo-preview" style="width:30px;height:30px;flex-shrink:0;"></div>
           <label class="btn btn-ghost" style="font-size:10px;cursor:pointer;padding:5px 9px;">
@@ -5638,7 +5657,7 @@ function switchTab(id){
   });
   if(id==='dashboard'){renderPayChart();renderCatChart();}
   if(id==='calendar'){renderCalendar();if(selDate)selectDay(selDate);}
-  if(id==='points')renderPtTab();
+  if(id==='points'){renderPtTab();renderPaymentSimulation();}
   if(id==='campaign')renderCampaignSummary();
   window.scrollTo({top:0,behavior:'smooth'});
   if(id==='sync'){renderCatList();renderMinorCatSettings();renderMethodList();renderPointLogoList();renderChargePairList();renderJcbPartnerList();renderJcbCampaignSettings();renderBrandList();renderShopLogoList();renderCardSettingList();sbRenderStatus();}
@@ -6065,6 +6084,7 @@ function copyTxToNew(key){
 }
 
 function openAddModal(){
+  hideTxSuggestions();
   txModalMode='add'; txEditKey=null;
   document.getElementById('tx-modal-title').textContent='取引を追加';
   document.getElementById('tx-modal-save').textContent='追加する';
@@ -6096,6 +6116,7 @@ function openAddModal(){
 }
 
 function openEditModal(key){
+  hideTxSuggestions();
   const t=S.transactions.find(tx=>tx.id===key);
   if(!t)return;
   txModalMode='edit'; txEditKey=key;
@@ -7586,9 +7607,164 @@ document.addEventListener('pointerdown',e=>{
   b.appendChild(sp); setTimeout(()=>sp.remove(),600);
 },{passive:true});
 
+
+// ===== 決済方法比較（読み取り専用。既存ポイント計算は変更しない） =====
+function simReadTransactions(){
+  const records=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(!/^finboo_tx_\d{4}_\d{2}$/.test(key))continue;
+    try{const arr=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(arr))records.push(...arr);}catch(e){}
+  }
+  const byId=new Map();
+  records.forEach(t=>{if(!t||!t.date)return;const id=t.id||`${t.date}:${t.shop}:${t.amount}:${t.method}`;
+    const prev=byId.get(id);if(!prev||String(t.updatedAt||'')>String(prev.updatedAt||''))byId.set(id,t);
+  });
+  return [...byId.values()];
+}
+function simDateIso(t){return String(t.date||'').replaceAll('/','-');}
+function simCycleTransactions(method,date,all){
+  const [y,m]=date.split('-').map(Number);
+  if(method==='JCBカードW'){
+    const cs=(S.cardSettings||[]).find(c=>c.method===method&&!c.isDebit&&c.closingDay);
+    if(cs){
+      let bm=m,by=y;
+      const closing=getCreditClosingDate(cs,y,m);
+      if(new Date(date+'T12:00:00')>new Date(closing.getFullYear(),closing.getMonth(),closing.getDate(),23,59,59)){
+        bm++;if(bm>12){bm=1;by++;}
+      }
+      const r=getCreditCycleRange(cs,by,bm);
+      const lo=`${r.start.getFullYear()}-${String(r.start.getMonth()+1).padStart(2,'0')}-${String(r.start.getDate()).padStart(2,'0')}`;
+      const hi=`${r.end.getFullYear()}-${String(r.end.getMonth()+1).padStart(2,'0')}-${String(r.end.getDate()).padStart(2,'0')}`;
+      return all.filter(t=>simDateIso(t)>=lo&&simDateIso(t)<=hi);
+    }
+  }
+  const prefix=date.slice(0,7);
+  return all.filter(t=>simDateIso(t).slice(0,7)===prefix);
+}
+function simOliveNormalPt(list){
+  let amount=0;
+  list.forEach(t=>{if(t.type==='income')return;
+    if(t.method==='三井住友カード(Olive)'||t.chargeBonusMethod==='三井住友カード(Olive)')amount+=Number(t.amount)||0;
+  });
+  // シミュレーション用に通常支払いのみで加算する場合は、既存のその他特約区分を維持する必要がある。
+  return amount;
+}
+function simOne(method,mode,shop,amount,date,all){
+  const synth={type:'expense',method,shop,amount,date};
+  const cycle=simCycleTransactions(method,date,all);
+  let pt=0,note='',uncertain=false;
+  if(method==='三井住友カード(Olive)'){
+    const before=calcOliveBreakdown(cycle).total;
+    const eligible=mode==='smart' || mode==='order';
+    const special=isOliveLounge(shop)||isSeven(shop)||isVTarget(shop);
+    // 既存のOlive合算関数は支払い経路を引数に持たないため、現物払いは特約店判定を避けて通常区分の増分のみ算出する。
+    if(!eligible&&special){
+      const base=calcOliveBreakdown(cycle);
+      const standardAmount=(cycle||[]).filter(t=>t.type!=='income'&&(t.method===method||t.chargeBonusMethod===method)&&!isOliveLounge(t.shop)&&!t.mobileOrder&&!isSeven(t.shop)&&!isVTarget(t.shop)&&!isMobile(t.shop)&&!isPayPayShop(t.shop)).reduce((a,t)=>a+(Number(t.amount)||0),0);
+      pt=(Math.floor((standardAmount+amount)/200)-Math.floor(standardAmount/200));
+      note='カード現物・iDは店舗特約を適用しません（通常0.5%の月合算）。';
+    }else{
+      if(mode==='order')synth.mobileOrder=true;
+      pt=calcOliveBreakdown([...cycle,synth]).total-before;
+      note=eligible?'スマホ決済／対象モバイルオーダーの想定。利用条件を確認してください。':'既存の通常・U25区分を適用。';
+      if(!eligible&&(isMobile(shop)||isPayPayShop(shop)))uncertain=true;
+      if(mode==='order'&&!special)uncertain=true;
+    }
+  }else if(method==='JCBカードW'){
+    pt=calcJcbCycle([...cycle,synth]).total-calcJcbCycle(cycle).total;
+    if(matchJcbPartnerShop(shop,synth.date)){
+      uncertain=true;note='優待倍率は登録値。支払経路・エントリー条件は未確認。';
+    }else note='基本1%を請求サイクルで合算。';
+    if(!(S.cardSettings||[]).some(c=>c.method===method&&c.closingDay))note+=' 締め日未設定のため暦月で試算。';
+  }else{
+    pt=calcPt(synth).pt;
+    note='登録済み決済手段の還元率を使用。';
+    if(mode!=='default'){uncertain=true;note+=' 支払経路による違いは設定されていません。';}
+  }
+  return{method,mode,pt:Math.max(0,pt),note,uncertain};
+}
+function simResults(shop,amount,date,all){
+  const modes=[{key:'smart',label:'スマホのタッチ決済'},{key:'physical_touch',label:'カード現物・タッチ決済'},{key:'physical_insert',label:'カード現物・差し込み'},{key:'id',label:'iD決済'}];
+  const out=[];
+  allMethodNames().forEach(method=>{
+    if(method==='三井住友カード(Olive)'){
+      modes.forEach(m=>out.push({...simOne(method,m.key,shop,amount,date,all),label:m.label}));
+      if(isVTarget(shop)||isSeven(shop)||isOliveLounge(shop))out.push({...simOne(method,'order',shop,amount,date,all),label:'対象モバイルオーダー（対象サービス要確認）'});
+    }else if(method==='JCBカードW'){
+      ['スマホ決済','カード現物・タッチ／差し込み'].forEach(label=>out.push({...simOne(method,'default',shop,amount,date,all),label,uncertain:!!matchJcbPartnerShop(shop,date.replaceAll('-','/'))}));
+    }else out.push({...simOne(method,'default',shop,amount,date,all),label:'登録済み基本還元（経路別条件未登録）'});
+  });
+  return out.sort((a,b)=>b.pt-a.pt||a.method.localeCompare(b.method,'ja'));
+}
+function renderPaymentSimulation(){
+  const target=$('sim-results');if(!target)return;
+  const shop=($('sim-shop')?.value||'').trim(),amount=Number($('sim-amount')?.value),date=$('sim-date')?.value;
+  target.replaceChildren();
+  if(!shop||!Number.isSafeInteger(amount)||amount<=0||!/^\d{4}-\d{2}-\d{2}$/.test(date||'')){
+    target.textContent='利用先・正の整数金額・利用日を入力してください。';return;
+  }
+  const rows=simResults(shop,amount,date,simReadTransactions());
+  if(!rows.length){target.textContent='比較可能な決済手段がありません。';return;}
+  rows.forEach((r,i)=>{
+    const el=document.createElement('div');el.className='sim-result-row';
+    const top=document.createElement('div');top.style.cssText='display:flex;justify-content:space-between;gap:10px;font-weight:700;font-size:12px;';
+    const name=document.createElement('span');name.textContent=`${i+1}. ${r.method}`;
+    const val=document.createElement('span');val.textContent=`+${r.pt.toLocaleString()} pt`;
+    top.append(name,val);
+    const sub=document.createElement('div');sub.style.cssText='font-size:11px;color:var(--text2);margin-top:5px;';sub.textContent=r.label;
+    const note=document.createElement('div');note.style.cssText='font-size:10px;color:var(--text3);margin-top:5px;line-height:1.6;';note.textContent=(r.uncertain?'⚠ 条件未確認：':'')+r.note;
+    el.append(top,sub,note);target.append(el);
+  });
+}
+// ===== 取引入力候補（参照のみ。ユーザーが候補を選択した場合のみ補完） =====
+function txSuggestionCandidates(query){
+  const q=String(query||'').trim().toLocaleLowerCase();if(!q)return[];
+  const grouped=new Map();
+  simReadTransactions().forEach(t=>{
+    if((t.type||'expense')!==txCurrentType)return;
+    const shop=String(t.shop||'').trim(),key=shop.toLocaleLowerCase();
+    if(!key.includes(q))return;
+    if(!grouped.has(key))grouped.set(key,{shop,count:0,recent:'',variants:new Map()});
+    const g=grouped.get(key);g.count++;
+    const d=simDateIso(t);if(d>g.recent){g.recent=d;g.shop=shop;}
+    const variant=[t.categoryMajor||'',t.categoryMinor||'',String(t.method||'').replace('（ポイント払い）','')];
+    const vk=JSON.stringify(variant),v=g.variants.get(vk)||{variant,n:0,date:''};v.n++;if(d>v.date)v.date=d;g.variants.set(vk,v);
+  });
+  return [...grouped.values()].map(g=>({...g,best:[...g.variants.values()].sort((a,b)=>b.n-a.n||b.date.localeCompare(a.date))[0]?.variant}))
+    .sort((a,b)=>Number(b.shop.toLocaleLowerCase().startsWith(q))-Number(a.shop.toLocaleLowerCase().startsWith(q))||b.count-a.count||b.recent.localeCompare(a.recent)).slice(0,7);
+}
+function hideTxSuggestions(){const el=$('tx-shop-suggestions');if(el)el.style.display='none';}
+function renderTxSuggestions(){
+  const el=$('tx-shop-suggestions'),input=$('tx-shop');if(!el||!input)return;
+  el.replaceChildren();const choices=txSuggestionCandidates(input.value);
+  choices.forEach(g=>{
+    const b=document.createElement('button');b.type='button';b.setAttribute('role','option');
+    const name=document.createElement('strong');name.textContent=g.shop;
+    const sub=document.createElement('small');sub.style.color='var(--text3)';sub.textContent=`${g.count}件の履歴 · ${g.best?.[0]||'カテゴリ未設定'} · ${g.best?.[2]||'決済手段未設定'}`;
+    b.append(name,sub);b.addEventListener('mousedown',e=>e.preventDefault());b.addEventListener('click',()=>selectTxSuggestion(g));el.append(b);
+  });el.style.display=choices.length?'block':'none';
+}
+function selectTxSuggestion(g){
+  const input=$('tx-shop');if(!input||!g)return;input.value=g.shop;
+  const [major,minor,method]=g.best||[];
+  if(major){const majorEl=$('tx-catmaj');if(majorEl&&[...majorEl.options].some(o=>o.value===major)){
+    majorEl.value=major;buildMinorSelect(minor||'');onCatMajChange();
+    const minorEl=$('tx-catmin');if(minorEl&&minor&&[...minorEl.options].some(o=>o.value===minor))minorEl.value=minor;
+  }}
+  if(method){const methodEl=$('tx-method');if(methodEl&&[...methodEl.options].some(o=>o.value===method)){
+    methodEl.value=method;
+    const point=$('tx-is-point');if(point)point.checked=false;
+    onMethodChange();
+  }}
+  refreshTxShopLogoPreview();updateJcbTxInfo();updateOliveTxInfo();hideTxSuggestions();
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   load();
   buildSelectors();
+  if($('sim-date'))$('sim-date').value=new Date().toLocaleDateString('sv-SE');
+  renderPaymentSimulation();
   applyDark(S.darkMode||false);
   gdriveInit(); // Google Drive トークン復元
   sbInit(); // Supabase 新システム（テスト中・独立動作）
