@@ -1956,7 +1956,8 @@ const INIT={
   pointSettings:{
     vProgramRate:8.0,
     sevenElevenRate:9.5,
-    vTargetShops:["セブン","セブンイレブン","マクドナルド","マック","ローソン","ファミリーマート","ファミマ","サイゼリヤ","ドトール"],
+    vTargetShops:["セブン","セブンイレブン","マクドナルド","マック","ローソン","サイゼリヤ","ドトール","セイコーマート","ポプラ","ミニストップ","モスバーガー","KFC","吉野家","フレッシュネスバーガー","ガスト","バーミヤン","しゃぶ葉","ジョナサン","夢庵","すき家","はま寿司","ココス","エクセルシオール","かっぱ寿司","ステーキガスト","から好し","むさしの森珈琲","藍屋","グラッチェガーデンズ","魚屋路","桃菜","八郎そば"],
+    vTargetVersion:2,      // 特約店リストの版（2: 2026-10 公式の対象店舗に合わせて更新。ファミリーマートは対象外）
     mobileKeywords:["povo","uq","uq mobile","au","linemo","docomo","softbank","y!mobile","ahamo","lineモバイル","rakuten","楽天モバイル"]
   },
   summary:{totalExpense:0,personalExpense:0,univLunchExpense:0,totalIncome:0,netBalance:0,
@@ -2517,7 +2518,7 @@ function mergeDeletedIds(a,b){
 // ============================================================
 // ポイント計算
 // ============================================================
-function isVTarget(shop){return S.pointSettings.vTargetShops.some(k=>(shop||'').includes(k));}
+function isVTarget(shop){const l=(shop||'').toLowerCase();return S.pointSettings.vTargetShops.some(k=>k&&l.includes(String(k).toLowerCase()));}
 function isSeven(shop){return(shop||'').includes('セブン');}
 function isOliveLounge(shop){return(shop||'').toLowerCase().includes('olive lounge');}
 function isMobile(shop){const l=(shop||'').toLowerCase();return S.pointSettings.mobileKeywords.some(k=>l.includes(k));}
@@ -3005,6 +3006,14 @@ function load(){
       S.catMinors = cfg.catMinors && Object.keys(cfg.catMinors).length ? cfg.catMinors : S.catMinors;
       S.darkMode        = cfg.darkMode        || false;
       if(cfg.pointSettings) S.pointSettings  = cfg.pointSettings;
+      // 特約店リストの移行（一度だけ）: ファミリーマート系(対象外)を外し、公式の対象店舗を追加。保存済みの独自追加分は残す
+      if((S.pointSettings.vTargetVersion||1)<2){
+        const add=["セブン","セブンイレブン","マクドナルド","マック","ローソン","サイゼリヤ","ドトール","セイコーマート","ポプラ","ミニストップ","モスバーガー","KFC","吉野家","フレッシュネスバーガー","ガスト","バーミヤン","しゃぶ葉","ジョナサン","夢庵","すき家","はま寿司","ココス","エクセルシオール","かっぱ寿司","ステーキガスト","から好し","むさしの森珈琲","藍屋","グラッチェガーデンズ","魚屋路","桃菜","八郎そば"];
+        const cur=(S.pointSettings.vTargetShops||[]).filter(k=>k&&k!=='ファミリーマート'&&k!=='ファミマ');
+        add.forEach(k=>{ if(!cur.includes(k)) cur.push(k); });
+        S.pointSettings.vTargetShops=cur;
+        S.pointSettings.vTargetVersion=2;
+      }
       if(S.pointSettings.sevenElevenRate==null) S.pointSettings.sevenElevenRate=9.5;
       // 以前のデフォルト値が誤っており(2.5%→合計3%)、未編集のまま保存されていたケースを正しい値(9.5%→合計10%)に自動修正
       if(S.pointSettings.sevenElevenRate===2.5) S.pointSettings.sevenElevenRate=9.5;
@@ -6081,6 +6090,7 @@ function openAddModal(){
   const memoElA=document.getElementById('tx-memo');
   if(memoElA) memoElA.value='';
   buildCatSelect();
+  onMethodChange(); // 決済手段に応じた注記・入力欄を、空に戻した状態で作り直す（前の取引の注記が残らないように）
   showModal('tx-modal-overlay');
   refreshTxShopLogoPreview();
 }
@@ -6276,11 +6286,11 @@ function updateOliveTxInfo(){
   }else if(isSeven(shop)){
     const rate=(0.5+S.pointSettings.sevenElevenRate).toFixed(1);
     noteEl.style.display='block';
-    noteEl.textContent=`⚡ セブン-イレブン特約ボーナス適用中（総還元率${rate}%）`;
+    noteEl.textContent=`⚡ セブン-イレブン特約ボーナス適用中（スマホのタッチ決済限定・総還元率${rate}%）`;
   }else if(isVTarget(shop)){
     const rate=(0.5+S.pointSettings.vProgramRate).toFixed(1);
     noteEl.style.display='block';
-    noteEl.textContent=`⚡ 特約店ボーナス適用中（総還元率${rate}%）`;
+    noteEl.textContent=`⚡ 特約店ボーナス適用中（スマホのタッチ決済限定・総還元率${rate}%）`;
   }else{
     noteEl.style.display='none';
   }
