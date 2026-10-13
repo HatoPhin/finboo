@@ -752,32 +752,19 @@ header{padding-top:var(--sat);}
       </div>
     </div>
     <div class="card p-5 lg:col-span-2 space-y-5">
-      <div><div style="font-size:13px;font-weight:700;color:var(--text);">💡 ポイント最適化アドバイザー</div></div>
-      <!-- AI アドバイザー -->
-      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-        <div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            <span style="font-size:12px;font-weight:700;color:var(--text);">AI ポイント最適化アドバイザー</span>
-            <span style="font-size:9px;background:var(--primary-light);color:var(--primary);padding:1px 6px;border-radius:99px;font-weight:600;">Claude AI</span>
-          </div>
-          <button id="btn-ai-advisor" onclick="runAiAdvisor()" style="display:flex;align-items:center;gap:4px;padding:6px 12px;background:var(--primary);color:var(--primary-text);border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            分析する
-          </button>
-        </div>
-        <!-- 状態表示 -->
-        <div id="ai-advisor-idle" style="padding:20px 14px;text-align:center;color:var(--text3);font-size:11px;">
-          「分析する」を押すと、今月の取引データをもとにAIが最適なアドバイスを生成します
-        </div>
-        <div id="ai-advisor-loading" style="display:none;padding:20px 14px;text-align:center;">
-          <div style="display:inline-flex;align-items:center;gap:8px;color:var(--text3);font-size:11px;">
-            <svg id="ai-loading-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-            AIが分析中...
-          </div>
-        </div>
-        <div id="ai-advisor-result" style="display:none;padding:14px;font-size:11px;color:var(--text);line-height:1.8;white-space:pre-wrap;"></div>
-        <div id="ai-advisor-error" style="display:none;padding:14px;font-size:11px;color:var(--red);"></div>
+      <div><div style="font-size:13px;font-weight:700;color:var(--text);">💡 決済手段別 お得度ランキング</div><div style="font-size:10px;color:var(--text3);margin-top:2px;line-height:1.6;">使いたい店舗を入力すると、Finbooに登録済みのルール・今月の利用状況から、どの決済手段で払うと何pt見込めるかを比べます（金額は空欄でも可。空欄のときは還元率で比較します）。</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input id="rank-shop" type="text" placeholder="店舗名（例: すき家、ローソン）" oninput="renderPointRank()" style="flex:1;min-width:160px;font-size:12px;padding:9px 12px;">
+        <input id="rank-amount" type="number" min="0" step="1" inputmode="numeric" placeholder="金額（任意）" oninput="renderPointRank()" style="width:120px;font-size:12px;padding:9px 12px;">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px;">比較する決済手段（タップで対象に含める/外す。直近3か月に使っていないものは自動で外れます）</div>
+        <div id="rank-chips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+      <div id="rank-result"></div>
+      <div id="rank-ai-wrap" style="display:none;">
+        <button id="rank-ai-btn" onclick="runRankAi()" class="btn btn-primary" style="font-size:11px;">✨ AIに相談（今月の予測を踏まえて判断）</button>
+        <div id="rank-ai-result" style="display:none;margin-top:10px;padding:12px 14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;font-size:11.5px;line-height:1.8;color:var(--text);white-space:pre-wrap;"></div>
       </div>
       <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
       <div>
@@ -1939,6 +1926,7 @@ const INIT={
   budgetOverToastLog:{}, // "YYYY-MM" → true。予算超過トーストを月に1回だけ出すためのログ
   budgetOverToastShown:{}, // "YYYY-MM" → true。予算超過トーストをその月にもう表示したかどうか(1ヶ月1回のみ)
   pinnedCats:["昼食（大学）"], // ホーム画面に大きく表示するカテゴリ/内訳キー
+  rankMethodOverrides:{}, // お得度ランキングの対象決済手段の手動設定 {決済手段名:'on'|'off'}（未設定は直近3か月の利用有無で自動判定）
   settingsUpdatedAt:{}, // 設定グループ別の最終ユーザー編集時刻（budget/school）。端末間の設定マージで新しい方を採用するために使用
   schoolDays:{},        // "YYYY/MM/DD" -> true（登校日として設定した日。昼食（大学）の使用可能額計算に使用）
   fixedCostAutoLog:{}, // 固定費自動生成: 'itemId_YYYY-MM' -> true（その月に自動生成済みかの記録）
@@ -2909,6 +2897,7 @@ function saveSettings(opts){
       pinnedCats:S.pinnedCats||[],
       schoolDays:S.schoolDays||{},
       settingsUpdatedAt:S.settingsUpdatedAt||{},
+      rankMethodOverrides:S.rankMethodOverrides||{},
       fixedCostAutoLog:S.fixedCostAutoLog||{},
       cardSettings:S.cardSettings||[],
       fixedCostItems:S.fixedCostItems||[],
@@ -3000,6 +2989,7 @@ function load(){
       S.pinnedCats      = cfg.pinnedCats      || ["昼食（大学）"];
       S.schoolDays      = cfg.schoolDays      || {};
       S.settingsUpdatedAt = cfg.settingsUpdatedAt || {};
+      S.rankMethodOverrides = cfg.rankMethodOverrides || {};
       S.fixedCostAutoLog = cfg.fixedCostAutoLog || {};
       S.cardSettings = cfg.cardSettings || [];
       S.fixedCostItems = cfg.fixedCostItems || [];
@@ -5588,7 +5578,217 @@ function renderPtTab(){
     tbody.appendChild(tr);
   });
   const oliveTotal=pc.oT+pc.oM+pc.oP+pc.oN;
+  if(typeof renderPointRank==='function') renderPointRank();
+}
 
+// ============================================================
+// 決済手段別 お得度ランキング（ポイントタブ）
+// 店舗名(＋任意の金額)から、各決済手段で払ったときの見込みptを、Finbooに登録済みのルール・今月の利用状況で計算して並べる。
+// Olive/JCBは月合算（200円単位切り捨て）なので、「今月の既存利用に、この支払いを足したときの増分pt」で順位を付ける。
+// ============================================================
+function rankMonthTxs(){
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth()+1;
+  return (y===S.viewYear&&m===S.viewMonth)?S.transactions:loadTx(y,m);
+}
+function rankBaseMethod(m){ return String(m||'').replace('（ポイント払い）',''); }
+// 直近3か月（今月を含む）に取引のある決済手段の集合
+function rankRecentMethods(){
+  const set=new Set(), now=new Date();
+  for(let i=0;i<3;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const y=d.getFullYear(), m=d.getMonth()+1;
+    const list=(y===S.viewYear&&m===S.viewMonth)?S.transactions:loadTx(y,m);
+    (list||[]).forEach(t=>{ if(t&&t.method&&t.type!=='income') set.add(rankBaseMethod(t.method)); });
+  }
+  return set;
+}
+function rankAllCandidates(){ return allMethodNames().filter(mt=>!mt.includes('ポイント払い')); }
+// 手動設定(on/off)を優先し、未設定なら直近3か月の利用有無で判定
+function rankIsIncluded(method,recent){
+  const ov=(S.rankMethodOverrides||{})[method];
+  if(ov==='on')return true;
+  if(ov==='off')return false;
+  return recent.has(method);
+}
+function rankToggleMethod(method){
+  const recent=rankRecentMethods();
+  const auto=recent.has(method);
+  const want=!rankIsIncluded(method,recent);
+  S.rankMethodOverrides=S.rankMethodOverrides||{};
+  if(want===auto) delete S.rankMethodOverrides[method];
+  else S.rankMethodOverrides[method]=want?'on':'off';
+  saveSettings();
+  renderPointRank();
+}
+function rankPointTypeOf(method){
+  if(method==='三井住友カード(Olive)')return'Vポイント';
+  if(method==='JCBカードW')return'J-POINT';
+  if(method==='PayPayクレジット'||method==='PayPay残高')return'PayPayポイント';
+  if(method==='楽天カード')return'楽天ポイント';
+  if(method==='住信SBI - デビット')return'dポイント';
+  return (S.methodPointType&&S.methodPointType[method])||method;
+}
+// 過去に同じ店・同じ決済手段で払った取引から、個別還元率やVクーポンの最新の実績を拾う
+function rankHistoryHint(shop,method){
+  const s=(shop||'').trim().toLowerCase(); if(!s)return null;
+  let best=null;
+  const now=new Date();
+  for(let i=0;i<12;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const list=(d.getFullYear()===S.viewYear&&d.getMonth()+1===S.viewMonth)?S.transactions:loadTx(d.getFullYear(),d.getMonth()+1);
+    (list||[]).forEach(t=>{
+      if(!t||t.type==='income'||rankBaseMethod(t.method)!==method)return;
+      if((t.shop||'').toLowerCase()!==s)return;
+      const hasRate=(t.pointRateOverride!=null&&t.pointRateOverride!=='')||(t.vCoupon!=null&&t.vCoupon!=='');
+      if(!hasRate)return;
+      if(!best||(t.date||'')>(best.date||'')) best=t;
+    });
+  }
+  return best;
+}
+// 1つの決済手段について、単体pt・今月の予測を踏まえた増分pt・ルール名などを計算
+function rankCalc(method,shop,amount,monthTxs){
+  const ref=amount>0?amount:10000;
+  const now=new Date();
+  const date=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  const t={id:'__rank__',date,shop,amount:ref,type:'expense',method};
+  const hint=rankHistoryHint(shop,method);
+  let usedHistory=false;
+  if(hint){
+    if(hint.pointRateOverride!=null&&hint.pointRateOverride!==''){ t.pointRateOverride=hint.pointRateOverride; usedHistory=true; }
+    if(hint.vCoupon!=null&&hint.vCoupon!==''&&method==='三井住友カード(Olive)'){ t.vCoupon=hint.vCoupon; usedHistory=true; }
+  }
+  let standalone=0, marginal=0, rule=calcPt(t).rule, note='';
+  if(method==='三井住友カード(Olive)'){
+    standalone=calcOliveBreakdown([t]).total;
+    marginal=calcOliveBreakdown(monthTxs.concat([t])).total-calcOliveBreakdown(monthTxs).total;
+    if(/特約|セブン|LOUNGE|モバイルオーダー/.test(rule)) note='スマホのタッチ決済限定（カード払い・差し込みは通常の0.5%）';
+  }else if(method==='JCBカードW'){
+    standalone=calcJcbCycle([t]).total;
+    marginal=calcJcbCycle(monthTxs.concat([t])).total-calcJcbCycle(monthTxs).total;
+  }else{
+    standalone=calcPt(t).pt; marginal=standalone;
+  }
+  if(!(amount>0)) marginal=standalone; // 金額が空のときは還元率の比較のみ
+  return{method,type:rankPointTypeOf(method),standalone,marginal,rate:ref>0?(standalone/ref*100):0,rule,note,usedHistory,ref};
+}
+// 今月の予測ポイント（種類別）
+function rankMonthPredicted(){
+  const keep=S.transactions;
+  let pc;
+  try{ S.transactions=rankMonthTxs(); pc=calcAllPts(); }finally{ S.transactions=keep; }
+  const out={}; const add=(k,v)=>{ if(v>0) out[k]=(out[k]||0)+v; };
+  add('Vポイント',pc.vPts+pc.vCouponPts); add('PayPayポイント',pc.pp); add('楽天ポイント',pc.rk); add('dポイント',pc.sbi); add('J-POINT',pc.jcb);
+  Object.keys(pc.miscByType||{}).forEach(k=>add(k,pc.miscByType[k]));
+  return out;
+}
+let rankLast=null; // 直近のランキング結果（AI相談に渡す）
+function renderPointRank(){
+  const chipsEl=$('rank-chips'), resEl=$('rank-result'), aiWrap=$('rank-ai-wrap');
+  if(!chipsEl||!resEl)return;
+  const recent=rankRecentMethods();
+  // チップ
+  chipsEl.innerHTML='';
+  rankAllCandidates().forEach(mt=>{
+    const on=rankIsIncluded(mt,recent);
+    const b=document.createElement('button');
+    b.type='button';
+    b.title=on?'タップで対象から外す':(recent.has(mt)?'タップで対象に含める':'直近3か月に利用なし（タップで対象に含める）');
+    b.style.cssText=`display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 6px;font-size:10.5px;font-weight:700;border-radius:99px;cursor:pointer;border:1px solid ${on?'var(--primary)':'var(--border)'};background:${on?'var(--primary-light)':'var(--card2)'};color:${on?'var(--primary)':'var(--text3)'};opacity:${on?1:.65};`;
+    b.innerHTML=`${getMethodLogoHtml(mt,{size:14,brandSize:0})}<span>${mt}</span>`;
+    b.onclick=()=>rankToggleMethod(mt);
+    chipsEl.appendChild(b);
+  });
+  const shop=($('rank-shop').value||'').trim();
+  const amount=parseInt($('rank-amount').value)||0;
+  rankLast=null;
+  if(aiWrap) aiWrap.style.display='none';
+  if(!shop){
+    resEl.innerHTML='<div style="font-size:11px;color:var(--text3);text-align:center;padding:18px 0;background:var(--card2);border:1px solid var(--border);border-radius:12px;">店舗名を入力すると、決済手段ごとの見込みポイントがランキングで表示されます</div>';
+    return;
+  }
+  const methods=rankAllCandidates().filter(mt=>rankIsIncluded(mt,recent));
+  if(methods.length===0){
+    resEl.innerHTML='<div style="font-size:11px;color:var(--text3);text-align:center;padding:18px 0;">比較する決済手段がありません。上のチップから対象を選んでください。</div>';
+    return;
+  }
+  const monthTxs=rankMonthTxs();
+  const rows=methods.map(mt=>rankCalc(mt,shop,amount,monthTxs))
+    .sort((a,b)=>(b.marginal-a.marginal)||(b.standalone-a.standalone)||(b.rate-a.rate));
+  const maxV=Math.max(1,...rows.map(r=>amount>0?r.marginal:r.rate));
+  const predicted=rankMonthPredicted();
+  const predStr=Object.keys(predicted).map(k=>`${k} ${predicted[k].toLocaleString()}pt`).join(' / ')||'まだありません';
+  const top=rows[0];
+  const hasAny=amount>0?top.marginal>0:top.rate>0;
+  const medal=['🥇','🥈','🥉'];
+  const conclusion=hasAny
+    ? (amount>0
+        ? `結論: <strong>${top.method}</strong>で払うと、今月の予測に <strong>+${top.marginal.toLocaleString()}pt</strong>（${top.type}）`
+        : `結論: <strong>${top.method}</strong>が最も高還元です（約${top.rate.toFixed(1)}%・${top.type}）`)
+    : '登録済みのルールでは、どの決済手段でもポイントが付かない見込みです';
+  resEl.innerHTML=`
+    <div style="background:var(--primary-light);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
+      <div style="font-size:12px;color:var(--text);line-height:1.6;">${conclusion}</div>
+      <div style="font-size:9.5px;color:var(--text3);margin-top:3px;">今月の予測ポイント: ${predStr}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+    ${rows.map((r,i)=>{
+      const v=amount>0?r.marginal:r.rate;
+      const w=Math.max(0,Math.min(100,v/maxV*100));
+      const big=amount>0?`+${r.marginal.toLocaleString()} pt`:`${r.rate.toFixed(1)}%`;
+      const sub=amount>0
+        ? `単体 ${r.standalone.toLocaleString()}pt・還元率 ${r.rate.toFixed(1)}%${r.marginal!==r.standalone?`・今月の合算で${r.marginal>r.standalone?'+':''}${(r.marginal-r.standalone).toLocaleString()}pt`:''}`
+        : `${r.type}`;
+      return `
+      <div class="rank-row" style="border:1px solid ${i===0&&hasAny?'var(--primary)':'var(--border)'};border-radius:12px;padding:10px 12px;background:var(--card);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="width:22px;text-align:center;font-size:${i<3?'16':'11'}px;font-weight:700;color:var(--text3);">${i<3&&hasAny?medal[i]:(i+1)}</span>
+          ${getMethodLogoHtml(r.method,{size:22,brandSize:11})}
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:700;color:var(--text);">${r.method}<span style="font-size:9px;font-weight:600;color:var(--text3);margin-left:6px;">${r.type}</span>${r.usedHistory?'<span style="font-size:8.5px;font-weight:700;color:var(--primary);background:var(--primary-light);border-radius:99px;padding:1px 6px;margin-left:6px;">実績あり</span>':''}</div>
+            <div style="font-size:9.5px;color:var(--text3);margin-top:1px;">${sub}</div>
+          </div>
+          <span style="font-size:14px;font-weight:800;color:${v>0?'var(--primary)':'var(--text3)'};font-family:monospace;white-space:nowrap;">${big}</span>
+        </div>
+        <div style="height:5px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden;"><div class="bar-grow" style="height:100%;width:${w}%;background:var(--primary);border-radius:99px;"></div></div>
+        <div style="font-size:9px;color:var(--text3);margin-top:5px;line-height:1.5;">${r.rule}${r.note?`<br>⚠️ ${r.note}`:''}</div>
+      </div>`;}).join('')}
+    </div>
+    <div style="font-size:9px;color:var(--text3);margin-top:8px;line-height:1.5;">※Olive・JCBは月合算（200円単位切り捨て）のため、「今月の既存の利用に足したときの増分」で順位を付けています。ポイントは1pt=1円として比較しています。${amount>0?'':'金額が空欄のため、10,000円で試算した還元率で比較しています。'}</div>`;
+  rankLast={shop,amount,rows,predicted};
+  if(aiWrap) aiWrap.style.display='block';
+}
+// AIに相談（既存のAIチャット=Geminiの仕組みを利用。Supabaseログインが必要）
+async function runRankAi(){
+  const out=$('rank-ai-result'), btn=$('rank-ai-btn');
+  if(!rankLast){ return; }
+  if(typeof sbUser==='undefined'||!sbUser){ toast('AI相談にはSupabaseへのログインが必要です（同期タブ）','error'); return; }
+  const {shop,amount,rows,predicted}=rankLast;
+  out.style.display='block'; out.style.color='var(--text3)'; out.textContent='考え中…';
+  if(btn) btn.disabled=true;
+  try{
+    const {data:{session}}=await sbClient.auth.getSession();
+    if(!session){ out.textContent='セッションが切れました。再ログインしてください。'; return; }
+    const now=new Date(), pad=n=>String(n).padStart(2,'0');
+    const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const from=fmt(new Date(now.getFullYear(),now.getMonth(),1)), to=fmt(new Date(now.getFullYear(),now.getMonth()+1,0));
+    const lines=rows.map((r,i)=>`${i+1}位 ${r.method}（${r.type}）: 単体${r.standalone}pt／今月の予測を踏まえた増分${r.marginal}pt／還元率${r.rate.toFixed(1)}%／ルール: ${r.rule}${r.note?'／注意: '+r.note:''}${r.usedHistory?'／過去の実績あり':''}`).join('\n');
+    const pred=Object.keys(predicted).map(k=>`${k} ${predicted[k]}pt`).join('、')||'なし';
+    const message=`次の支払いでどの決済手段を使うのが最適か、判断してください。\n店舗: ${shop}\n金額: ${amount>0?amount+'円':'未定（還元率で比較）'}\n\n【Finbooの計算によるランキング（今月の予測を踏まえた増分pt順）】\n${lines}\n\n【今月すでに予測されているポイント（種類別）】\n${pred}\n\n前提: Olive・JCBは月合算（200円単位切り捨て）。ポイントは1pt=1円として比較。端数の切り上げ効果、ポイントの種類の偏り、スマホのタッチ決済などの条件を踏まえ、「どれで払うのが最適か」を結論から3〜5行で、日本語で答えてください。`;
+    const res=await fetch(GEMINI_FUNCTION_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SB_ANON_KEY},
+      body:JSON.stringify({from,to,message,history:[]})
+    });
+    const json=await res.json();
+    if(!res.ok||json.error){ out.style.color='var(--red)'; out.textContent='エラー: '+(json.error||'応答を取得できませんでした'); return; }
+    out.style.color='var(--text)'; out.textContent=json.reply;
+  }catch(e){
+    console.error('runRankAi error:',e);
+    out.style.color='var(--red)'; out.textContent='通信エラーが発生しました';
+  }finally{
+    if(btn) btn.disabled=false;
+  }
 }
 
 // ============================================================
@@ -7324,101 +7524,6 @@ function removeCat(name){
 // ============================================================
 // AI ポイント最適化アドバイザー（Claude API）
 // ============================================================
-async function runAiAdvisor(){
-  const idle    = $('ai-advisor-idle');
-  const loading = $('ai-advisor-loading');
-  const result  = $('ai-advisor-result');
-  const error   = $('ai-advisor-error');
-  const btn     = $('btn-ai-advisor');
-
-  // ローディング開始
-  if(idle)   idle.style.display   = 'none';
-  if(result) result.style.display = 'none';
-  if(error)  error.style.display  = 'none';
-  if(loading)loading.style.display= 'block';
-  if(btn)    btn.disabled = true;
-
-  // 取引データからプロンプトを構築
-  const pc = calcAllPts();
-  const txSummary = S.transactions
-    .filter(t=>t.type!=='income')
-    .map(t=>`・${t.date} ${t.shop}（${t.categoryMajor}）${t.method} ¥${t.amount} → ${calcPt(t).pt}pt [${calcPt(t).rule}]`)
-    .join('\n');
-
-  let catSummary='';
-  allCats().forEach(c=>{if((S.categories[c]||0)>0)catSummary+=`・${c}: ¥${S.categories[c].toLocaleString()}
-`;});
-
-  const kaetate = S.summary.totalKaetate||0;
-  const recovered = S.summary.recoveredKaetate||0;
-
-  const prompt = `あなたはキャッシュレス決済とポイント還元の専門家です。以下のユーザーの今月（${S.viewYear}年${S.viewMonth}月）の家計データをもとに、具体的で実践的なポイント最適化アドバイスを日本語で提供してください。
-
-## ユーザー情報
-- U25（25歳以下）特別特約適用中
-- 主な決済手段: 三井住友カード(Olive)、PayPayクレジット、楽天カード、現金
-
-## 今月の取引データ
-${txSummary||'（取引データなし）'}
-
-## カテゴリ別支出
-${catSummary||'（データなし）'}
-
-## ポイント獲得サマリー
-- Vポイント合計: ${pc.vPts}pt（月間合算）
-- PayPayポイント合計: ${pc.pp}pt（都度計算）
-- JCBカードW J-POINT合計: ${pc.jcb}pt（月間合算＋優待店ボーナス）
-- 総獲得ポイント: ${pc.total}pt
-- 支出合計: ¥${S.summary.totalExpense.toLocaleString()}
-- 実質還元率: ${S.summary.totalExpense>0?((pc.total/S.summary.totalExpense)*100).toFixed(2):0}%
-
-## Vポイントアッププログラム設定
-- 現在の加算率: +${S.pointSettings.vProgramRate}%
-- 特約店合計還元率: ${(0.5+S.pointSettings.vProgramRate).toFixed(1)}%
-
-## 立替状況
-- 立替合計: ¥${kaetate.toLocaleString()}
-- 回収済み: ¥${recovered.toLocaleString()}
-- 未回収: ¥${Math.max(kaetate-recovered,0).toLocaleString()}
-
-## 回答形式
-以下の3点について、具体的な金額・ポイント数を示しながら簡潔に答えてください：
-1. 【今月の評価】ポイント獲得状況の評価（良い点・改善点）
-2. 【具体的な改善提案】この取引データを見て、来月からすぐ実践できる提案を2〜3個
-3. 【見逃しているポイント】気づいていなさそうな還元機会があれば指摘
-
-回答は箇条書きを使いすぎず、読みやすい自然な文章で。300〜400字程度にまとめてください。`;
-
-  try{
-    const response = await fetch('https://script.google.com/macros/s/AKfycbzSUeo4IFjchk0SqjHfah864qK7g_BDIDdMXHvMLKe096hZwB4lWBcY7Qn552NldicCNA/exec',{
-      method:'POST',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({prompt})
-    });
-
-    if(!response.ok){
-      throw new Error(`通信エラー: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if(data.error) throw new Error(data.error);
-    const text = data.text || '応答を取得できませんでした';
-
-    if(loading)loading.style.display='none';
-    if(result){
-      result.style.display='block';
-      result.textContent=text;
-    }
-  }catch(e){
-    if(loading)loading.style.display='none';
-    if(error){
-      error.style.display='block';
-      error.textContent='分析に失敗しました: '+e.message;
-    }
-  }finally{
-    if(btn)btn.disabled=false;
-  }
-}
 
 // ============================================================
 // 重複チェック（候補の提示のみ。削除は必ずユーザーが選んで実行する）
