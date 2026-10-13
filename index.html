@@ -3599,7 +3599,7 @@ async function downloadPDF(){
     const {jsPDF}=window.jspdf;
     const y=S.viewYear, m=S.viewMonth;
     const monthStr=`${y}年${m}月`;
-    const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+    const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true}); // compress:true でグラフ画像・フォント・本文をロスレス圧縮（見た目は変わらず容量が大幅に減る）
     const PW=210, PH=297, MX=18;
 
     setProgress(15,'フォントを読み込み中...');
@@ -3748,8 +3748,8 @@ async function downloadPDF(){
     doc.setDrawColor(C.line); doc.setLineWidth(0.2);
     doc.roundedRect(MX,imgY,chartW,chartH,1.5,1.5);
     doc.roundedRect(MX+chartW+8,imgY,chartW,chartH,1.5,1.5);
-    if(payImg) doc.addImage(payImg,'PNG',MX+2,imgY+2,chartW-4,chartH-4);
-    if(catImg) doc.addImage(catImg,'PNG',MX+chartW+8+2,imgY+2,chartW-4,chartH-4);
+    if(payImg) doc.addImage(payImg,'PNG',MX+2,imgY+2,chartW-4,chartH-4,undefined,'FAST');
+    if(catImg) doc.addImage(catImg,'PNG',MX+chartW+8+2,imgY+2,chartW-4,chartH-4,undefined,'FAST');
 
     let by=imgY+chartH+10;
 
