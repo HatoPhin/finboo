@@ -7869,5 +7869,127 @@ document.addEventListener('DOMContentLoaded',()=>{
   const fcClose=$('fc-modal-close');if(fcClose)fcClose.addEventListener('click',()=>hideModal('fixed-cost-modal-overlay'));
 });
 </script>
+
+<script>
+// FINBOO_NOTIFICATIONS_START: existing billing/calculation functions remain unchanged.
+const finbooNotifyEnabledKey='finboo_card_notifications_enabled_v1';
+const finbooNotifySentKey='finboo_card_notifications_sent_v1';
+let finbooNotifyRunning=false;
+function finbooNotifyDay(date){
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+function finbooNotificationEvents(now=new Date()){
+  const events=[];
+  (S.cardSettings||[]).filter(cs=>!isDebitMethod(cs.method)).forEach(cs=>{
+    // Adjacent billing months cover closing dates and holiday shifts across month/year boundaries.
+    for(let offset=-1;offset<=1;offset++){
+      const billing=new Date(now.getFullYear(),now.getMonth()+offset,1);
+      const y=billing.getFullYear(),m=billing.getMonth()+1;
+      const usage=getCreditBillingMonth(cs,y,m);
+      const range=getCreditCycleRange(cs,usage.year,usage.month);
+      const dates=[
+        ['tentative','仮確定',getCreditTentativeDate(cs,y,m)||(cs.confirmDay?range.end:null)],
+        ['confirmed','請求確定',getCreditConfirmDate(cs,y,m)],
+        ['paid','支払い完了（支払い日による判定）',getCreditDebitDate(cs,y,m)]
+      ];
+      dates.forEach(([status,label,date])=>{
+        if(!date||finbooNotifyDay(date)!==finbooNotifyDay(now))return;
+        const total=getMethodUsageInRange(cs.method,range.start,range.end);
+        if(!Number.isFinite(total))return;
+        events.push({key:JSON.stringify([cs.id||cs.method,y,m,status]),status,label,
+          card:cs.method,total,date:finbooNotifyDay(date)});
+      });
+    }
+  });
+  return events;
+}
+async function finbooShowNotification(event){
+  const options={body:`ステータス: ${event.label}\nカード: ${event.card}\n金額: ¥${event.total.toLocaleString('ja-JP')}\n対象日: ${event.date}`,
+    tag:'finboo-card-'+event.key};
+  if('serviceWorker' in navigator){
+    const registration=await navigator.serviceWorker.getRegistration();
+    if(registration&&registration.active){
+      await registration.showNotification('Finboo — '+event.label,options);
+      return;
+    }
+  }
+  // Desktop fallback; mobile browsers may require an active Service Worker.
+  new Notification('Finboo — '+event.label,options);
+}
+async function finbooCheckNotifications(){
+  if(finbooNotifyRunning)return;
+  finbooNotifyRunning=true;
+  try{
+    const run=async()=>{
+      if(!window.isSecureContext||!('Notification' in window)||Notification.permission!=='granted'
+        ||localStorage.getItem(finbooNotifyEnabledKey)!=='1')return;
+      const stored=JSON.parse(localStorage.getItem(finbooNotifySentKey)||'{}');
+      const sent=stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:{};
+      const now=new Date();
+      for(const event of finbooNotificationEvents(now)){
+        if(sent[event.key])continue;
+        // Persist only after the browser accepts the notification; failures remain retryable.
+        await finbooShowNotification(event);
+        sent[event.key]=now.getTime();
+        for(const key of Object.keys(sent)){
+          if(typeof sent[key]==='number'&&now.getTime()-sent[key]>400*86400000)delete sent[key];
+        }
+        localStorage.setItem(finbooNotifySentKey,JSON.stringify(sent));
+      }
+    };
+    if(navigator.locks)await navigator.locks.request('finboo-card-notifications',run);
+    else await run();
+  }catch(error){
+    console.warn('Finboo: カード通知を送信できませんでした',error);
+    const el=document.getElementById('finboo-notify-status');
+    if(el)el.textContent='通知に失敗しました。ブラウザの通知設定・Service Worker・保存領域を確認してください。';
+  }finally{finbooNotifyRunning=false;}
+}
+function finbooUpdateNotificationUI(){
+  const el=document.getElementById('finboo-notify-status');
+  if(!el)return;
+  try{
+    el.textContent=!window.isSecureContext?'通知にはHTTPSまたはlocalhostが必要です。':
+      !('Notification' in window)?'このブラウザは通知に対応していません。':
+      Notification.permission==='denied'?'通知が拒否されています。ブラウザのサイト設定から許可してください。':
+      localStorage.getItem(finbooNotifyEnabledKey)==='1'&&Notification.permission==='granted'?'通知は有効です。':'通知は無効です。';
+  }catch(error){el.textContent='通知設定を保存できません。ブラウザの保存領域を確認してください。';}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const section=document.getElementById('wallet-cards-section');
+  if(!section)return;
+  const panel=document.createElement('div');
+  panel.className='card';
+  panel.style.cssText='padding:14px;margin-bottom:12px;font-size:12px;line-height:1.7';
+  panel.innerHTML=`<strong>カードの日付通知</strong>
+    <div>仮確定・請求確定・支払い完了の当日に、ステータス・カード名・請求金額を通知します（端末の現地日付）。</div>
+    <div>ページ動作中に約1分ごとに確認します。ページ停止・ブラウザ終了中の通知、指定時刻の通知は保証できません。終了中にも届くPush通知には別途Push配信サーバーが必要です。</div>
+    <div>仮確定日が未設定の場合は締め日を使用します（確定日の設定が必要）。支払い完了は設定上の支払い日による判定で、実際の引き落とし確認ではありません。過去日の通知は再送しません。</div>
+    <button type="button" class="btn" id="finboo-notify-enable">通知を有効にする</button>
+    <button type="button" class="btn" id="finboo-notify-disable">通知を無効にする</button>
+    <div id="finboo-notify-status" role="status"></div>`;
+  section.before(panel);
+  document.getElementById('finboo-notify-enable').addEventListener('click',async()=>{
+    try{
+      if(!window.isSecureContext||!('Notification' in window)){finbooUpdateNotificationUI();return;}
+      const permission=await Notification.requestPermission();
+      if(permission==='granted')localStorage.setItem(finbooNotifyEnabledKey,'1');
+      finbooUpdateNotificationUI();
+      await finbooCheckNotifications();
+    }catch(error){document.getElementById('finboo-notify-status').textContent='通知を有効にできませんでした。ブラウザ設定を確認してください。';}
+  });
+  document.getElementById('finboo-notify-disable').addEventListener('click',()=>{
+    try{localStorage.removeItem(finbooNotifyEnabledKey);finbooUpdateNotificationUI();}
+    catch(error){document.getElementById('finboo-notify-status').textContent='通知設定を保存できません。';}
+  });
+  finbooUpdateNotificationUI();
+  finbooCheckNotifications();
+  setInterval(finbooCheckNotifications,60000);
+  window.addEventListener('focus',()=>{finbooUpdateNotificationUI();finbooCheckNotifications();});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)finbooCheckNotifications();});
+});
+// FINBOO_NOTIFICATIONS_END
+
+</script>
 </body>
 </html>
