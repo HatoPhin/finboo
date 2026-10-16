@@ -7985,6 +7985,7 @@ async function finbooCheckNotifications(){
       const stored=JSON.parse(localStorage.getItem(finbooNotifySentKey)||'{}');
       const sent=stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:{};
       const now=new Date();
+      if(now.getHours()<12)return; // 通知は設定日の12:00以降に送信
       for(const event of finbooNotificationEvents(now)){
         if(sent[event.key])continue;
         // Persist only after the browser accepts the notification; failures remain retryable.
@@ -8021,8 +8022,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   panel.className='card';
   panel.style.cssText='padding:14px;margin-bottom:12px;font-size:12px;line-height:1.7';
   panel.innerHTML=`<strong>カードの日付通知</strong>
-    <div>仮確定・請求確定・支払い完了の当日に、ステータス・カード名・請求金額を通知します（端末の現地日付）。</div>
-    <div>ページ動作中に約1分ごとに確認します。ページ停止・ブラウザ終了中の通知、指定時刻の通知は保証できません。終了中にも届くPush通知には別途Push配信サーバーが必要です。</div>
+    <div>仮確定・請求確定・支払い完了の当日12:00（端末の現地時刻）以降に、ステータス・カード名・請求金額を通知します。</div>
+    <div>ページ動作中に約1分ごとに確認します。12:00ちょうどの通知や、ページ停止・ブラウザ終了中の通知は保証できません（12:00を過ぎてからページを開いた時点で、その日のうちに送ります）。終了中にも届くPush通知には別途Push配信サーバーが必要です。</div>
     <div>仮確定日が未設定の場合は締め日を使用します（確定日の設定が必要）。支払い完了は設定上の支払い日による判定で、実際の引き落とし確認ではありません。過去日の通知は再送しません。</div>
     <button type="button" class="btn" id="finboo-notify-enable">通知を有効にする</button>
     <button type="button" class="btn" id="finboo-notify-disable">通知を無効にする</button>
