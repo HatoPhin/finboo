@@ -1565,6 +1565,18 @@ header{padding-top:var(--sat);}
         <div id="tx-fixedcost-desc" style="font-size:9px;color:var(--text3);margin-top:5px;margin-left:24px;">この日付を基準に、翌月以降も自動的に取引として計上されます。「サブスクリプション」カテゴリを選ぶと自動でオンになります</div>
       </div>
 
+      <!-- 引き落とし月の調整（クレジットカード払いのみ表示） -->
+      <div id="tx-billdelay-wrap" style="margin-bottom:14px;display:none;">
+        <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">引き落とし月の調整（任意）</label>
+        <select id="tx-billdelay" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
+          <option value="0">自動（通常どおり）</option>
+          <option value="1">1か月後ろにずらす</option>
+          <option value="2">2か月後ろにずらす</option>
+          <option value="3">3か月後ろにずらす</option>
+        </select>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:4px;line-height:1.5;">ETCなど、利用日より遅れて請求される分に使います。利用日・月別の支出は変わらず、カードの請求額と請求明細だけが指定した月に移ります。</div>
+      </div>
+
       <!-- メモ -->
       <div style="margin-bottom:20px;">
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">メモ（任意）</label>
@@ -4386,17 +4398,30 @@ function getCurrentBillingCycleStart(cs){
 }
 
 // 指定決済手段の、指定期間内（複数月をまたぐ場合も対応）の確定支出額を集計（ポイント払い・立替除外）
+// 請求上の利用日：取引に「引き落とし月の後ろ倒し(billDelay: 1〜3か月)」が設定されていれば、その月数だけ後ろにずらした日付で請求サイクルに振り分ける
+// （利用日そのもの・月別支出・予算・統計は変えない。カード請求額と請求明細の集計だけに使う）
+function txBillDate(t){
+  const d=new Date(t.date);
+  const n=parseInt(t.billDelay,10)||0;
+  if(!n||isNaN(d)) return d;
+  const r=new Date(d.getFullYear(),d.getMonth()+n,1);
+  r.setDate(Math.min(d.getDate(),daysInMonth(r.getFullYear(),r.getMonth()+1)));
+  return r;
+}
+function billScanStart(s){ return new Date(s.getFullYear(),s.getMonth()-3,1); } // 後ろ倒し(最大3か月)の取引も拾うため、3か月前から走査
+
 function getMethodUsageInRange(method, startDate, endDate){
   const s=new Date(startDate); s.setHours(0,0,0,0);
   const e=new Date(endDate); e.setHours(23,59,59,999);
   let sum=0;
-  let cy=s.getFullYear(), cm=s.getMonth()+1;
+  const sc=billScanStart(s);
+  let cy=sc.getFullYear(), cm=sc.getMonth()+1;
   while(cy<e.getFullYear()||(cy===e.getFullYear()&&cm<=e.getMonth()+1)){
     const isCurrentMonth=(cy===S.viewYear&&cm===S.viewMonth);
     const txs=isCurrentMonth ? S.transactions : (loadTx(cy,cm)||[]);
     txs.forEach(t=>{
       if(t.type==='income') return;
-      const td=new Date(t.date);
+      const td=txBillDate(t);
       if(td<s||td>e) return;
       // カード請求集計は「実際にそのカードで支払われた金額」なので立替も含める（支出集計や統計は別途isKaetate()で除外している）
       if(t.method===method&&!isPointPayment(t)) sum+=t.amount;
@@ -4641,12 +4666,13 @@ function openCardDetailModal(csId){
   const txInCycle=[];
   const cycleAllTxs=[]; // サイクル内の全取引（Olive/JCBのポイント再計算用）
   let chargeBonusAmt=0; // このカードがチャージ元として請求額に含まれている分（明細には出ないが合計には計上）
-  let cy=s.getFullYear(), cmo=s.getMonth()+1;
+  const scD=billScanStart(s);
+  let cy=scD.getFullYear(), cmo=scD.getMonth()+1;
   while(cy<e.getFullYear()||(cy===e.getFullYear()&&cmo<=e.getMonth()+1)){
     const isCurrentMonth=(cy===S.viewYear&&cmo===S.viewMonth);
     const txs=isCurrentMonth ? S.transactions : (loadTx(cy,cmo)||[]);
     txs.forEach(t=>{
-      const td=new Date(t.date);
+      const td=txBillDate(t);
       if(td<s||td>e) return;
       if(t.type==='income') return;
       cycleAllTxs.push(t);
@@ -4789,7 +4815,7 @@ function openCardDetailModal(csId){
             ${getShopLogoHtml(t.shop||'?',{size:26})}
             <div style="flex:1;min-width:0;">
               <div style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.shop||'利用先不明'}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}${t.billDelay?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">請求 +${t.billDelay}か月</span>`:''}</div>
               ${(t.method==='三井住友カード(Olive)'||t.method==='JCBカードW')?`<div style="font-size:9px;color:var(--text3);margin-top:1px;">${calcPt(t).rule}</div>`:''}
             </div>
             <span style="font-size:12.5px;font-weight:700;color:var(--text);font-family:monospace;white-space:nowrap;">¥${(t.amount||0).toLocaleString()}</span>
@@ -6287,6 +6313,8 @@ function openAddModal(){
   if(scratchElR) scratchElR.value='';
   const memoElA=document.getElementById('tx-memo');
   if(memoElA) memoElA.value='';
+  const bdElA=document.getElementById('tx-billdelay');
+  if(bdElA) bdElA.value='0';
   buildCatSelect();
   onMethodChange(); // 決済手段に応じた注記・入力欄を、空に戻した状態で作り直す（前の取引の注記が残らないように）
   showModal('tx-modal-overlay');
@@ -6319,6 +6347,8 @@ function openEditModal(key){
   if(scratchEl2) scratchEl2.value=t.scratchGrade||'';
   const moElE=document.getElementById('tx-mobile-order');
   if(moElE) moElE.checked=!!t.mobileOrder;
+  const bdElE=document.getElementById('tx-billdelay');
+  if(bdElE) bdElE.value=String(parseInt(t.billDelay,10)||0);
   onMethodChange();
   const rateInputE=document.getElementById('tx-rate-override');
   if(rateInputE) rateInputE.value=(t.pointRateOverride!=null)?t.pointRateOverride:'';
@@ -6432,6 +6462,12 @@ function onMethodChange(){
   if(rateWrap) rateWrap.style.display=isOlive?'none':'block';
   if(rateLabel) rateLabel.textContent=isPayPay?'PayPayクーポン還元率（任意・%）':(isJcb?'還元率（任意・総還元率・%）':'還元率（任意・%）');
   if(vcWrap) vcWrap.style.display=isOlive?'block':'none';
+  const bdWrap=document.getElementById('tx-billdelay-wrap');
+  if(bdWrap){
+    const baseM=(method||'').replace('（ポイント払い）','');
+    const isCredit=(S.cardSettings||[]).some(cs=>!isDebitMethod(cs.method)&&getCardLinkedMethods(cs).includes(baseM));
+    bdWrap.style.display=(isCredit&&txCurrentType!=='income')?'block':'none';
+  }
   updateJcbTxInfo();
   updateOliveTxInfo();
   // チャージ払い欄の出し分け：新規登録時のみ、選択中の決済手段が登録済みチャージペアの「チャージ先」に一致する場合に表示
@@ -6585,6 +6621,10 @@ function saveTxModal(){
   if(vCoupon!=null) newTx.vCoupon=vCoupon;
   if(mobileOrder) newTx.mobileOrder=true;
   if(memo) newTx.memo=memo;
+  const bdWrapS=document.getElementById('tx-billdelay-wrap');
+  const bdElS=document.getElementById('tx-billdelay');
+  const billDelay=(bdWrapS&&bdWrapS.style.display!=='none'&&bdElS)?(parseInt(bdElS.value,10)||0):0;
+  if(type==='expense'&&billDelay>=1&&billDelay<=3) newTx.billDelay=billDelay;
   if(excludeFromAggregate) newTx.excludeFromAggregate=true;
   // JCBカードW 新規入会キャンペーン：スマホ決済チェック（欄が表示されている＝期間内の場合のみ判定）
   const jcbSpEl=document.getElementById('tx-jcb-smartpay');
