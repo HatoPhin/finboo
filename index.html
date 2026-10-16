@@ -1918,7 +1918,7 @@ function calcDailyAllowance(spent,budget,key){
 }
 
 const INIT={
-  viewYear:2026, viewMonth:6,
+  viewYear:new Date().getFullYear(), viewMonth:new Date().getMonth()+1, // 起動時は常に「今日の年月」。表示月は保存・同期しない（ユーザーが選んだときだけ変わる）
   budgetLimit:10000,
   budgetMode:'total',   // 'total' | 'category'
   catBudgets:{},        // カテゴリ名(または食費内訳キー) → 予算額(0=未設定)
@@ -2888,7 +2888,6 @@ function txKey_monthly(y,m){return`finboo_tx_${y}_${String(m).padStart(2,'0')}`;
 function saveSettings(opts){
   try{
     const cfg={
-      viewYear:S.viewYear, viewMonth:S.viewMonth,
       budgetLimit:S.budgetLimit,
       budgetMode:S.budgetMode||'total',
       catBudgets:S.catBudgets||{},
@@ -2979,8 +2978,7 @@ function load(){
     const d=localStorage.getItem(SETTINGS_KEY);
     if(d){
       const cfg=JSON.parse(d);
-      S.viewYear        = cfg.viewYear        || S.viewYear;
-      S.viewMonth       = cfg.viewMonth       || S.viewMonth;
+      // 表示月(viewYear/viewMonth)は復元しない: 起動時は今日の年月、同期の更新でもページを動かさない
       S.budgetLimit     = cfg.budgetLimit     || S.budgetLimit;
       S.budgetMode      = cfg.budgetMode      || 'total';
       S.catBudgets      = cfg.catBudgets      || {};
@@ -7692,6 +7690,7 @@ document.addEventListener('pointerdown',e=>{
 },{passive:true});
 
 document.addEventListener('DOMContentLoaded',()=>{
+  { const _n=new Date(); S.viewYear=_n.getFullYear(); S.viewMonth=_n.getMonth()+1; } // 初期表示は今月
   load();
   buildSelectors();
   applyDark(S.darkMode||false);
@@ -7897,24 +7896,84 @@ function finbooNotificationEvents(now=new Date()){
         const total=getMethodUsageInRange(cs.method,range.start,range.end);
         if(!Number.isFinite(total))return;
         events.push({key:JSON.stringify([cs.id||cs.method,y,m,status]),status,label,
-          card:cs.method,total,date:finbooNotifyDay(date)});
+          card:cs.method,csId:cs.id,total,date:finbooNotifyDay(date)});
       });
     }
   });
   return events;
 }
+const FINBOO_NOTIFY_STYLE={
+  tentative:{emoji:'🕒',color:'#f59e0b',title:'請求が仮確定しました',sub:'ご利用額が仮確定'},
+  confirmed:{emoji:'✅',color:'#3b82f6',title:'請求が確定しました',sub:'請求額が確定'},
+  paid:{emoji:'🎉',color:'#10b981',title:'お支払い日になりました',sub:'引き落とし予定日'}
+};
+function finbooNotifyParts(event){
+  const st=FINBOO_NOTIFY_STYLE[event.status]||FINBOO_NOTIFY_STYLE.confirmed;
+  const amt='¥'+Number(event.total).toLocaleString('ja-JP');
+  const d=String(event.date).split('-');const ds=d.length===3?`${+d[1]}/${+d[2]}`:event.date;
+  return {st,amt,ds,title:`${st.emoji} ${event.card}｜${st.title}`,body:`${amt}　·　${ds} ${st.sub}`};
+}
+function finbooNotifyIcon(color){
+  try{
+    const c=document.createElement('canvas');c.width=c.height=192;const g=c.getContext('2d');
+    const gr=g.createLinearGradient(0,0,192,192);gr.addColorStop(0,color||'#3b82f6');gr.addColorStop(1,'#1e293b');
+    g.fillStyle=gr;g.beginPath();g.roundRect?g.roundRect(0,0,192,192,44):g.rect(0,0,192,192);g.fill();
+    g.fillStyle='#fff';g.font='bold 120px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('F',96,104);
+    return c.toDataURL('image/png');
+  }catch(e){return undefined;}
+}
+function finbooShowBanner(event){
+  const P=finbooNotifyParts(event);
+  if(!document.getElementById('finboo-banner-css')){
+    const css=document.createElement('style');css.id='finboo-banner-css';
+    css.textContent=`#finboo-banner-host{position:fixed;top:0;left:0;right:0;z-index:10001;display:flex;flex-direction:column;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 0;pointer-events:none}
+.fb-banner{pointer-events:auto;width:100%;max-width:400px;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:20px;background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);box-shadow:0 10px 30px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.08);transform:translateY(-130%) scale(.96);opacity:0;transition:transform .55s cubic-bezier(.34,1.4,.64,1),opacity .3s ease;cursor:pointer;touch-action:pan-y;color:#0f172a}
+.fb-banner.in{transform:none;opacity:1}
+.fb-banner.out{transform:translateY(-130%) scale(.96);opacity:0;transition:transform .35s ease,opacity .3s ease}
+.fb-ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none;color:#fff}
+.fb-main{min-width:0;flex:1}.fb-app{font-size:10px;font-weight:600;letter-spacing:.04em;opacity:.55}
+.fb-t{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-amt{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.25}
+.fb-b{font-size:11px;opacity:.65}
+@media(prefers-color-scheme:dark){.fb-banner{background:rgba(30,41,59,.85);color:#f1f5f9}}
+body.dark .fb-banner{background:rgba(30,41,59,.85);color:#f1f5f9}
+@media(prefers-reduced-motion:reduce){.fb-banner,.fb-banner.out{transition:opacity .2s}}`;
+    document.head.appendChild(css);
+  }
+  let host=document.getElementById('finboo-banner-host');
+  if(!host){host=document.createElement('div');host.id='finboo-banner-host';document.body.appendChild(host);}
+  const el=document.createElement('div');el.className='fb-banner';el.setAttribute('role','status');
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  el.innerHTML=`<div class="fb-ico" style="background:${P.st.color}">${P.st.emoji}</div><div class="fb-main"><div class="fb-app">FINBOO ・ たった今</div><div class="fb-t">${esc(event.card)}｜${esc(P.st.title)}</div><div class="fb-amt">${esc(P.amt)}</div><div class="fb-b">${esc(P.ds+' '+P.st.sub)}</div></div>`;
+  host.prepend(el);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('in')));
+  let tmr,y0=null,dy=0;
+  const close=()=>{clearTimeout(tmr);el.classList.remove('in');el.classList.add('out');setTimeout(()=>el.remove(),400);};
+  tmr=setTimeout(close,4500);
+  el.addEventListener('pointerdown',e=>{y0=e.clientY;dy=0;clearTimeout(tmr);});
+  el.addEventListener('pointermove',e=>{if(y0===null)return;dy=Math.min(0,e.clientY-y0);el.style.transition='none';el.style.transform=`translateY(${dy}px)`;});
+  const end=()=>{if(y0===null)return;y0=null;el.style.transition='';el.style.transform='';if(dy<-30){close();}else tmr=setTimeout(close,2500);};
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+  el.addEventListener('click',()=>{
+    if(dy<-5)return;close();
+    try{if(event.csId&&typeof openCardDetailModal==='function'){switchTab('wallet');openCardDetailModal(event.csId);}}catch(e){}
+  });
+}
 async function finbooShowNotification(event){
-  const options={body:`ステータス: ${event.label}\nカード: ${event.card}\n金額: ¥${event.total.toLocaleString('ja-JP')}\n対象日: ${event.date}`,
-    tag:'finboo-card-'+event.key};
+  const P=finbooNotifyParts(event);
+  if(!document.hidden)finbooShowBanner(event);
+  const icon=finbooNotifyIcon(P.st.color);
+  const options={body:P.body,tag:'finboo-card-'+event.key,icon,badge:icon,timestamp:Date.now(),
+    silent:false,renotify:false};
   if('serviceWorker' in navigator){
     const registration=await navigator.serviceWorker.getRegistration();
     if(registration&&registration.active){
-      await registration.showNotification('Finboo — '+event.label,options);
+      await registration.showNotification(P.title,options);
       return;
     }
   }
   // Desktop fallback; mobile browsers may require an active Service Worker.
-  new Notification('Finboo — '+event.label,options);
+  new Notification(P.title,options);
 }
 async function finbooCheckNotifications(){
   if(finbooNotifyRunning)return;
@@ -7967,6 +8026,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div>仮確定日が未設定の場合は締め日を使用します（確定日の設定が必要）。支払い完了は設定上の支払い日による判定で、実際の引き落とし確認ではありません。過去日の通知は再送しません。</div>
     <button type="button" class="btn" id="finboo-notify-enable">通知を有効にする</button>
     <button type="button" class="btn" id="finboo-notify-disable">通知を無効にする</button>
+    <button type="button" class="btn" id="finboo-notify-preview">プレビュー送信</button>
     <div id="finboo-notify-status" role="status"></div>`;
   section.before(panel);
   document.getElementById('finboo-notify-enable').addEventListener('click',async()=>{
@@ -7981,6 +8041,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('finboo-notify-disable').addEventListener('click',()=>{
     try{localStorage.removeItem(finbooNotifyEnabledKey);finbooUpdateNotificationUI();}
     catch(error){document.getElementById('finboo-notify-status').textContent='通知設定を保存できません。';}
+  });
+  document.getElementById('finboo-notify-preview').addEventListener('click',async()=>{
+    const first=(S.cardSettings||[]).find(cs=>!isDebitMethod(cs.method));
+    const ev={status:'confirmed',card:first?first.method:'Olive',csId:first&&first.id,total:48200,date:finbooNotifyDay(new Date())};
+    finbooShowBanner(ev);
+    try{if('Notification' in window&&Notification.permission==='granted'&&document.hidden)await finbooShowNotification(ev);}catch(e){}
   });
   finbooUpdateNotificationUI();
   finbooCheckNotifications();
