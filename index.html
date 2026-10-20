@@ -555,10 +555,10 @@ header{padding-top:var(--sat);}
         <div style="font-size:10px;color:#94a3b8;margin-top:2px;">還元率: <span id="ui-avg-rate" style="font-weight:700;color:#bbf7d0;">0.0%</span></div>
       </div>
     </div>
-    <div id="budget-card-wrap" class="card p-4 flex flex-col" style="min-height:120px;transition:background .3s;">
+    <div id="budget-card-wrap" class="card p-4 flex flex-col" role="button" tabindex="0" title="タップで今月の収支を表示" onclick="openBalanceModal(event)" onkeydown="if(event.key==='Enter')openBalanceModal(event)" style="min-height:120px;transition:background .3s;cursor:pointer;">
       <!-- ヘッダー行 -->
       <div class="flex items-center justify-between" style="margin-bottom:10px;">
-        <span style="font-size:11px;font-weight:600;color:var(--text3);">今月の予算</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text3);">今月の予算 <span style="font-size:9px;font-weight:600;color:var(--primary);">・タップで収支</span></span>
         <div style="display:flex;align-items:center;gap:6px;">
           <span id="ui-budget-status-badge" style="display:none;font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;"></span>
           <button id="btn-edit-budget" style="font-size:10px;color:var(--primary);font-weight:600;background:none;border:none;cursor:pointer;padding:0;">編集</button>
@@ -1369,6 +1369,17 @@ header{padding-top:var(--sat);}
           <li>決済手段の選択肢にない → 設定画面の決済手段の一覧から追加します。</li>
         </ul></div>
     </div>
+  </div>
+</div>
+
+<!-- ==================== 今月の収支モーダル ==================== -->
+<div id="balance-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:8100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);" onclick="if(event.target===this)hideModal('balance-modal-overlay')">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(420px,100%);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <span id="balance-modal-title" style="font-size:14px;font-weight:700;color:var(--text);">今月の収支</span>
+      <button onclick="hideModal('balance-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div id="balance-modal-body" style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;"></div>
   </div>
 </div>
 
@@ -6833,6 +6844,51 @@ function toggleRecovered(key){
   toast(t.recovered?'回収済みにしました ✅':'回収を取り消しました','success');
 }
 
+function openBalanceModal(ev){
+  if(ev&&ev.target&&ev.target.closest&&ev.target.closest('#btn-edit-budget'))return; // 編集ボタンは従来どおり予算の編集
+  const sm=S.summary;
+  const exp=sm.totalExpense||0, inc=sm.totalIncome||0, bal=sm.netBalance||0;
+  const rec=sm.recoveredKaetate||0;
+  const lim=getEffectiveBudgetLimit(S.viewYear,S.viewMonth);
+  const yen=n=>'¥'+Math.abs(n).toLocaleString('ja-JP');
+  const sgn=n=>(n>=0?'+':'−')+yen(n);
+  const balColor=bal>=0?'var(--green)':'var(--red)';
+  const over=lim>0&&exp>lim;
+  const diff=lim-exp;
+  const pct=lim>0?Math.round(exp/lim*100):0;
+  let verdict='';
+  if(lim>0){
+    verdict=over
+      ?`予算を ${yen(-diff)} 超過。${bal>=0?`ただし収支は ${sgn(bal)} の黒字です。`:`収支も ${sgn(bal)} の赤字です。`}`
+      :`予算内（残り ${yen(diff)}）。収支は ${sgn(bal)} です。`;
+  }
+  const row=(l,v,c)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;"><span style="color:var(--text2);">${l}</span><span style="font-weight:700;font-family:monospace;color:${c||'var(--text)'};">${v}</span></div>`;
+  const kaeUn=Math.max(0,(sm.totalKaetate||0)-rec);
+  $('balance-modal-title').textContent=`${S.viewYear}年${S.viewMonth}月の収支`;
+  $('balance-modal-body').innerHTML=`
+    <div style="text-align:center;padding:10px 0 4px;">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">収支結果</div>
+      <div style="font-size:32px;font-weight:800;font-family:monospace;letter-spacing:-.5px;color:${balColor};">${sgn(bal)}</div>
+      <div style="font-size:10.5px;color:var(--text3);margin-top:2px;">${bal>=0?'黒字':'赤字'}</div>
+    </div>
+    <div>
+      ${row('収入合計','+'+yen(inc),'var(--green)')}
+      ${row('支出（実質・ポイント払いを除く）','−'+yen(exp),'var(--red)')}
+      ${rec>0?row('立替の回収済み分','+'+yen(rec),'var(--green)'):''}
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0 0;font-size:12.5px;font-weight:800;"><span>収支</span><span style="font-family:monospace;color:${balColor};">${sgn(bal)}</span></div>
+    </div>
+    ${lim>0?`<div style="background:${over?'var(--red-light)':'var(--card2)'};border:1px solid var(--border);border-radius:14px;padding:12px 14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;">予算との比較</div>
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text2);"><span>支出 ${yen(exp)} / 予算 ${yen(lim)}</span><span style="font-weight:700;">${pct}%</span></div>
+      <div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden;margin:6px 0;"><div style="height:100%;width:${Math.min(100,pct)}%;background:${over?'var(--red)':'var(--primary)'};"></div></div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--text);line-height:1.5;">${verdict}</div>
+    </div>`:''}
+    ${(kaeUn>0||(sm.totalPointPayment||0)>0)?`<div style="font-size:10.5px;color:var(--text3);line-height:1.7;">
+      ${kaeUn>0?`参考：立替の未回収 ${yen(kaeUn)}（収支には含まれません）<br>`:''}
+      ${(sm.totalPointPayment||0)>0?`参考：ポイント払い ${yen(sm.totalPointPayment)}（支出に含まれません）`:''}
+    </div>`:''}`;
+  showModal('balance-modal-overlay');
+}
 function openPayGuide(){ showModal('pay-guide-overlay'); }
 function showModal(id){
   const el=document.getElementById(id);
