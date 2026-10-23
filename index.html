@@ -1042,6 +1042,26 @@ header{padding-top:var(--sat);}
       </div>
     </div>
 
+    <!-- ポイントが貯まる店（ポイントカード提示） -->
+    <div style="border-top:1px solid var(--border);padding-top:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🪙 ポイントが貯まる店（ポイントカード提示）</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">登録した店名（部分一致）の取引を追加すると、「どのポイントを提示しましたか？」と質問し、選んだポイントが決済手段のポイントとは別に加算されます。どのポイントが使えるかは店ごとに変わるので、ご自身で確認した店を登録してください。</div>
+      <div id="store-point-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <input id="new-store-point-kw" type="text" placeholder="店名（例: ローソン）" style="flex:1;min-width:120px;padding:7px 10px;font-size:11px;">
+        <label style="font-size:10.5px;"><input id="new-store-point-rakuten" type="checkbox"> 楽天</label>
+        <label style="font-size:10.5px;"><input id="new-store-point-d" type="checkbox"> d</label>
+        <label style="font-size:10.5px;"><input id="new-store-point-v" type="checkbox"> V</label>
+        <button onclick="addStorePointRule()" class="btn btn-primary" style="font-size:11px;">追加</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px;">還元率（%）：楽天・dは100円=1pt（1%）、Vは200円=1pt（0.5%）が目安です。実際の値に合わせて直してください。</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;">
+        <label>楽天 <input id="pc-rate-rakuten" type="number" step="0.1" min="0" style="width:60px;padding:4px 6px;font-size:11px;" onchange="setPresentPointRate('rakuten',this.value)"> %</label>
+        <label>d <input id="pc-rate-d" type="number" step="0.1" min="0" style="width:60px;padding:4px 6px;font-size:11px;" onchange="setPresentPointRate('d',this.value)"> %</label>
+        <label>V <input id="pc-rate-v" type="number" step="0.1" min="0" style="width:60px;padding:4px 6px;font-size:11px;" onchange="setPresentPointRate('v',this.value)"> %</label>
+      </div>
+    </div>
+
     <!-- Supabase 新システム(テスト中・既存のDrive同期とは独立して併存) -->
     <div style="border-top:1px solid var(--border);padding-top:20px;">
       <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🧪 Supabase 新システム（テスト中）</div>
@@ -1361,7 +1381,15 @@ header{padding-top:var(--sat);}
           <li><b>Olive</b>：Vクーポンの欄にサイトの数値をそのまま入力。</li>
           <li><b>JCBカードW</b>：優待店は、JCBのサイトに書いてある「○倍」をそのまま入力（1倍＝0.5%で自動換算。基本2倍＝1.0%を含む合計倍率）。</li>
         </ul></div>
-      <div class="pg-sec"><div class="pg-h">⑦ よくあるつまずき</div>
+      <div class="pg-sec"><div class="pg-h">⑦ メルペイとポイントカード提示</div>
+        <ul>
+          <li><b>メルペイ</b>（残高払い）で払った取引は、予算・支出・収支に含まれません。記録とポイント計算には使われます。</li>
+          <li>設定画面の「🪙 ポイントが貯まる店」に店名と貯まるポイント（楽天・d・V）を登録すると、その店の取引を保存するとき「どのポイントを提示しましたか？」と聞かれます（決済手段は問いません）。</li>
+          <li>選んだポイントは、決済手段のポイントとは別に、ポイントタブへ加算されます。還元率は同じ設定画面で変更できます。</li>
+        </ul></div>
+      <div class="pg-sec"><div class="pg-h">⑧ Oliveのポイント充当</div>
+        <p>Oliveで払った取引を、後からVポイントで支払い済みにしたいときは、取引の編集画面で<b>「ポイント充当」</b>にチェックを入れます（Oliveのときだけ表示）。支出・予算・カテゴリ別予算・Vポイントの付与はそのままで、<b>カードの請求額（引き落とし予定）からだけ</b>除かれます。チェックを外せば元に戻ります。</p></div>
+      <div class="pg-sec"><div class="pg-h">⑨ よくあるつまずき</div>
         <ul>
           <li>請求額が合わない → 「紐づける決済手段」と締め日を確認。遅れて請求された分は「引き落とし月の調整」。</li>
           <li>ホームに引き落とし予定が出ない → 引き落とし設定が未登録です。</li>
@@ -1380,6 +1408,15 @@ header{padding-top:var(--sat);}
       <button onclick="hideModal('balance-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
     </div>
     <div id="balance-modal-body" style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;"></div>
+  </div>
+</div>
+
+<!-- ==================== ポイント提示の質問 ==================== -->
+<div id="pc-ask-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:8700;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(360px,100%);padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px;">どのポイントを提示しましたか？</div>
+    <div id="pc-ask-shop" style="font-size:11px;color:var(--text3);margin-bottom:14px;"></div>
+    <div id="pc-ask-btns" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 </div>
 
@@ -1514,7 +1551,7 @@ header{padding-top:var(--sat);}
       <!-- 利用先 -->
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">利用先 / 収入源 *</label>
-        <input id="tx-shop" type="text" placeholder="例: セブンイレブン、給与 など" oninput="refreshTxShopLogoPreview();updateJcbTxInfo();updateOliveTxInfo();" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
+        <input id="tx-shop" type="text" placeholder="例: セブンイレブン、給与 など" oninput="refreshTxShopLogoPreview();updateJcbTxInfo();updateOliveTxInfo();updatePointCardUi();" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
         <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
           <div id="tx-shop-logo-preview" style="width:30px;height:30px;flex-shrink:0;"></div>
           <label class="btn btn-ghost" style="font-size:10px;cursor:pointer;padding:5px 9px;">
@@ -1645,6 +1682,23 @@ header{padding-top:var(--sat);}
         </select>
         <div style="font-size:9.5px;color:var(--text3);margin-top:4px;line-height:1.5;">ETCなど、利用日より遅れて請求される分に使います。利用日・月別の支出は変わらず、カードの請求額と請求明細だけが指定した月に移ります。</div>
       </div>
+
+      <!-- Oliveのポイント充当 -->
+      <div id="tx-pointoffset-wrap" style="display:none;margin-bottom:14px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input id="tx-pointoffset" type="checkbox" style="width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;">
+          <span style="font-size:12px;font-weight:700;color:var(--text2);">ポイント充当（Vポイントで支払い済み）</span>
+        </label>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:5px;margin-left:24px;line-height:1.5;">支出・予算・カテゴリ別予算・Vポイントの付与にはこれまで通り含め、カードの請求額（引き落とし予定）からだけ除きます。後から編集でも切り替えられます。</div>
+      </div>
+
+      <!-- ポイントカード提示（登録した店のときだけ表示） -->
+      <div id="tx-pointcard-wrap" style="display:none;margin-bottom:14px;">
+        <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">ポイントカードの提示</label>
+        <select id="tx-pointcard" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;"></select>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:4px;line-height:1.5;">提示したポイントが、この取引の金額に応じて加算されます（決済手段のポイントとは別にたまります）。「保存時に確認する」のままだと、保存するときに質問します。</div>
+      </div>
+      <div id="tx-merpay-note" style="display:none;margin-bottom:14px;padding:8px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);font-size:10.5px;color:var(--text2);line-height:1.6;">メルペイ払いは、予算・支出・収支には含めません（取引の記録とポイント計算には使います）。</div>
 
       <!-- メモ -->
       <div style="margin-bottom:20px;">
@@ -1777,6 +1831,7 @@ const DEFAULT_METHOD_COLORS={
   "V Point Pay":"#8b5cf6",
   "JCBカードW":"#1d4ed8",
   "住信SBI - デビット":"#0ea5e9",
+  "メルペイ":"#e11d48",
   "現金":"#6b7280",
   "収入":"#10b981"
 };
@@ -1799,6 +1854,8 @@ function isKaetateRecovery(t){ return t.type==='income'&&(t.categoryMajor||'')==
 function isExcludedFromAggregate(t){ return !!t.excludeFromAggregate; }
 // チャージ払いのボーナス加算が設定された取引かどうか（バッジ表示用）
 function isChargePairTx(t){ return !!t.chargeBonusMethod; }
+// Oliveのポイント充当（Vポイントで支払い済み）：支出・予算・ポイント付与には含めるが、カード請求額からは除く
+function isPointOffset(t){ return !!t.pointOffset; }
 // (未使用: 旧・2件登録方式の名残。excludeFromCardUsageが立っている取引は無い想定だが、互換のため判定だけ残す)
 function isChargeTargetLeg(t){ return !!t.excludeFromCardUsage; }
 
@@ -2049,6 +2106,8 @@ const INIT={
   methodPointType:{},    // 決済手段名 → ポイントの種類名（例:「Tポイント」）。独自還元率の決済手段のポイント内訳をグループ分けするための表示用ラベル
   pointLogos:{},          // ポイント名(Vポイント等のラベル) → Base64画像。ポイント内訳モーダルのブランド画像表示用
   chargePairs:[],        // チャージ払いペア設定 [{id, source, target}]。sourceからtargetへチャージして払う運用を1回の入力で登録するための設定
+  storePointRules:[{id:'spr_famima',keyword:'ファミリーマート',types:['rakuten']}], // ポイントが貯まる店 [{id,keyword(部分一致),types:['rakuten'|'d'|'v']}]。取引追加時に提示したポイントを質問する
+  presentPointRates:{rakuten:1,d:1,v:0.5}, // 提示ポイントの還元率(%)。楽天・d=100円1pt、V=200円1pt
   jcbPartnerShops:[],    // JCBカードW: J-POINTパートナー優待店リスト [{id, name(前方一致), rates:[{id, rate(%), from(YYYY-MM-DD or '')}]}]
   jcbCampaign:null       // JCBカードW: 新規入会キャンペーン設定 {joinDate:'YYYY-MM-DD', cap:12000}
 };
@@ -2806,13 +2865,29 @@ function calcPt(t){
   return{pt:0,rule:'非対象'};
 }
 
+// ===== ポイントカード提示（共通ポイント） =====
+const PC_TYPES={rakuten:{label:'楽天ポイント',short:'楽天'},d:{label:'dポイント',short:'d'},v:{label:'Vポイント',short:'V'}};
+function pcMatchRule(shop){
+  const sh=(shop||'').trim().toLowerCase(); if(!sh) return null;
+  return (S.storePointRules||[]).find(r=>{const k=(r.keyword||'').trim().toLowerCase();return k&&sh.includes(k)&&(r.types||[]).length;})||null;
+}
+function pcRate(type){
+  const d={rakuten:1,d:1,v:0.5}; const v=(S.presentPointRates||{})[type];
+  return (v!=null&&!isNaN(v))?v:d[type];
+}
+function pcCalc(t){
+  if(!t||!t.pointCard||t.type==='income'||!PC_TYPES[t.pointCard]) return 0;
+  return Math.max(0,Math.floor((t.amount||0)*pcRate(t.pointCard)/100));
+}
 function calcAllPts(){
   let oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,pp=0,rk=0,sbi=0,ov=0,vCouponPts=0,oJ=0,jcbBonus=0;
+  const cardPts={rakuten:0,d:0,v:0}; // ポイントカード提示分（決済手段とは別にたまる共通ポイント）
   const miscByType={}; // 独自還元率の決済手段のポイントを「ポイントの種類」ごとにグループ分けした合計
   const txs=S.transactions.map(t=>{
     const{pt,rule}=calcPt(t);
     // 立替は集計から除外
     // 立替も決済自体は行っているためポイント集計に含める（支出集計とは別軸）
+    if(t.pointCard&&t.type!=='income'&&PC_TYPES[t.pointCard]) cardPts[t.pointCard]+=pcCalc(t);
     if(t.type!=='income'){
       if(t.method==='三井住友カード(Olive)'){
         if(isOliveLounge(t.shop))oLounge+=t.amount;
@@ -2885,8 +2960,8 @@ function calcAllPts(){
   // JCBカードW月間合算ポイント計算（200円毎2pt=1.0%、切り捨て）＋優待店ボーナス
   const ptJ = Math.floor(oJ/200) * 2;
   const jcb = ptJ + jcbBonus;
-  const total = vPts + vCouponPts + pp + rk + sbi + ov + jcb;
-  return{txs,vPts,pp,rk,sbi,ov,miscByType,vCouponPts,jcb,ptJ,jcbBonus,total,oT,oM,oP,oN,oS,oOrder,oLounge,oJ,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN};
+  const total = vPts + vCouponPts + pp + rk + sbi + ov + jcb + cardPts.rakuten + cardPts.d + cardPts.v;
+  return{cardRk:cardPts.rakuten,cardD:cardPts.d,cardV:cardPts.v,txs,vPts,pp,rk,sbi,ov,miscByType,vCouponPts,jcb,ptJ,jcbBonus,total,oT,oM,oP,oN,oS,oOrder,oLounge,oJ,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN};
 }
 
 // 任意の取引リスト(例: カードの請求サイクル分)からOlive(Vポイント)の区分別ポイントを計算する。
@@ -2999,6 +3074,8 @@ function saveSettings(opts){
       pointLogos:S.pointLogos||{},
       chargePairs:S.chargePairs||[],
       jcbPartnerShops:S.jcbPartnerShops||[],
+      storePointRules:S.storePointRules||[],
+      presentPointRates:S.presentPointRates||{rakuten:1,d:1,v:0.5},
       jcbCampaign:S.jcbCampaign||null
     };
     localStorage.setItem(SETTINGS_KEY,JSON.stringify(cfg));
@@ -3101,6 +3178,8 @@ function load(){
       if(cfg.pointLogos) S.pointLogos = cfg.pointLogos;
       if(cfg.chargePairs)   S.chargePairs     = cfg.chargePairs;
       if(cfg.jcbPartnerShops) S.jcbPartnerShops = cfg.jcbPartnerShops;
+      if(cfg.storePointRules) S.storePointRules = cfg.storePointRules;
+      if(cfg.presentPointRates) S.presentPointRates = cfg.presentPointRates;
       if(cfg.jcbCampaign!==undefined) S.jcbCampaign = cfg.jcbCampaign;
     }
   }catch(e){console.warn('load error:',e);}
@@ -3960,6 +4039,9 @@ function openPtBreakdownModal(){
   addEntry('PayPayポイント', pc.pp, 'PayPayクレジット', 'PayPayカード・都度計算', false);
   addEntry('楽天ポイント', pc.rk, '楽天カード', '楽天カード・都度計算', false);
   addEntry('dポイント', pc.sbi, '住信SBI - デビット', '住信SBI - デビット・都度計算(基本0.8%)', false);
+  if(pc.cardV>0) addEntry('Vポイント', pc.cardV, 'ポイントカード提示', 'ポイントカード提示分', true);
+  if(pc.cardRk>0) addEntry('楽天ポイント', pc.cardRk, 'ポイントカード提示', 'ポイントカード提示分', true);
+  if(pc.cardD>0) addEntry('dポイント', pc.cardD, 'ポイントカード提示', 'ポイントカード提示分', true);
   addEntry('J-POINT', pc.jcb, 'JCBカードW', 'JCBカードW・月間合算(1.0%)＋優待店ボーナス', false);
   // 独自還元率の決済手段は「ポイントの種類」名で追加（既存の上記5種と同名ならそのまま統合される）
   const miscByType=pc.miscByType||{};
@@ -4014,7 +4096,7 @@ function renderStats(){
   const ptPay2=S.summary.totalPointPayment||0;
   setText('ui-total-pts',`${pc.total} pt`);
   setText('ui-avg-rate',`${exp>0?((pc.total/exp)*100).toFixed(1):'0.0'}%`);
-  setText('ui-vpts',`${pc.vPts} pt`);setText('ui-pppts',`${pc.pp} pt`);
+  setText('ui-vpts',`${pc.vPts+pc.cardV} pt`);setText('ui-pppts',`${pc.pp} pt`);
   // 予算カード（ポイント除外の実質支出で計算）
   setText('ui-expense',`¥${exp.toLocaleString()}`);
   // サマリーカード: メイン数値はポイント除外、サブにポイント込みを表示
@@ -4493,7 +4575,7 @@ function getMethodUsageInRange(method, startDate, endDate){
       const td=txBillDate(t);
       if(td<s||td>e) return;
       // カード請求集計は「実際にそのカードで支払われた金額」なので立替も含める（支出集計や統計は別途isKaetate()で除外している）
-      if(t.method===method&&!isPointPayment(t)) sum+=t.amount;
+      if(t.method===method&&!isPointPayment(t)&&!isPointOffset(t)) sum+=t.amount;
       // チャージ払いのチャージ元カード：明細上の決済手段はチャージ先だが、実際にはチャージ元カードでも
       // 同額の引き落とし・請求が発生しているため、チャージ元カードの請求額にも同じ金額を計上する
       if(t.chargeBonusMethod===method) sum+=t.amount;
@@ -4884,7 +4966,7 @@ function openCardDetailModal(csId){
             ${getShopLogoHtml(t.shop||'?',{size:26})}
             <div style="flex:1;min-width:0;">
               <div style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.shop||'利用先不明'}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}${t.billDelay?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">請求 +${t.billDelay}か月</span>`:''}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}${isPointOffset(t)?`　<span style="background:#dcfce7;color:#166534;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当（請求に含めず）</span>`:''}${t.billDelay?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">請求 +${t.billDelay}か月</span>`:''}</div>
               ${(t.method==='三井住友カード(Olive)'||t.method==='JCBカードW')?`<div style="font-size:9px;color:var(--text3);margin-top:1px;">${calcPt(t).rule}</div>`:''}
             </div>
             <span style="font-size:12.5px;font-weight:700;color:var(--text);font-family:monospace;white-space:nowrap;">¥${(t.amount||0).toLocaleString()}</span>
@@ -5614,6 +5696,7 @@ function renderTable(){
               ${isPointPayment(t)?'<span style=\"background:#dcfce7;color:#166534;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;">💠ポイント払い</span>':''}
               ${isKaetate(t)?(t.recovered?'<span style=\"background:#d1fae5;color:#065f46;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;">✅ 回収済</span>':'<span style=\"background:#fee2e2;color:#991b1b;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;">🔄 立替</span>'):''}
               ${isExcludedFromAggregate(t)?'<span style=\"background:#e2e8f0;color:#475569;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;">🚫 対象外</span>':''}
+              ${isPointOffset(t)?'<span style=\"background:#dcfce7;color:#166534;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;\">💠 ポイント充当</span>':''}
               ${isChargePairTx(t)?'<span style=\"background:#fef3c7;color:#92400e;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;\">⚡チャージ払い</span>':''}
             </span>
           </td>
@@ -5643,6 +5726,7 @@ function renderTable(){
             ${isPointPayment(t)?'<span style="font-size:10.5px;font-weight:700;background:#dcfce7;color:#166534;padding:4px 10px;border-radius:99px;">💠 ポイント払い</span>':''}
             ${isKaetate(t)?(t.recovered?'<span style="font-size:10.5px;font-weight:700;background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:99px;">✅ 回収済</span>':'<span style="font-size:10.5px;font-weight:700;background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:99px;">🔄 立替</span>'):''}
             ${isExcludedFromAggregate(t)?'<span style="font-size:10.5px;font-weight:700;background:#e2e8f0;color:#475569;padding:4px 10px;border-radius:99px;">🚫 対象外</span>':''}
+            ${isPointOffset(t)?'<span style="font-size:10.5px;font-weight:700;background:#dcfce7;color:#166534;padding:4px 10px;border-radius:99px;">💠 ポイント充当</span>':''}
             ${isChargePairTx(t)?'<span style="font-size:10.5px;font-weight:700;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:99px;">⚡チャージ払い</span>':''}
           </div>
         </div>
@@ -5772,6 +5856,7 @@ function rankMonthPredicted(){
   try{ S.transactions=rankMonthTxs(); pc=calcAllPts(); }finally{ S.transactions=keep; }
   const out={}; const add=(k,v)=>{ if(v>0) out[k]=(out[k]||0)+v; };
   add('Vポイント',pc.vPts+pc.vCouponPts); add('PayPayポイント',pc.pp); add('楽天ポイント',pc.rk); add('dポイント',pc.sbi); add('J-POINT',pc.jcb);
+  add('Vポイント',pc.cardV); add('楽天ポイント',pc.cardRk); add('dポイント',pc.cardD);
   Object.keys(pc.miscByType||{}).forEach(k=>add(k,pc.miscByType[k]));
   return out;
 }
@@ -5934,7 +6019,7 @@ function switchTab(id){
   if(id==='points')renderPtTab();
   if(id==='campaign')renderCampaignSummary();
   window.scrollTo({top:0,behavior:'smooth'});
-  if(id==='sync'){renderCatList();renderMinorCatSettings();renderMethodList();renderPointLogoList();renderChargePairList();renderJcbPartnerList();renderJcbCampaignSettings();renderBrandList();renderShopLogoList();renderCardSettingList();sbRenderStatus();}
+  if(id==='sync'){renderCatList();renderMinorCatSettings();renderMethodList();renderPointLogoList();renderChargePairList();renderStorePointRules();renderJcbPartnerList();renderJcbCampaignSettings();renderBrandList();renderShopLogoList();renderCardSettingList();sbRenderStatus();}
 }
 
 // ============================================================
@@ -6384,8 +6469,11 @@ function openAddModal(){
   if(memoElA) memoElA.value='';
   const bdElA=document.getElementById('tx-billdelay');
   if(bdElA) bdElA.value='0';
+  const poElA=document.getElementById('tx-pointoffset');
+  if(poElA) poElA.checked=false;
   buildCatSelect();
-  onMethodChange(); // 決済手段に応じた注記・入力欄を、空に戻した状態で作り直す（前の取引の注記が残らないように）
+  onMethodChange();
+  updatePointCardUi(''); // 決済手段に応じた注記・入力欄を、空に戻した状態で作り直す（前の取引の注記が残らないように）
   showModal('tx-modal-overlay');
   refreshTxShopLogoPreview();
 }
@@ -6418,7 +6506,10 @@ function openEditModal(key){
   if(moElE) moElE.checked=!!t.mobileOrder;
   const bdElE=document.getElementById('tx-billdelay');
   if(bdElE) bdElE.value=String(parseInt(t.billDelay,10)||0);
+  const poElE=document.getElementById('tx-pointoffset');
+  if(poElE) poElE.checked=!!t.pointOffset;
   onMethodChange();
+  updatePointCardUi(t.pointCard||'none');
   const rateInputE=document.getElementById('tx-rate-override');
   if(rateInputE) rateInputE.value=(t.pointRateOverride!=null)?t.pointRateOverride:'';
   const vcInputE=document.getElementById('tx-vcoupon');
@@ -6531,6 +6622,11 @@ function onMethodChange(){
   if(rateWrap) rateWrap.style.display=isOlive?'none':'block';
   if(rateLabel) rateLabel.textContent=isPayPay?'PayPayクーポン還元率（任意・%）':(isJcb?'還元率（任意・総還元率・%）':'還元率（任意・%）');
   if(vcWrap) vcWrap.style.display=isOlive?'block':'none';
+  { const poW=document.getElementById('tx-pointoffset-wrap'), poC=document.getElementById('tx-pointoffset');
+    const showPo=txCurrentType!=='income'&&method==='三井住友カード(Olive)';
+    if(poW) poW.style.display=showPo?'block':'none';
+    if(poC&&!showPo) poC.checked=false; }
+  updatePointCardUi();
   const bdWrap=document.getElementById('tx-billdelay-wrap');
   if(bdWrap){
     const baseM=(method||'').replace('（ポイント払い）','');
@@ -6669,11 +6765,19 @@ function saveTxModal(){
   const date=cleanDate(dateRaw.replace(/-/g,'/'));
   if(!date){toast('日付の形式が正しくありません','error');return;}
 
+  // ポイントカード提示：登録した店のときは、保存前に提示したポイントを確認する
+  let pointCard=null;
+  const pcWrapS=document.getElementById('tx-pointcard-wrap'), pcSelS=document.getElementById('tx-pointcard');
+  if(type==='expense'&&pcWrapS&&pcWrapS.style.display!=='none'&&pcSelS){
+    if(pcSelS.value===''){ openPointCardAsk(); return; }
+    if(pcSelS.value!=='none') pointCard=pcSelS.value;
+  }
+
   const memoEl=document.getElementById('tx-memo');
   const memo=memoEl?memoEl.value.trim():'';
 
   const excludeEl=document.getElementById('tx-exclude');
-  const excludeFromAggregate=type==='expense'&&!!(excludeEl&&excludeEl.checked);
+  const excludeFromAggregate=type==='expense'&&(!!(excludeEl&&excludeEl.checked)||methodBase==='メルペイ'); // メルペイ(残高払い)は予算・支出・収支に含めない
 
   const fixedCostEl=document.getElementById('tx-fixedcost');
   const wantFixedCost=type==='expense'&&!!(fixedCostEl&&fixedCostEl.checked);
@@ -6690,6 +6794,9 @@ function saveTxModal(){
   if(vCoupon!=null) newTx.vCoupon=vCoupon;
   if(mobileOrder) newTx.mobileOrder=true;
   if(memo) newTx.memo=memo;
+  if(pointCard) newTx.pointCard=pointCard;
+  const poWrapS=document.getElementById('tx-pointoffset-wrap'), poElS=document.getElementById('tx-pointoffset');
+  if(type==='expense'&&method==='三井住友カード(Olive)'&&poWrapS&&poWrapS.style.display!=='none'&&poElS&&poElS.checked) newTx.pointOffset=true;
   const bdWrapS=document.getElementById('tx-billdelay-wrap');
   const bdElS=document.getElementById('tx-billdelay');
   const billDelay=(bdWrapS&&bdWrapS.style.display!=='none'&&bdElS)?(parseInt(bdElS.value,10)||0):0;
@@ -6776,7 +6883,9 @@ function openTxDetailModal(key){
   const badges=[];
   if(isPointPayment(t)) badges.push('<span style="font-size:11px;font-weight:700;background:#dcfce7;color:#166534;padding:4px 11px;border-radius:99px;">💠 ポイント払い</span>');
   if(isKaetate(t)) badges.push(t.recovered?'<span style="font-size:11px;font-weight:700;background:#d1fae5;color:#065f46;padding:4px 11px;border-radius:99px;">✅ 回収済</span>':'<span style="font-size:11px;font-weight:700;background:#fee2e2;color:#991b1b;padding:4px 11px;border-radius:99px;">🔄 立替</span>');
+  if(t.pointCard&&PC_TYPES[t.pointCard]) badges.push('<span style="font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;padding:4px 11px;border-radius:99px;">🪙 '+PC_TYPES[t.pointCard].label+'提示 +'+pcCalc(t)+'pt</span>');
   if(isExcludedFromAggregate(t)) badges.push('<span style="font-size:11px;font-weight:700;background:#e2e8f0;color:#475569;padding:4px 11px;border-radius:99px;">🚫 対象外</span>');
+  if(isPointOffset(t)) badges.push('<span style="font-size:11px;font-weight:700;background:#dcfce7;color:#166534;padding:4px 11px;border-radius:99px;">💠 ポイント充当</span>');
   if(isChargePairTx(t)) badges.push('<span style="font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;padding:4px 11px;border-radius:99px;">⚡チャージ払い</span>');
   if(badges.length===0) badges.push(`<span style="font-size:11px;font-weight:700;background:var(--card2);color:var(--text2);padding:4px 11px;border-radius:99px;">${isIncome?'収入':'支出'}</span>`);
   $('tx-detail-badges').innerHTML=badges.join('');
@@ -6888,6 +6997,67 @@ function openBalanceModal(ev){
       ${(sm.totalPointPayment||0)>0?`参考：ポイント払い ${yen(sm.totalPointPayment)}（支出に含まれません）`:''}
     </div>`:''}`;
   showModal('balance-modal-overlay');
+}
+function updatePointCardUi(forceVal){
+  const wrap=document.getElementById('tx-pointcard-wrap'), sel=document.getElementById('tx-pointcard');
+  const note=document.getElementById('tx-merpay-note');
+  const mEl=document.getElementById('tx-method');
+  if(note) note.style.display=(txCurrentType!=='income'&&mEl&&mEl.value==='メルペイ')?'block':'none';
+  if(!wrap||!sel) return;
+  const rule=(txCurrentType!=='income')?pcMatchRule((document.getElementById('tx-shop')||{}).value):null;
+  if(!rule){ wrap.style.display='none'; sel.innerHTML=''; return; }
+  const prev=forceVal!==undefined?forceVal:sel.value;
+  sel.innerHTML=`<option value="">保存時に確認する</option><option value="none">提示なし</option>`+
+    rule.types.filter(k=>PC_TYPES[k]).map(k=>`<option value="${k}">${PC_TYPES[k].label}</option>`).join('');
+  sel.value=[...sel.options].some(o=>o.value===prev)?prev:'';
+  wrap.style.display='block';
+}
+function openPointCardAsk(){
+  const shop=(document.getElementById('tx-shop')||{}).value||'';
+  const rule=pcMatchRule(shop); if(!rule) return;
+  document.getElementById('pc-ask-shop').textContent=`「${shop}」はポイントが貯まる店です`;
+  const box=document.getElementById('pc-ask-btns');
+  const mk=(val,label,primary)=>`<button type="button" onclick="answerPointCardAsk('${val}')" style="padding:12px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border);${primary?'background:var(--primary);color:#fff;border-color:var(--primary);':'background:var(--card2);color:var(--text);'}">${label}</button>`;
+  box.innerHTML=rule.types.filter(k=>PC_TYPES[k]).map(k=>mk(k,PC_TYPES[k].label,true)).join('')+mk('none','提示なし',false);
+  showModal('pc-ask-overlay');
+}
+function answerPointCardAsk(val){
+  hideModal('pc-ask-overlay');
+  const sel=document.getElementById('tx-pointcard'); if(sel) sel.value=val;
+  setTimeout(saveTxModal,0);
+}
+// 設定画面：ポイントが貯まる店
+function renderStorePointRules(){
+  const el=document.getElementById('store-point-list'); if(!el) return;
+  const rules=S.storePointRules||[];
+  const chk=(r,k)=>`<label style="display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--text2);"><input type="checkbox" ${(r.types||[]).includes(k)?'checked':''} onchange="toggleStorePointType('${r.id}','${k}',this.checked)">${PC_TYPES[k].short}</label>`;
+  el.innerHTML=rules.length?rules.map(r=>`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;"><span style="font-size:12px;font-weight:600;color:var(--text);flex:1;min-width:110px;">${dupEsc(r.keyword)}</span>${['rakuten','d','v'].map(k=>chk(r,k)).join('')}<button onclick="removeStorePointRule('${r.id}')" style="font-size:10px;background:var(--red-light);color:var(--red);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;">削除</button></div>`).join(''):'<div style="font-size:11px;color:var(--text3);">登録されている店はありません。</div>';
+  ['rakuten','d','v'].forEach(k=>{const i=document.getElementById('pc-rate-'+k); if(i&&document.activeElement!==i) i.value=pcRate(k);});
+}
+function addStorePointRule(){
+  const kw=(document.getElementById('new-store-point-kw').value||'').trim();
+  const types=['rakuten','d','v'].filter(k=>document.getElementById('new-store-point-'+k).checked);
+  if(!kw){toast('店名のキーワードを入力してください','error');return;}
+  if(!types.length){toast('貯まるポイントを1つ以上選んでください','error');return;}
+  S.storePointRules=S.storePointRules||[];
+  const ex=S.storePointRules.find(r=>(r.keyword||'').trim().toLowerCase()===kw.toLowerCase());
+  if(ex) ex.types=types; else S.storePointRules.push({id:'spr_'+uid(),keyword:kw,types});
+  document.getElementById('new-store-point-kw').value='';
+  saveSettings(); renderStorePointRules(); toast('登録しました','success');
+}
+function toggleStorePointType(id,k,on){
+  const r=(S.storePointRules||[]).find(x=>x.id===id); if(!r) return;
+  const set=new Set(r.types||[]); on?set.add(k):set.delete(k); r.types=[...set];
+  saveSettings();
+}
+function removeStorePointRule(id){
+  S.storePointRules=(S.storePointRules||[]).filter(r=>r.id!==id);
+  saveSettings(); renderStorePointRules();
+}
+function setPresentPointRate(k,v){
+  const n=parseFloat(v); if(isNaN(n)||n<0) return;
+  S.presentPointRates=S.presentPointRates||{}; S.presentPointRates[k]=n;
+  saveSettings(); recalc(); renderAll();
 }
 function openPayGuide(){ showModal('pay-guide-overlay'); }
 function showModal(id){
