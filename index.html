@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#15803d" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#161b22" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7fbf3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101511" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -407,6 +407,191 @@ header{padding-top:var(--sat);}
   .wc-arrow[hidden]{display:none!important;}
 }
 
+
+/* =====================================================================
+   Material You (Material 3) テーマ層
+   - 既存のCSS変数を M3 のトーナルパレットに置き換え、形・ボタン・入力欄・シートを上書き
+   - 下部の Liquid Glass タブバー / Netflix風ウォレット矢印 / 通知バナーは維持
+   ===================================================================== */
+:root{
+  /* surface / tonal container */
+  --bg:#f7fbf3;
+  --card:#ecf2e9;
+  --card2:#e1e8de;
+  --border:rgba(112,121,111,.20);
+  --border2:rgba(112,121,111,.11);
+  --text:#181d18;
+  --text2:#414941;
+  --text3:#717970;
+  /* primary (green seed) */
+  --indigo:#1a6c3c;
+  --indigo-dim:#2a8a52;
+  --indigo-light:#c4eecb;
+  --indigo-text:#00210d;
+  /* semantic */
+  --green:#1a7f46;
+  --green-light:#d9f0dc;
+  --red:#ba1a1a;
+  --red-light:#ffdad6;
+  --amber:#8c5a00;
+  --amber-light:#ffddb0;
+  --shadow:0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 16px rgba(0,0,0,.10);
+  --nav-bg:#f7fbf3;
+  --nav-border:transparent;
+  /* M3 motion & shape */
+  --m3-ease:cubic-bezier(.2,0,0,1);
+  --m3-ease-emph:cubic-bezier(.05,.7,.1,1);
+  --m3-r-card:24px;
+  --m3-r-lg:28px;
+  --state-hover:.08;
+  --state-press:.12;
+}
+body.dark{
+  --bg:#101511;
+  --card:#1c211d;
+  --card2:#272d28;
+  --border:rgba(138,147,137,.24);
+  --border2:rgba(138,147,137,.13);
+  --text:#e0e4dd;
+  --text2:#c0c9be;
+  --text3:#8a9389;
+  --indigo:#86d99a;
+  --indigo-dim:#9be5ad;
+  --indigo-light:#1f512f;
+  --indigo-text:#a6f4b8;
+  --green:#7fdc97;
+  --green-light:#16301f;
+  --red:#ffb4ab;
+  --red-light:#4a1f1b;
+  --amber:#ffb95c;
+  --amber-light:#3b2a0e;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+  --shadow-md:0 6px 20px rgba(0,0,0,.5);
+  --nav-bg:#101511;
+}
+body.dark{--primary-text:#00391a;}
+body{background:var(--bg);}
+
+/* ---- Top App Bar（スクロールで色が変わる） ---- */
+header{
+  background:var(--bg)!important;
+  border-bottom:none!important;
+  box-shadow:none!important;
+  transition:background-color .3s var(--m3-ease);
+}
+header.m3-scrolled{background:var(--card)!important;}
+header + div.noscroll{background:var(--bg)!important;border-bottom:1px solid var(--border2)!important;}
+header.m3-scrolled + div.noscroll{background:var(--card)!important;}
+.tab-t{font-size:13px;font-weight:600;padding:14px 14px;border-bottom-width:3px;border-radius:3px 3px 0 0;}
+.tab-t.active{border-bottom-color:var(--primary);}
+
+/* ---- 面・カード（枠線ではなくトーンで区切る） ---- */
+.card,.stat-card{
+  border:1px solid transparent;
+  border-radius:var(--m3-r-card);
+  box-shadow:none;
+}
+.stat-card{padding:18px;}
+.stat-label{font-weight:600;color:var(--text2);}
+[style*="border-radius:12px"]{border-radius:16px!important;}
+[style*="border-radius:14px"],[style*="border-radius:16px"]{border-radius:24px!important;}
+[style*="border-radius:20px"]{border-radius:28px!important;}
+.badge{padding:3px 10px;font-weight:600;}
+.badge-point{background:var(--indigo-light);color:var(--indigo-text);}
+.chart-tgl{border-radius:99px;padding:5px 12px;}
+.chart-tgl.active-tgl{background:var(--indigo-light);color:var(--indigo-text);box-shadow:none;}
+
+/* ---- ボタン: filled / tonal / text / error-tonal ---- */
+.btn{
+  min-height:40px;padding:0 20px;font-size:13px;font-weight:600;
+  border-radius:999px;letter-spacing:.01em;justify-content:center;
+}
+.btn-primary{background:var(--primary);color:var(--primary-text);box-shadow:none;}
+.btn-primary:hover{opacity:1;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.btn-ghost{background:var(--indigo-light);color:var(--indigo-text);border:none;}
+.btn-ghost:hover{background:var(--indigo-light);filter:brightness(.97);}
+.btn-danger{background:var(--red-light);color:var(--red);border:none;}
+header .btn{min-height:36px;padding:0 12px;}
+header #btn-dark{padding:0 10px;width:40px;}
+button[style*="border-radius:10px"],button[style*="border-radius:99px"]{min-height:36px;}
+
+/* ---- 入力欄: 塗りつぶし型 ---- */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),
+select,textarea{
+  background:var(--card2);
+  border:1px solid transparent;
+  border-bottom:2px solid var(--text3);
+  border-radius:14px 14px 6px 6px!important;
+  transition:border-color .2s var(--m3-ease),background-color .2s var(--m3-ease);
+}
+.card input:not([type=checkbox]):not([type=radio]):not([type=range]),
+.card select,.card textarea{background:var(--bg);}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focus,textarea:focus{
+  outline:none;border-color:transparent;border-bottom-color:var(--primary);
+  box-shadow:inset 0 -1px 0 var(--primary);
+}
+input[type=range]{accent-color:var(--primary);}
+input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
+
+/* ---- 下部ナビ: Liquid Glass は維持し、選択中をM3のピル型インジケーターに ---- */
+.tab-b{border-radius:20px!important;}
+.tab-b.tab-b-active{background:transparent;}
+.tab-b svg{
+  box-sizing:content-box;padding:5px 16px;border-radius:999px;
+  transition:background-color .3s var(--m3-ease),transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.tab-b.tab-b-active svg{background:var(--indigo-light);color:var(--indigo-text);transform:none;}
+.tab-b span{font-size:10px!important;letter-spacing:.02em;}
+
+/* ---- ステートレイヤー（押下時の薄い色オーバーレイ） ---- */
+.card[onclick],.wc-card,.tab-t,.btn{position:relative;}
+.card[onclick]::after,.wc-card::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:var(--primary);opacity:0;transition:opacity .2s var(--m3-ease);
+}
+.card[onclick]:active::after,.wc-card:active::after{opacity:var(--state-press);}
+@media (hover:hover) and (pointer:fine){
+  .card[onclick]:hover::after,.wc-card:hover::after{opacity:var(--state-hover);}
+  .card[onclick]:hover,.wc-card:hover{transform:none!important;box-shadow:none!important;}
+}
+
+/* ---- モーダル: スマホではボトムシート、PCでは角丸ダイアログ ---- */
+[id$="-overlay"]{backdrop-filter:none!important;}
+#tx-modal,[id$="-overlay"]>div{border-radius:var(--m3-r-lg);}
+#tx-modal{background:var(--bg);border:none;box-shadow:var(--shadow-md);}
+@media (max-width:640px){
+  [id$="-overlay"]{align-items:flex-end!important;padding:0!important;}
+  [id$="-overlay"]>div,#tx-modal{
+    width:100%!important;max-width:none!important;
+    border-radius:var(--m3-r-lg) var(--m3-r-lg) 0 0!important;
+    padding-bottom:calc(var(--sab) + 0px);
+  }
+}
+@media (prefers-reduced-motion:no-preference){
+  [id$="-overlay"].m-open{animation:ovIn .3s var(--m3-ease) both;}
+  [id$="-overlay"].m-open>div{animation:m3SheetIn .5s var(--m3-ease-emph) both;}
+  [id$="-overlay"].m-close{animation:ovOut .2s var(--m3-ease) both;}
+  [id$="-overlay"].m-close>div{animation:m3SheetOut .25s cubic-bezier(.3,0,.8,.15) both;}
+  @keyframes m3SheetIn{from{opacity:.6;transform:translateY(48vh);}to{opacity:1;transform:none;}}
+  @keyframes m3SheetOut{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(36vh);}}
+  .tab-pane{animation:tabIn .4s var(--m3-ease-emph);}
+  .btn{transition:opacity .15s,transform .3s var(--m3-ease),box-shadow .2s var(--m3-ease);}
+}
+
+/* ---- トースト / ステータス ---- */
+#toast{border-radius:16px!important;}
+#header-status{border-radius:99px;padding:5px 12px;}
+
+/* ---- ウォレットのカード矢印（Netflix風）は維持。M3の色だけ合わせる ---- */
+@media (hover:hover) and (pointer:fine){
+  .wc-arrow:hover{color:var(--primary);border-color:var(--primary);}
+}
+
+/* AccentColor 非対応ブラウザ（iOS Safari等）: ダークでも --primary をトーナル値に追従させる */
+@supports not (background-color: AccentColor){
+  body.dark{--primary:var(--indigo);--primary-light:var(--indigo-light);--primary-border:rgba(134,217,154,.30);}
+}
 </style>
 </head>
 <body class="min-h-screen flex flex-col pb-safe md:pb-0">
@@ -6036,8 +6221,8 @@ function applyDark(on){
   // theme-colorメタタグ更新（全て更新）
   document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
     const media=m.getAttribute('media')||'';
-    if(media.includes('dark'))m.setAttribute('content',on?'#161b22':'#161b22');
-    else m.setAttribute('content',on?'#161b22':'#15803d');
+    if(media.includes('dark'))m.setAttribute('content',on?'#101511':'#101511');
+    else m.setAttribute('content',on?'#101511':'#f7fbf3');
   });
   setTimeout(()=>{renderPayChart();renderCatChart();},50);
 }
@@ -8192,6 +8377,19 @@ document.addEventListener('DOMContentLoaded',()=>{
   const fcCancel=$('fc-cancel-btn');if(fcCancel)fcCancel.addEventListener('click',()=>hideModal('fixed-cost-modal-overlay'));
   const fcClose=$('fc-modal-close');if(fcClose)fcClose.addEventListener('click',()=>hideModal('fixed-cost-modal-overlay'));
 });
+</script>
+<script>
+/* Material You: Top App Bar はスクロールで色が変わる（見た目のみ） */
+(function(){
+  try{
+    var h=document.querySelector('header');
+    if(!h)return;
+    var on=false;
+    function f(){var s=(window.scrollY||document.documentElement.scrollTop)>8;if(s!==on){on=s;h.classList.toggle('m3-scrolled',s);}}
+    window.addEventListener('scroll',f,{passive:true});
+    f();
+  }catch(e){}
+})();
 </script>
 
 <script>
