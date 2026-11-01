@@ -1694,7 +1694,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
 
       <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border);">
         <button onclick="saveBudgetModal()" class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;">保存する</button>
-        <button onclick="hideModal('budget-modal-overlay')" class="btn btn-ghost" style="font-size:12px;">キャンセル</button>
+        <button id="budget-skip-btn" onclick="skipBudgetPromptThisMonth()" class="btn btn-ghost" style="display:none;font-size:12px;">今月はスキップ</button>
+        <button id="budget-cancel-btn" onclick="hideModal('budget-modal-overlay')" class="btn btn-ghost" style="font-size:12px;">キャンセル</button>
       </div>
     </div>
   </div>
@@ -4329,6 +4330,7 @@ function renderStats(){
 function budgetTier(rawPct){ return rawPct>=100?'over':rawPct>=80?'warn':'ok'; }
 
 function renderBudgetCard(){
+  updateBudgetUnsetHint();
   const exp = S.summary.totalExpense;
   const lim = getEffectiveBudgetLimit(S.viewYear,S.viewMonth);
   const rawPct = lim>0 ? (exp/lim)*100 : 0;
@@ -4655,7 +4657,7 @@ function renderCardSettingList(){
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;cursor:pointer;';
     row.onclick=()=>openCardSettingModal(cs.id);
-    const debitLabel=isDebitMethod(cs.method)?'即時引き落とし（対象外）':`毎月${cs.debitDay}日引き落とし（${cs.holidayRule==='prev'?'休前日':'休翌日'}）・${cs.closingDay===31?'末日':cs.closingDay+'日'}締め`;
+    const debitLabel=isDebitMethod(cs.method)?'即時引き落とし（対象外）':`毎月${cs.debitDay}日引き落とし（${cs.holidayRule==='prev'?'休前日':'休翌日'}）・${cs.closingDay===31?'末日':cs.closingDay+'日'}締め（${closingPeriodText(cs)}）`;
     row.innerHTML=`
       <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;" onclick="event.stopPropagation();">
         <button onclick="moveCardSetting('${cs.id}',-1)" ${idx===0?'disabled':''} style="width:22px;height:18px;border:1px solid var(--border);background:var(--card);border-radius:4px;font-size:10px;line-height:1;cursor:pointer;color:var(--text2);${idx===0?'opacity:.3;cursor:default;':''}">▲</button>
@@ -4720,8 +4722,10 @@ function getCurrentBillingCycleStart(cs){
   const today=new Date();
   const y=today.getFullYear(), m=today.getMonth()+1;
   const closingThisMonth=getCreditClosingDate(cs,y,m);
+  // 締め日当日は、その日のうちは「今の」請求サイクルに含める（日付のみで比較）
+  const todayStart=new Date(y,m-1,today.getDate());
   let base;
-  if(today>closingThisMonth){
+  if(todayStart>closingThisMonth){
     base=closingThisMonth;
   }else{
     let py=y,pm=m-1; if(pm<1){pm=12;py--;}
@@ -4731,6 +4735,42 @@ function getCurrentBillingCycleStart(cs){
   start.setDate(start.getDate()+1);
   start.setHours(0,0,0,0);
   return start;
+}
+
+// ===== 請求サイクル表示用ヘルパー（表示のみ。集計ロジックは変更しない） =====
+function fmtMD(d){return (d.getMonth()+1)+'/'+d.getDate();}
+function closingDayLabel(cs){return cs.closingDay===31?'末日':cs.closingDay+'日';}
+// 現在進行中の請求サイクル全体（開始日〜次の締め日）
+function getCurrentBillingCycleRange(cs){
+  const start=getCurrentBillingCycleStart(cs);
+  const today=new Date();
+  const y=today.getFullYear(), m=today.getMonth()+1;
+  const closeThis=getCreditClosingDate(cs,y,m);
+  let end;
+  const todayStart=new Date(y,m-1,today.getDate());
+  if(todayStart>closeThis){let ny=y,nm=m+1;if(nm>12){nm=1;ny++;}end=getCreditClosingDate(cs,ny,nm);}
+  else end=closeThis;
+  return {start,end};
+}
+// 締め日が他のクレジットカードの多数派と異なるか（例: 月末締めが多い中でJCBだけ15日締め）
+function isOddClosingCard(cs){
+  const list=(S.cardSettings||[]).filter(c=>!isDebitMethod(c.method));
+  if(list.length<2)return false;
+  const cnt={};list.forEach(c=>{cnt[c.closingDay]=(cnt[c.closingDay]||0)+1;});
+  let std=null,best=-1;
+  Object.keys(cnt).forEach(k=>{const n=cnt[k];if(n>best||(n===best&&+k===31)){best=n;std=+k;}});
+  return cs.closingDay!==std;
+}
+function closingBadgeHtml(cs){
+  if(!isOddClosingCard(cs))return '';
+  return `<span style="display:inline-block;margin-left:6px;padding:1px 8px;font-size:10px;font-weight:700;border-radius:99px;background:var(--indigo-light);color:var(--indigo-text);vertical-align:1px;">${closingDayLabel(cs)}締め</span>`;
+}
+// 設定リスト用: 利用期間の説明文
+function closingPeriodText(cs){
+  const d=cs.closingDay;
+  if(d===31)return '利用期間: 1日〜末日';
+  if(d<=27)return `利用期間: 前月${d+1}日〜${d}日`;
+  return `利用期間: 前回締め日の翌日〜${d}日`;
 }
 
 // 指定決済手段の、指定期間内（複数月をまたぐ場合も対応）の確定支出額を集計（ポイント払い・立替除外）
@@ -4866,8 +4906,11 @@ function renderWalletCards(){
   const sec=$('wallet-cards-section'); if(sec) sec.classList.toggle('wc-multi',settings.length>1);
   const today=new Date();
   settings.forEach((cs,idx)=>{
-    const {debitDate,total}=getThisMonthDebitInfo(cs);
+    const {debitDate,total,billingYear:bY,billingMonth:bM}=getThisMonthDebitInfo(cs);
     const cycleStart=getCurrentBillingCycleStart(cs);
+    const billRange=getCreditCycleRange(cs,bY,bM);
+    const curRange=getCurrentBillingCycleRange(cs);
+    const usedLabel=cs.closingDay===31?'今月の使った金額':'今サイクルの使った金額';
     const usedThisMonth=getMethodUsageInRange(cs.method,cycleStart,today);
     const debitLabel=`支払い日: ${debitDate.getFullYear()}年${debitDate.getMonth()+1}月${debitDate.getDate()}日`;
     const status=getCardBillingStatus(cs);
@@ -4888,7 +4931,7 @@ function renderWalletCards(){
       <div style="padding:16px 20px;display:flex;align-items:center;gap:10px;">
         ${getMethodLogoHtml(cs.method,{size:30,brandSize:15})}
         <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:700;color:var(--text);">${cs.method}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);">${cs.method}${closingBadgeHtml(cs)}</div>
           <div style="font-size:10px;color:var(--text3);margin-top:1px;">${debitLabel}</div>
           ${statusBadge}
         </div>
@@ -4898,8 +4941,9 @@ function renderWalletCards(){
           <span style="font-size:11.5px;color:var(--text3);">今回の請求金額</span>
           <span style="font-size:18px;font-weight:800;color:var(--text);font-family:monospace;">¥${total.toLocaleString()}</span>
         </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">${fmtMD(billRange.start)}〜${fmtMD(billRange.end)}の利用分（${closingDayLabel(cs)}締め）</div>
         <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);margin-top:10px;">
-          <span style="font-size:11.5px;color:var(--text3);">今月の使った金額</span>
+          <span style="font-size:11.5px;color:var(--text3);">${usedLabel}<span style="display:block;font-size:10px;margin-top:1px;">${fmtMD(curRange.start)}〜${fmtMD(curRange.end)}</span></span>
           <span style="font-size:12.5px;font-weight:700;color:var(--text);font-family:monospace;">¥${usedThisMonth.toLocaleString()}</span>
         </div>
         ${availableAmt!=null?`
@@ -5092,7 +5136,7 @@ function openCardDetailModal(csId){
     <div style="display:flex;align-items:center;gap:10px;">
       ${getMethodLogoHtml(cs.method,{size:34,brandSize:17})}
       <div>
-        <div style="font-size:14px;font-weight:700;color:var(--text);">${cs.method}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);">${cs.method}${closingBadgeHtml(cs)}</div>
         <div style="font-size:10.5px;color:var(--text3);">支払い日: ${debitDate.getFullYear()}年${debitDate.getMonth()+1}月${debitDate.getDate()}日</div>
       </div>
     </div>
@@ -5101,6 +5145,7 @@ function openCardDetailModal(csId){
         <span style="font-size:11.5px;color:var(--text3);">請求金額</span>
         <span style="font-size:18px;font-weight:800;color:var(--text);font-family:monospace;">¥${total.toLocaleString()}</span>
       </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px;">${fmtMD(start)}〜${fmtMD(end)}の利用分（${closingDayLabel(cs)}締め）</div>
       ${chargeBonusAmt>0?`
       <div style="font-size:9px;color:var(--text3);margin-top:2px;">うち⚡チャージ払いの引き落とし分 ¥${chargeBonusAmt.toLocaleString()}（明細は決済先の取引に1件で記載）</div>`:''}
       ${cs.bankAccount?`
@@ -5411,31 +5456,107 @@ function deleteFixedCost(){
 }
 
 
-function openBudgetModal(){
+// ===== 毎月の予算設定の促し =====
+// 月が変わって最初にアプリを開いたとき、その月の予算が未設定なら設定を促す。
+// 「あとで」「スキップ」は端末内(localStorage)にだけ記録し、同期データ(S)は増やさない。
+let budgetPromptMode=false;
+const BUDGET_PROMPT_LATER_KEY='finboo_budget_prompt_later';
+const BUDGET_PROMPT_SKIP_PREFIX='finboo_budget_prompt_skip_';
+function budgetTodayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function isViewingCurrentRealMonth(){const d=new Date();return S.viewYear===d.getFullYear()&&S.viewMonth===d.getMonth()+1;}
+function isCurrentMonthBudgetUnset(){
+  if(!isViewingCurrentRealMonth())return false;
+  const key=budgetMonthKey(S.viewYear,S.viewMonth);
+  return !(S.monthlyBudgets&&S.monthlyBudgets[key]);
+}
+function budgetLsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function budgetLsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function anyOverlayOpen(){
+  return Array.from(document.querySelectorAll('[id$="-overlay"]')).some(o=>o.style.display&&o.style.display!=='none');
+}
+function maybePromptMonthlyBudget(){
+  try{
+    if(!isCurrentMonthBudgetUnset())return;
+    const key=budgetMonthKey(S.viewYear,S.viewMonth);
+    if(budgetLsGet(BUDGET_PROMPT_SKIP_PREFIX+key)==='1')return;
+    if(budgetLsGet(BUDGET_PROMPT_LATER_KEY)===budgetTodayStr())return;
+    if(anyOverlayOpen())return;
+    // 閉じ方によらず「あとで」扱いにするため、開く時点で今日の分を記録する
+    budgetLsSet(BUDGET_PROMPT_LATER_KEY,budgetTodayStr());
+    openBudgetModal({prompt:true});
+  }catch(e){console.warn('Finboo: 予算の促しに失敗',e);}
+}
+function skipBudgetPromptThisMonth(){
+  budgetLsSet(BUDGET_PROMPT_SKIP_PREFIX+budgetMonthKey(S.viewYear,S.viewMonth),'1');
+  hideModal('budget-modal-overlay');
+  updateBudgetUnsetHint();
+  toast('今月は基本予算を使います','info');
+}
+// 起動して少し待ってから判定（同期で今月の予算が届く時間を見込む）。他の端末で設定済みなら出さない
+window.addEventListener('load',function(){setTimeout(maybePromptMonthlyBudget,2500);});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(maybePromptMonthlyBudget,800);});
+// ホームの予算カードに「今月の予算は未設定」の帯を出す（タップで設定）
+function updateBudgetUnsetHint(){
+  const wrap=$('budget-card-wrap');
+  if(!wrap)return;
+  let el=$('budget-unset-hint');
+  if(!isCurrentMonthBudgetUnset()){if(el)el.remove();return;}
+  if(!el){
+    el=document.createElement('div');
+    el.id='budget-unset-hint';
+    el.setAttribute('role','button');
+    el.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;padding:8px 12px;border-radius:14px;background:var(--indigo-light);color:var(--indigo-text);font-size:11px;font-weight:700;cursor:pointer;';
+    el.onclick=function(ev){ev.stopPropagation();openBudgetModal({prompt:true});};
+    wrap.insertBefore(el,wrap.firstChild);
+  }
+  el.innerHTML=`<span>${S.viewMonth}月の予算は未設定です（基本予算を使用中）</span><span>設定する ›</span>`;
+}
+
+function openBudgetModal(opts){
+  const prompt=!!(opts&&opts.prompt===true);
+  budgetPromptMode=prompt;
   const key=budgetMonthKey(S.viewYear,S.viewMonth);
   const ov=S.monthlyBudgets&&S.monthlyBudgets[key];
+  let total=getEffectiveBudgetLimit(S.viewYear,S.viewMonth);
+  let prefillCat=null;
+  let prevMonth=S.viewMonth-1;
+  if(prompt){
+    // 先月の実効予算（先月だけの上書きがあればそれ、無ければ基本予算）を初期値にする
+    let py=S.viewYear,pm=S.viewMonth-1;if(pm<1){pm=12;py--;}
+    prevMonth=pm;
+    total=getEffectiveBudgetLimit(py,pm);
+    prefillCat=Object.assign({},getEffectiveCatBudgets(py,pm));
+  }
   const inp=$('budget-total-input');
-  if(inp) inp.value=getEffectiveBudgetLimit(S.viewYear,S.viewMonth);
+  if(inp) inp.value=total;
   const moChk=$('budget-month-only');
-  if(moChk) moChk.checked=!!ov;
+  if(moChk) moChk.checked=prompt?true:!!ov;
   const label=$('budget-modal-month-label');
   if(label) label.textContent=`${S.viewYear}年${S.viewMonth}月`;
+  const title=$('budget-modal-title');
+  if(title) title.textContent=prompt?`${S.viewMonth}月の予算を設定しましょう`:'予算を編集';
   const baseHint=$('budget-modal-base-hint');
-  if(baseHint) baseHint.textContent=`基本予算（他の月に適用される値）: ¥${S.budgetLimit.toLocaleString()}${ov?'　※この月は上書き設定中':''}`;
+  if(baseHint) baseHint.textContent=prompt
+    ?`${prevMonth}月の予算を初期値にしています。金額を確認して保存してください。`
+    :`基本予算（他の月に適用される値）: ¥${S.budgetLimit.toLocaleString()}${ov?'　※この月は上書き設定中':''}`;
   const clearBtn=$('budget-month-clear-btn');
-  if(clearBtn) clearBtn.style.display=ov?'inline-flex':'none';
-  buildCatBudgetInputs();
+  if(clearBtn) clearBtn.style.display=(!prompt&&ov)?'inline-flex':'none';
+  const skipBtn=$('budget-skip-btn');
+  if(skipBtn) skipBtn.style.display=prompt?'inline-flex':'none';
+  const cancelBtn=$('budget-cancel-btn');
+  if(cancelBtn) cancelBtn.textContent=prompt?'あとで':'キャンセル';
+  buildCatBudgetInputs(prefillCat);
   showModal('budget-modal-overlay');
 }
 
-function buildCatBudgetInputs(){
+function buildCatBudgetInputs(prefillCat){
   const container=$('budget-cat-inputs');
   if(!container) return;
   container.innerHTML='';
   const pinned = S.pinnedCats||[];
   const keys = [...FOOD_MINORS, ...allCats().filter(c=>c!=='立替')];
   keys.forEach(key=>{
-    const budget=getKeyBudget(key);
+    const budget=prefillCat?(prefillCat[key]||0):getKeyBudget(key);
     const color=getKeyColor(key);
     const checked=pinned.includes(key);
     const row=document.createElement('div');
@@ -5484,6 +5605,7 @@ function saveBudgetModal(){
   save();
   hideModal('budget-modal-overlay');
   renderBudgetCard();
+  updateBudgetUnsetHint();
   toast(monthOnly?`${S.viewMonth}月だけの予算として保存しました！`:'予算を保存しました！','success');
 }
 
@@ -5495,6 +5617,7 @@ function clearMonthBudgetOverride(){
   save();
   openBudgetModal();
   renderBudgetCard();
+  updateBudgetUnsetHint();
   toast('この月の予算設定を解除し、基本予算に戻しました','success');
 }
 
