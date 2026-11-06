@@ -1247,6 +1247,18 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
       </div>
     </div>
 
+    <!-- 楽天ペイの還元率（月別） -->
+    <div class="card" style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">💳 楽天ペイの還元率（月別）</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.6;">支払い元（チャージ残高・楽天カード・ポイント払い）にかかわらず、楽天ペイ全体で月ごとに1つの還元率です。設定していない月は、直近の過去月の値を引き継ぎます（どの月も未設定なら0.5%）。取引ごとの「還元率（任意）」があればそちらが優先されます。</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:11px;">
+        <label>対象月 <input id="rpay-rate-month" type="month" onchange="renderRpayRateUi()" style="padding:4px 6px;font-size:11px;"></label>
+        <label>還元率 <input id="rpay-rate-input" type="number" step="0.1" min="0" style="width:64px;padding:4px 6px;font-size:11px;" onchange="setRpayRate(this.value)"> %</label>
+        <button type="button" class="btn" id="rpay-rate-clear" onclick="clearRpayRate()" style="font-size:10.5px;">この月の設定を解除</button>
+      </div>
+      <div id="rpay-rate-note" style="font-size:10px;color:var(--text3);margin-top:6px;line-height:1.6;"></div>
+    </div>
+
     <!-- Supabase 新システム(テスト中・既存のDrive同期とは独立して併存) -->
     <div style="border-top:1px solid var(--border);padding-top:20px;">
       <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🧪 Supabase 新システム（テスト中）</div>
@@ -1776,6 +1788,17 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
         </label>
       </div>
 
+      <!-- 楽天ペイの支払い元 -->
+      <div id="tx-rpay-wrap" style="display:none;margin-bottom:14px;">
+        <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">楽天ペイの支払い元</label>
+        <select id="tx-rpay-source" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
+          <option value="charge">チャージ残高</option>
+          <option value="card">楽天カード</option>
+          <option value="point">ポイント払い</option>
+        </select>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:4px;line-height:1.5;">楽天カードは楽天カードの請求額に合算、チャージ残高は請求に含まれません。ポイント払いは支払い時にポイントから払うので請求に含めず、支出・実質支出からも除きます（他のポイント払いと同じ）。還元は、いずれも設定画面の月別還元率で付きます。</div>
+      </div>
+
       <!-- スクラッチくじ（PayPayクレジット系・期間中のみ表示） -->
       <div id="tx-scratch-wrap" style="display:none;margin-bottom:14px;">
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px;">🎰 超PayPay祭 スクラッチくじ当選</label>
@@ -1873,9 +1896,9 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
       <div id="tx-pointoffset-wrap" style="display:none;margin-bottom:14px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
           <input id="tx-pointoffset" type="checkbox" style="width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;">
-          <span style="font-size:12px;font-weight:700;color:var(--text2);">ポイント充当（Vポイントで支払い済み）</span>
+          <span id="tx-pointoffset-label" style="font-size:12px;font-weight:700;color:var(--text2);">ポイント充当（Vポイントで支払い済み）</span>
         </label>
-        <div style="font-size:9.5px;color:var(--text3);margin-top:5px;margin-left:24px;line-height:1.5;">支出・予算・カテゴリ別予算・Vポイントの付与にはこれまで通り含め、カードの請求額（引き落とし予定）からだけ除きます。後から編集でも切り替えられます。</div>
+        <div id="tx-pointoffset-note" style="font-size:9.5px;color:var(--text3);margin-top:5px;margin-left:24px;line-height:1.5;">支出・予算・カテゴリ別予算・Vポイントの付与にはこれまで通り含め、カードの請求額（引き落とし予定）からだけ除きます。後から編集でも切り替えられます。</div>
       </div>
 
       <!-- ポイントカード提示（登録した店のときだけ表示） -->
@@ -2012,7 +2035,7 @@ const DEFAULT_METHOD_COLORS={
   "PayPayクレジット（ポイント払い）":"#f87171",
   "PayPay残高":"#f97316",
   "楽天カード":"#dc2626",
-  "楽天カード（ポイント払い）":"#fca5a5",
+  "楽天ペイ":"#e11d48",
   "EPOSカード":"#3b82f6",
   "V Point Pay":"#8b5cf6",
   "JCBカードW":"#1d4ed8",
@@ -2023,7 +2046,7 @@ const DEFAULT_METHOD_COLORS={
 };
 
 // 専用の還元率計算式を持つ決済手段（カードごとの還元率設定を適用しない）
-const METHODS_WITH_BUILTIN_RATE=["三井住友カード(Olive)","PayPayクレジット","PayPay残高","PayPayクレジット（ポイント払い）","楽天カード","楽天カード（ポイント払い）","住信SBI - デビット","JCBカードW"];
+const METHODS_WITH_BUILTIN_RATE=["三井住友カード(Olive)","PayPayクレジット","PayPay残高","PayPayクレジット（ポイント払い）","楽天カード","楽天ペイ","住信SBI - デビット","JCBカードW"];
 
 // デフォルト8種＋ユーザーが追加登録したカスタム決済手段を合わせた一覧（「収入」は含まない）
 function allMethodNames(){
@@ -2042,6 +2065,51 @@ function isExcludedFromAggregate(t){ return !!t.excludeFromAggregate; }
 function isChargePairTx(t){ return !!t.chargeBonusMethod; }
 // Oliveのポイント充当（Vポイントで支払い済み）：支出・予算・ポイント付与には含めるが、カード請求額からは除く
 function isPointOffset(t){ return !!t.pointOffset; }
+// 楽天カードのポイント充当：カード明細の「処理済み」(pointOffsetDone)にチェックが入るまで、請求額からは差し引かない
+// （Oliveは従来どおりチェックした時点で請求額から除く）
+function isBillingOffset(t){
+  if(!t.pointOffset) return false;
+  return t.method==='楽天カード' ? !!t.pointOffsetDone : true;
+}
+// 楽天ペイ：支払い元(rpaySource) 'charge'=チャージ残高 / 'card'=楽天カード / 'point'=ポイント払い
+function isRakutenPay(t){ return t.method==='楽天ペイ'; }
+function rpaySourceOf(t){ return t.method==='楽天ペイ' ? (t.rpaySource||'charge') : ''; }
+const RPAY_SOURCE_LABELS={charge:'チャージ残高',card:'楽天カード',point:'ポイント払い'};
+// カード請求上の決済手段：楽天ペイを楽天カードで払った分は楽天カードの請求に合算する
+function billMethodOf(t){ return (t.method==='楽天ペイ'&&t.rpaySource==='card') ? '楽天カード' : t.method; }
+// 楽天ペイの還元率(%)：月別設定(S.rpayRates["YYYY-MM"])。その月の設定が無ければ、直近の過去月の設定を引き継ぐ（全く無ければ0.5%）
+const RPAY_DEFAULT_RATE=0.5;
+function getRpayRate(y,m){
+  const map=S.rpayRates||{};
+  const key=y+'-'+String(m).padStart(2,'0');
+  if(map[key]!=null&&!isNaN(map[key])) return map[key];
+  let best=null;
+  Object.keys(map).forEach(k=>{ if(k<key&&(best==null||k>best)&&map[k]!=null&&!isNaN(map[k])) best=k; });
+  return best!=null?map[best]:RPAY_DEFAULT_RATE;
+}
+function rpayRateOfTx(t){
+  const dm=(t.date||'').match(/^(\d{4})\/(\d{1,2})\//);
+  const y=dm?parseInt(dm[1],10):S.viewYear, mo=dm?parseInt(dm[2],10):S.viewMonth;
+  return getRpayRate(y,mo);
+}
+// 旧「楽天カード（ポイント払い）」→「楽天カード＋ポイント充当（処理済みは未チェック）」へ変換（取引の更新時刻も進めるので同期でも新しい方が優先される）
+const _rkMigrated=[];
+function migrateLegacyRakutenTx(list){
+  let changed=false; const now=new Date().toISOString();
+  (list||[]).forEach(t=>{
+    if(t&&t.method==='楽天カード（ポイント払い）'){
+      t.method='楽天カード'; t.pointOffset=true; t.pointOffsetDone=false; t.updatedAt=now;
+      _rkMigrated.push(t); changed=true;
+    }
+  });
+  return changed;
+}
+function flushRkMigrated(){
+  if(!_rkMigrated.length||typeof sbUser==='undefined'||!sbUser||typeof sbUpsertTransaction!=='function') return;
+  const arr=_rkMigrated.splice(0,_rkMigrated.length);
+  arr.forEach(t=>{ sbUpsertTransaction(t).catch(()=>{}); });
+}
+setTimeout(flushRkMigrated,5000); setTimeout(flushRkMigrated,15000);
 // (未使用: 旧・2件登録方式の名残。excludeFromCardUsageが立っている取引は無い想定だが、互換のため判定だけ残す)
 function isChargeTargetLeg(t){ return !!t.excludeFromCardUsage; }
 
@@ -2294,6 +2362,7 @@ const INIT={
   chargePairs:[],        // チャージ払いペア設定 [{id, source, target}]。sourceからtargetへチャージして払う運用を1回の入力で登録するための設定
   storePointRules:[{id:'spr_famima',keyword:'ファミリーマート',types:['rakuten']}], // ポイントが貯まる店 [{id,keyword(部分一致),types:['rakuten'|'d'|'v']}]。取引追加時に提示したポイントを質問する
   presentPointRates:{rakuten:1,d:1,v:0.5}, // 提示ポイントの還元率(%)。楽天・d=100円1pt、V=200円1pt
+  rpayRates:{},          // 楽天ペイの月別還元率(%) {"YYYY-MM":rate}。未設定の月は直近の過去月の値を引き継ぐ（全く無ければ0.5%）
   jcbPartnerShops:[],    // JCBカードW: J-POINTパートナー優待店リスト [{id, name(前方一致), rates:[{id, rate(%), from(YYYY-MM-DD or '')}]}]
   jcbCampaign:null       // JCBカードW: 新規入会キャンペーン設定 {joinDate:'YYYY-MM-DD', cap:12000}
 };
@@ -2744,8 +2813,7 @@ function resolveMethod(cardMethod, colVal){
   const v=(colVal||'').trim();
   // 楽天系
   if(cardMethod==='楽天カード'){
-    if(v.includes('ポイント')||v.includes('楽天ポイント'))return '楽天カード（ポイント払い）';
-    return '楽天カード';
+    return '楽天カード'; // ポイント充当は取り込み後に、取引の編集画面とカード明細の「処理済み」で設定する
   }
   // PayPayクレジット系
   if(cardMethod==='PayPayクレジット'){
@@ -2758,7 +2826,7 @@ function resolveMethod(cardMethod, colVal){
 
 // ポイント払い判定
 function isPointPayment(t){
-  return (t.method||'').includes('ポイント払い');
+  return (t.method||'').includes('ポイント払い') || (t.method==='楽天ペイ'&&t.rpaySource==='point');
 }
 
 // ============================================================
@@ -3018,7 +3086,12 @@ function calcPt(t){
     const gradeLabel = grade==='1'?'1等(+100%)':grade==='2'?'2等(+5%)':grade==='3'?'3等(+0.5%)':'';
     return{pt:basePt+scratchPt, rule: scratchPt>0 ? `都度(200円毎2pt) ＋くじ${gradeLabel}` : '都度(200円毎2pt)'};
   }
-  // 楽天カード（通常・ポイント払いともに基本100円毎1pt=1.0%）
+  // 楽天ペイ（月別の還元率。ポイント払いにも還元が付く）。取引ごとの上書き還元率があればそちらを優先
+  if(t.method==='楽天ペイ'){
+    const rate=hasOverride?parseFloat(t.pointRateOverride):rpayRateOfTx(t);
+    return{pt:Math.floor(t.amount*rate/100),rule:hasOverride?`都度(独自還元率${rate}%)`:`楽天ペイ(${rate}%)`};
+  }
+  // 楽天カード（通常・ポイント充当ともに基本100円毎1pt=1.0%）
   if(t.method==='楽天カード'||t.method==='楽天カード（ポイント払い）'){
     if(hasOverride){
       const rate=parseFloat(t.pointRateOverride);
@@ -3086,7 +3159,7 @@ function calcAllPts(){
         if(t.vCoupon!=null&&t.vCoupon!=='') vCouponPts+=pt; // ptはVクーポン加算分のみ
       }else if(t.method==='PayPayクレジット'||t.method==='PayPay残高'||t.method==='PayPayクレジット（ポイント払い）'){
         pp+=pt;
-      }else if(t.method==='楽天カード'||t.method==='楽天カード（ポイント払い）'){
+      }else if(t.method==='楽天カード'||t.method==='楽天ペイ'||t.method==='楽天カード（ポイント払い）'){
         rk+=pt;
       }else if(t.method==='住信SBI - デビット'){
         sbi+=pt;
@@ -3262,6 +3335,7 @@ function saveSettings(opts){
       jcbPartnerShops:S.jcbPartnerShops||[],
       storePointRules:S.storePointRules||[],
       presentPointRates:S.presentPointRates||{rakuten:1,d:1,v:0.5},
+      rpayRates:S.rpayRates||{},
       jcbCampaign:S.jcbCampaign||null
     };
     localStorage.setItem(SETTINGS_KEY,JSON.stringify(cfg));
@@ -3310,7 +3384,8 @@ function loadTx(y,m){
     const key=txKey_monthly(y,m);
     const d=localStorage.getItem(key);
     const list=d?JSON.parse(d):[];
-    if(ensureTxIds(list)){
+    const c1=ensureTxIds(list), c2=migrateLegacyRakutenTx(list);
+    if(c1||c2){
       try{ localStorage.setItem(key, JSON.stringify(list)); }catch(e){}
     }
     return list;
@@ -3366,10 +3441,20 @@ function load(){
       if(cfg.jcbPartnerShops) S.jcbPartnerShops = cfg.jcbPartnerShops;
       if(cfg.storePointRules) S.storePointRules = cfg.storePointRules;
       if(cfg.presentPointRates) S.presentPointRates = cfg.presentPointRates;
+      if(cfg.rpayRates) S.rpayRates = cfg.rpayRates;
       if(cfg.jcbCampaign!==undefined) S.jcbCampaign = cfg.jcbCampaign;
     }
   }catch(e){console.warn('load error:',e);}
   S.jcbPartnerShops = migrateJcbPartnerShops(S.jcbPartnerShops);
+  // 旧「楽天カード（ポイント払い）」の取引を全月分まとめて変換（以降は各月の読み込み時にも自動変換される）
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      const mm=/^finboo_tx_(\d{4})_(\d{2})$/.exec(k||'');
+      if(mm) loadTx(parseInt(mm[1],10),parseInt(mm[2],10));
+    }
+  }catch(e){}
+  (S.fixedCostItems||[]).forEach(f=>{ if(f&&f.method==='楽天カード（ポイント払い）') f.method='楽天カード'; });
   S.transactions=loadTx(S.viewYear,S.viewMonth);
   syncFixedCostTransactions();
   recalc();
@@ -4800,7 +4885,7 @@ function getMethodUsageInRange(method, startDate, endDate){
       const td=txBillDate(t);
       if(td<s||td>e) return;
       // カード請求集計は「実際にそのカードで支払われた金額」なので立替も含める（支出集計や統計は別途isKaetate()で除外している）
-      if(t.method===method&&!isPointPayment(t)&&!isPointOffset(t)) sum+=t.amount;
+      if(billMethodOf(t)===method&&!isPointPayment(t)&&!isBillingOffset(t)) sum+=t.amount;
       // チャージ払いのチャージ元カード：明細上の決済手段はチャージ先だが、実際にはチャージ元カードでも
       // 同額の引き落とし・請求が発生しているため、チャージ元カードの請求額にも同じ金額を計上する
       if(t.chargeBonusMethod===method) sum+=t.amount;
@@ -5021,6 +5106,30 @@ function toggleTxListExpand(){
 
 // 折りたたみ時: 直近4件の簡易プレビューを表示
 // カード請求詳細モーダル（タップ時）
+// 楽天カードのポイント充当：カード明細の「処理済み」チェックの切り替え（対象月の保存データを直接更新）
+function toggleRakutenOffsetDone(id, on, csId){
+  let target=null, ty=null, tm=null;
+  const idx=S.transactions.findIndex(t=>t.id===id);
+  const now=new Date().toISOString();
+  if(idx>=0){
+    target=S.transactions[idx]; target.pointOffsetDone=!!on; target.updatedAt=now;
+    saveTx();
+  }else{
+    const keys=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(/^finboo_tx_\d{4}_\d{2}$/.test(k)) keys.push(k); }
+    for(const k of keys){
+      const list=JSON.parse(localStorage.getItem(k)||'[]');
+      const j=list.findIndex(t=>t.id===id);
+      if(j>=0){ list[j].pointOffsetDone=!!on; list[j].updatedAt=now; target=list[j]; localStorage.setItem(k,JSON.stringify(list)); break; }
+    }
+  }
+  if(!target){ toast('取引が見つかりませんでした','error'); return; }
+  localStorage.setItem('finboo_last_local_update', now);
+  if(sbUser) sbUpsertTransaction(target).then(ok=>{ if(!ok) console.warn('Supabase同期失敗（ローカル保存は成功）:',target.id); });
+  recalc(); renderAll();
+  openCardDetailModal(csId);
+  toast(on?'処理済みにしました（請求額から差し引きます）':'未処理に戻しました（請求額に含めます）','success');
+}
+
 function openCardDetailModal(csId){
   const cs=(S.cardSettings||[]).find(c=>c.id===csId);
   if(!cs) return;
@@ -5057,9 +5166,9 @@ function openCardDetailModal(csId){
       if(t.type==='income') return;
       cycleAllTxs.push(t);
       // 紐づけ先の決済手段そのものでの利用分
-      if(linkedMethods.includes(t.method)){
+      if(linkedMethods.includes(billMethodOf(t))){
         const {pt}=calcPt(t);
-        if(!isPointPayment(t)) pointByMethod[t.method]=(pointByMethod[t.method]||0)+pt;
+        if(!isPointPayment(t)) pointByMethod[billMethodOf(t)]=(pointByMethod[billMethodOf(t)]||0)+pt;
         txInCycle.push(t);
       }
       // チャージ払いのボーナス分：このカードがチャージ元に指定されている場合、明細には出さずポイントと金額だけ加算
@@ -5185,6 +5294,7 @@ function openCardDetailModal(csId){
       </div>
     </div>
     <div>
+      ${(()=>{ const un=txInCycle.filter(t=>t.method==='楽天カード'&&t.pointOffset&&!t.pointOffsetDone); if(!un.length) return ''; const amt=un.reduce((a,t)=>a+(t.amount||0),0); return `<div style="background:#fef3c7;color:#92400e;border-radius:10px;padding:8px 12px;font-size:11px;font-weight:700;margin-bottom:10px;line-height:1.6;">💠 未処理のポイント充当 ${un.length}件（¥${amt.toLocaleString()}）<div style="font-size:9.5px;font-weight:400;">楽天ポイントを充当したら、下の明細の「処理済み」にチェックしてください。チェックした分だけ請求額から差し引きます。</div></div>`; })()}
       <div style="font-size:11.5px;font-weight:700;color:var(--text2);margin-bottom:8px;">取引明細（今回の請求分）</div>
       <div style="display:flex;flex-direction:column;">
         ${txInCycle.length===0?`<div style="font-size:11.5px;color:var(--text3);padding:12px 0;text-align:center;">取引がありません</div>`:
@@ -5196,10 +5306,11 @@ function openCardDetailModal(csId){
             ${getShopLogoHtml(t.shop||'?',{size:26})}
             <div style="flex:1;min-width:0;">
               <div style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.shop||'利用先不明'}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}${isPointOffset(t)?`　<span style="background:#dcfce7;color:#166534;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当（請求に含めず）</span>`:''}${t.billDelay?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">請求 +${t.billDelay}か月</span>`:''}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}${t.method==='楽天ペイ'?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">${RPAY_SOURCE_LABELS[rpaySourceOf(t)]}</span>`:''}${isPointOffset(t)?(t.method==='楽天カード'?`　<span style="background:#dcfce7;color:#166534;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当${t.pointOffsetDone?'（処理済み・請求から差引）':'（未処理・請求に含む）'}</span>`:`　<span style="background:#dcfce7;color:#166534;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当（請求に含めず）</span>`):''}${t.billDelay?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">請求 +${t.billDelay}か月</span>`:''}</div>
               ${(t.method==='三井住友カード(Olive)'||t.method==='JCBカードW')?`<div style="font-size:9px;color:var(--text3);margin-top:1px;">${calcPt(t).rule}</div>`:''}
             </div>
             <span style="font-size:12.5px;font-weight:700;color:var(--text);font-family:monospace;white-space:nowrap;">¥${(t.amount||0).toLocaleString()}</span>
+            ${(t.method==='楽天カード'&&t.pointOffset)?`<label onclick="event.stopPropagation();" style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;font-weight:700;color:var(--text2);cursor:pointer;padding-left:4px;"><input type="checkbox" class="rk-offset-done" ${t.pointOffsetDone?'checked':''} onchange="toggleRakutenOffsetDone('${t.id}',this.checked,'${csId}')" style="width:18px;height:18px;accent-color:var(--primary);">処理済み</label>`:''}
           </div>`;
         }).join('')}
       </div>
@@ -5910,7 +6021,7 @@ function renderTable(){
       const chip=document.createElement('button');
       chip.style.cssText=`padding:5px 12px;font-size:10px;font-weight:700;border-radius:99px;border:1.5px solid ${isActive?'var(--primary)':'var(--border)'};background:${isActive?'var(--primary)':'var(--card)'};color:${isActive?'var(--primary-text)':'var(--text2)'};cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;`;
       // 短縮名
-      const shortName=m.replace('三井住友カード(Olive)','Olive').replace('PayPayクレジット（ポイント払い）','PayPay(P払い)').replace('楽天カード（ポイント払い）','楽天(P払い)');
+      const shortName=m.replace('三井住友カード(Olive)','Olive').replace('PayPayクレジット（ポイント払い）','PayPay(P払い)');
       chip.textContent=`${shortName} ¥${methodTotals[m].toLocaleString()}`;
       chip.onclick=()=>{
         if(methodSel)methodSel.value=isActive?'':m;
@@ -6109,7 +6220,7 @@ function rankPointTypeOf(method){
   if(method==='三井住友カード(Olive)')return'Vポイント';
   if(method==='JCBカードW')return'J-POINT';
   if(method==='PayPayクレジット'||method==='PayPay残高')return'PayPayポイント';
-  if(method==='楽天カード')return'楽天ポイント';
+  if(method==='楽天カード'||method==='楽天ペイ')return'楽天ポイント';
   if(method==='住信SBI - デビット')return'dポイント';
   return (S.methodPointType&&S.methodPointType[method])||method;
 }
@@ -6694,9 +6805,9 @@ async function gdriveSync(){
 // ============================================================
 const METHODS_LIST=[
   '三井住友カード(Olive)','PayPayクレジット','PayPay残高',
-  '楽天カード','EPOSカード','V Point Pay','住信SBI - デビット','現金'
+  '楽天カード','楽天ペイ','EPOSカード','V Point Pay','住信SBI - デビット','現金'
 ];
-const POINT_METHODS=['PayPayクレジット','PayPay残高','楽天カード'];
+const POINT_METHODS=['PayPayクレジット','PayPay残高'];
 
 // tx-method プルダウンを再構築（デフォルト8種＋カスタム追加分）
 function buildMethodSelect(keepValue){
@@ -6736,7 +6847,9 @@ function copyTxToNew(key){
   const methodSel=document.getElementById('tx-method');
   if(methodSel) methodSel.value=baseMethod;
   const isPointEl=document.getElementById('tx-is-point');
-  if(isPointEl) isPointEl.checked=isPointPayment(t);
+  if(isPointEl) isPointEl.checked=isPointPayment(t)&&t.method!=='楽天ペイ';
+  const rpSrcC=document.getElementById('tx-rpay-source');
+  if(rpSrcC) rpSrcC.value=t.rpaySource||'charge';
   const excludeElC=document.getElementById('tx-exclude');
   if(excludeElC) excludeElC.checked=false;
   const fcElC=document.getElementById('tx-fixedcost');
@@ -6802,7 +6915,9 @@ function openEditModal(key){
   // 決済手段（ポイント払いを解除してセット）
   const baseMethod=(t.method||'').replace('（ポイント払い）','');
   document.getElementById('tx-method').value=baseMethod;
-  document.getElementById('tx-is-point').checked=isPointPayment(t);
+  document.getElementById('tx-is-point').checked=isPointPayment(t)&&t.method!=='楽天ペイ';
+  const rpSrcE=document.getElementById('tx-rpay-source');
+  if(rpSrcE) rpSrcE.value=t.rpaySource||'charge';
   const excludeElE=document.getElementById('tx-exclude');
   if(excludeElE) excludeElE.checked=!!t.excludeFromAggregate;
   const fcElE=document.getElementById('tx-fixedcost');
@@ -6928,12 +7043,21 @@ function onMethodChange(){
   const rateLabel=document.getElementById('tx-rate-override-label');
   const vcWrap=document.getElementById('tx-vcoupon-wrap');
   if(rateWrap) rateWrap.style.display=isOlive?'none':'block';
-  if(rateLabel) rateLabel.textContent=isPayPay?'PayPayクーポン還元率（任意・%）':(isJcb?'還元率（任意・総還元率・%）':'還元率（任意・%）');
+  if(rateLabel) rateLabel.textContent=isPayPay?'PayPayクーポン還元率（任意・%）':(isJcb?'還元率（任意・総還元率・%）':(method==='楽天ペイ'?'還元率（任意・%）※空欄なら月別の楽天ペイ還元率':'還元率（任意・%）'));
   if(vcWrap) vcWrap.style.display=isOlive?'block':'none';
   { const poW=document.getElementById('tx-pointoffset-wrap'), poC=document.getElementById('tx-pointoffset');
-    const showPo=txCurrentType!=='income'&&method==='三井住友カード(Olive)';
+    const isRk=method==='楽天カード';
+    const showPo=txCurrentType!=='income'&&(method==='三井住友カード(Olive)'||isRk);
     if(poW) poW.style.display=showPo?'block':'none';
-    if(poC&&!showPo) poC.checked=false; }
+    if(poC&&!showPo) poC.checked=false;
+    const poL=document.getElementById('tx-pointoffset-label'), poN=document.getElementById('tx-pointoffset-note');
+    if(poL) poL.textContent=isRk?'ポイント充当（楽天ポイントで支払い済み）':'ポイント充当（Vポイントで支払い済み）';
+    if(poN){
+      if(!poN.dataset.oliveText) poN.dataset.oliveText=poN.textContent;
+      poN.textContent=isRk?'支出・予算・カテゴリ別予算・楽天ポイントの付与にはこれまで通り含めます。カードの請求額（引き落とし予定）からは、仮確定日に処理したあと、カード明細の「処理済み」にチェックした分だけ差し引きます（チェックするまでは請求額に含みます）。':poN.dataset.oliveText;
+    }
+    const rpW=document.getElementById('tx-rpay-wrap');
+    if(rpW) rpW.style.display=(txCurrentType!=='income'&&method==='楽天ペイ')?'block':'none'; }
   updatePointCardUi();
   const bdWrap=document.getElementById('tx-billdelay-wrap');
   if(bdWrap){
@@ -7051,7 +7175,7 @@ function saveTxModal(){
   const catMin=document.getElementById('tx-catmin').value.trim();
   const type=txCurrentType;
   const methodBase=type==='income'?'収入':document.getElementById('tx-method').value;
-  const isPoint=type==='expense'&&document.getElementById('tx-is-point').checked;
+  const isPoint=type==='expense'&&POINT_METHODS.includes(methodBase)&&document.getElementById('tx-is-point').checked;
   const method=isPoint?methodBase+'（ポイント払い）':methodBase;
   const amount=parseFloat(document.getElementById('tx-amount').value);
   // スクラッチくじ当選
@@ -7104,7 +7228,9 @@ function saveTxModal(){
   if(memo) newTx.memo=memo;
   if(pointCard) newTx.pointCard=pointCard;
   const poWrapS=document.getElementById('tx-pointoffset-wrap'), poElS=document.getElementById('tx-pointoffset');
-  if(type==='expense'&&method==='三井住友カード(Olive)'&&poWrapS&&poWrapS.style.display!=='none'&&poElS&&poElS.checked) newTx.pointOffset=true;
+  if(type==='expense'&&(method==='三井住友カード(Olive)'||method==='楽天カード')&&poWrapS&&poWrapS.style.display!=='none'&&poElS&&poElS.checked) newTx.pointOffset=true;
+  const rpSrcEl=document.getElementById('tx-rpay-source');
+  if(type==='expense'&&method==='楽天ペイ') newTx.rpaySource=(rpSrcEl&&rpSrcEl.value)||'charge';
   const bdWrapS=document.getElementById('tx-billdelay-wrap');
   const bdElS=document.getElementById('tx-billdelay');
   const billDelay=(bdWrapS&&bdWrapS.style.display!=='none'&&bdElS)?(parseInt(bdElS.value,10)||0):0;
@@ -7152,6 +7278,8 @@ function saveTxModal(){
       newTx.updatedAt=new Date().toISOString();
       // チャージ払いのボーナス設定は編集UIには出さないため、既存の値をそのまま引き継ぐ
       if(S.transactions[idx].chargeBonusMethod) newTx.chargeBonusMethod=S.transactions[idx].chargeBonusMethod;
+      // 楽天カードのポイント充当の「処理済み」は、カード明細側で付けた値を引き継ぐ
+      if(newTx.method==='楽天カード'&&newTx.pointOffset&&S.transactions[idx].pointOffset&&S.transactions[idx].pointOffsetDone) newTx.pointOffsetDone=true;
       S.transactions[idx]=newTx;
     }
   }else{
@@ -7341,6 +7469,7 @@ function renderStorePointRules(){
   const chk=(r,k)=>`<label style="display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--text2);"><input type="checkbox" ${(r.types||[]).includes(k)?'checked':''} onchange="toggleStorePointType('${r.id}','${k}',this.checked)">${PC_TYPES[k].short}</label>`;
   el.innerHTML=rules.length?rules.map(r=>`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;"><span style="font-size:12px;font-weight:600;color:var(--text);flex:1;min-width:110px;">${dupEsc(r.keyword)}</span>${['rakuten','d','v'].map(k=>chk(r,k)).join('')}<button onclick="removeStorePointRule('${r.id}')" style="font-size:10px;background:var(--red-light);color:var(--red);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;">削除</button></div>`).join(''):'<div style="font-size:11px;color:var(--text3);">登録されている店はありません。</div>';
   ['rakuten','d','v'].forEach(k=>{const i=document.getElementById('pc-rate-'+k); if(i&&document.activeElement!==i) i.value=pcRate(k);});
+  renderRpayRateUi();
 }
 function addStorePointRule(){
   const kw=(document.getElementById('new-store-point-kw').value||'').trim();
@@ -7361,6 +7490,33 @@ function toggleStorePointType(id,k,on){
 function removeStorePointRule(id){
   S.storePointRules=(S.storePointRules||[]).filter(r=>r.id!==id);
   saveSettings(); renderStorePointRules();
+}
+function rpayMonthKey(){
+  const el=document.getElementById('rpay-rate-month');
+  if(el&&!el.value) el.value=S.viewYear+'-'+String(S.viewMonth).padStart(2,'0');
+  return el?el.value:'';
+}
+function renderRpayRateUi(){
+  const key=rpayMonthKey(); if(!key) return;
+  const inp=document.getElementById('rpay-rate-input'), note=document.getElementById('rpay-rate-note'), clr=document.getElementById('rpay-rate-clear');
+  const [y,m]=key.split('-').map(n=>parseInt(n,10));
+  const own=(S.rpayRates||{})[key];
+  if(inp&&document.activeElement!==inp) inp.value=getRpayRate(y,m);
+  if(clr) clr.style.display=(own!=null)?'':'none';
+  if(note){
+    const set=Object.keys(S.rpayRates||{}).sort().map(k=>`${k}: ${S.rpayRates[k]}%`);
+    note.textContent=(own!=null?`${key} は個別に設定済みです。`:`${key} は未設定のため、直近の値（${getRpayRate(y,m)}%）を引き継いでいます。`)+(set.length?`　設定済み: ${set.join(' / ')}`:'');
+  }
+}
+function setRpayRate(v){
+  const n=parseFloat(v); const key=rpayMonthKey(); if(isNaN(n)||n<0||!key) return;
+  S.rpayRates=S.rpayRates||{}; S.rpayRates[key]=n;
+  saveSettings(); recalc(); renderAll(); renderRpayRateUi();
+}
+function clearRpayRate(){
+  const key=rpayMonthKey(); if(!key||!S.rpayRates||S.rpayRates[key]==null) return;
+  delete S.rpayRates[key];
+  saveSettings(); recalc(); renderAll(); renderRpayRateUi();
 }
 function setPresentPointRate(k,v){
   const n=parseFloat(v); if(isNaN(n)||n<0) return;
