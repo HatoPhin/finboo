@@ -796,7 +796,11 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
     </div>
     <div id="monthly-debit-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     <div id="monthly-debit-empty" style="display:none;font-size:11px;color:var(--text3);padding:8px 0;text-align:center;line-height:1.7;">今月引き落とし予定の支払いはありません。</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;">
+  </div>
+
+  <!-- 口座の残高で引き落とせるか（引き落とし設定の有無にかかわらず常に表示） -->
+  <div class="card p-4" id="bank-judge-card">
+    <div class="flex items-center justify-between" style="margin-bottom:10px;">
       <span style="font-size:11px;font-weight:600;color:var(--text3);">🏦 口座の残高で引き落とせる？（来月分まで）</span>
       <button type="button" class="btn" onclick="openBankModal()" style="font-size:10.5px;">口座・給料</button>
     </div>
