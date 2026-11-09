@@ -796,6 +796,11 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
     </div>
     <div id="monthly-debit-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     <div id="monthly-debit-empty" style="display:none;font-size:11px;color:var(--text3);padding:8px 0;text-align:center;line-height:1.7;">今月引き落とし予定の支払いはありません。</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;">
+      <span style="font-size:11px;font-weight:600;color:var(--text3);">🏦 口座の残高で引き落とせる？（来月分まで）</span>
+      <button type="button" class="btn" onclick="openBankModal()" style="font-size:10.5px;">口座・給料</button>
+    </div>
+    <div id="bank-judge" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 
   <!-- 今月のサブスク（サブスクリプションカテゴリの当月取引を集計表示） -->
@@ -1477,6 +1482,43 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
 </nav>
 
 <!-- ==================== 引き落とし設定モーダル ==================== -->
+<div id="bank-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(460px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span style="font-size:14px;font-weight:700;color:var(--text);">🏦 口座・給料</span>
+      <button onclick="hideModal('bank-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:16px;">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">口座と預金残高</div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:8px;">残高は手入力です。いつでも更新できます。<b>残高を更新した日より後</b>の給料・引き落としだけを計算に入れます（更新した日の分は、残高に反映済みとして扱います）。</div>
+        <div id="bank-acc-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+          <input id="bank-new-name" type="text" placeholder="口座名（例: 三井住友銀行）" style="flex:2;min-width:140px;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <input id="bank-new-balance" type="number" inputmode="numeric" placeholder="残高" style="flex:1;min-width:90px;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <button type="button" class="btn btn-primary" onclick="addBankAccount()" style="font-size:11.5px;">口座を追加</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">給料の入力（都度）</div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:8px;">入金日と手取り額を、そのつど入力します。家計簿の収入や予算には影響しません。入金日までは「見込み」として、引き落とし判定に足されます。</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <select id="bank-sal-acc" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select>
+          <div style="display:flex;gap:6px;">
+            <input id="bank-sal-date" type="date" style="flex:1;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+            <input id="bank-sal-amount" type="number" inputmode="numeric" placeholder="手取り額" style="flex:1;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          </div>
+          <div style="display:flex;gap:6px;">
+            <input id="bank-sal-memo" type="text" placeholder="メモ（任意・例: 11月分）" style="flex:1;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+            <button type="button" class="btn btn-primary" onclick="addSalaryEntry()" style="font-size:11.5px;">給料を追加</button>
+          </div>
+        </div>
+        <div id="bank-sal-list" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="card-setting-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(440px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
@@ -1503,7 +1545,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
         <div style="margin-top:10px;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">限度額（任意）</label>
             <input id="cs-limit" type="number" inputmode="numeric" placeholder="未設定" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
         <div style="margin-top:10px;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">引き落とし銀行口座（任意）</label>
-            <input id="cs-bank-account" type="text" placeholder="例: 三井住友銀行" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+            <select id="cs-bank-account" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;">口座の追加・預金残高の入力は <a href="#" onclick="openBankModal();return false;" style="color:var(--primary);font-weight:700;">口座・給料</a> から。残高が足りるかをホームで判定します。</div></div>
         <div style="margin-top:10px;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">紐づける決済手段（任意・複数選択可）</label>
             <div id="cs-linked-methods" style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;"></div>
             <div style="font-size:10px;color:var(--text3);margin-top:4px;">未選択の場合はこのカード自身の決済手段のみが対象になります</div></div>
@@ -2362,6 +2405,8 @@ const INIT={
   chargePairs:[],        // チャージ払いペア設定 [{id, source, target}]。sourceからtargetへチャージして払う運用を1回の入力で登録するための設定
   storePointRules:[{id:'spr_famima',keyword:'ファミリーマート',types:['rakuten']}], // ポイントが貯まる店 [{id,keyword(部分一致),types:['rakuten'|'d'|'v']}]。取引追加時に提示したポイントを質問する
   presentPointRates:{rakuten:1,d:1,v:0.5}, // 提示ポイントの還元率(%)。楽天・d=100円1pt、V=200円1pt
+  bankAccounts:[],       // 銀行口座 [{id,name,balance(数値|null),balanceUpdatedAt(ISO)}]。残高は手入力のみ。カード設定の引き落とし口座(bankAccountId)から参照
+  salaryEntries:[],      // 給料の入金 [{id,accountId,date:'YYYY/MM/DD',amount,memo}]。都度入力（家計簿の収入取引とは別管理で、収支・予算には影響しない）
   rpayRates:{},          // 楽天ペイの月別還元率(%) {"YYYY-MM":rate}。未設定の月は直近の過去月の値を引き継ぐ（全く無ければ0.5%）
   jcbPartnerShops:[],    // JCBカードW: J-POINTパートナー優待店リスト [{id, name(前方一致), rates:[{id, rate(%), from(YYYY-MM-DD or '')}]}]
   jcbCampaign:null       // JCBカードW: 新規入会キャンペーン設定 {joinDate:'YYYY-MM-DD', cap:12000}
@@ -3336,6 +3381,8 @@ function saveSettings(opts){
       storePointRules:S.storePointRules||[],
       presentPointRates:S.presentPointRates||{rakuten:1,d:1,v:0.5},
       rpayRates:S.rpayRates||{},
+      bankAccounts:S.bankAccounts||[],
+      salaryEntries:S.salaryEntries||[],
       jcbCampaign:S.jcbCampaign||null
     };
     localStorage.setItem(SETTINGS_KEY,JSON.stringify(cfg));
@@ -3442,10 +3489,13 @@ function load(){
       if(cfg.storePointRules) S.storePointRules = cfg.storePointRules;
       if(cfg.presentPointRates) S.presentPointRates = cfg.presentPointRates;
       if(cfg.rpayRates) S.rpayRates = cfg.rpayRates;
+      if(cfg.bankAccounts) S.bankAccounts = cfg.bankAccounts;
+      if(cfg.salaryEntries) S.salaryEntries = cfg.salaryEntries;
       if(cfg.jcbCampaign!==undefined) S.jcbCampaign = cfg.jcbCampaign;
     }
   }catch(e){console.warn('load error:',e);}
   S.jcbPartnerShops = migrateJcbPartnerShops(S.jcbPartnerShops);
+  ensureBankAccountsFromCards();
   // 旧「楽天カード（ポイント払い）」の取引を全月分まとめて変換（以降は各月の読み込み時にも自動変換される）
   try{
     for(let i=0;i<localStorage.length;i++){
@@ -4660,7 +4710,7 @@ function openCardSettingModal(id){
   confirmSel.value=cs&&cs.confirmDay?cs.confirmDay:'';
   tentativeSel.value=cs&&cs.tentativeDay?cs.tentativeDay:'';
   $('cs-limit').value=(cs&&cs.limit!=null)?cs.limit:'';
-  $('cs-bank-account').value=(cs&&cs.bankAccount)?cs.bankAccount:'';
+  refreshCsBankSelect(cs);
   $('cs-holiday-rule').value=cs?(cs.holidayRule||'prev'):'prev';
 
   // 紐づける決済手段（複数選択チェックボックス）
@@ -4696,7 +4746,8 @@ function saveCardSettingModal(){
   const confirmVal=$('cs-confirm-day').value;
   const tentativeVal=$('cs-tentative-day').value;
   const limitVal=$('cs-limit').value;
-  const bankAccountVal=$('cs-bank-account').value.trim();
+  const bankAccountId=$('cs-bank-account').value||'';
+  const bankAcc=(S.bankAccounts||[]).find(a=>a.id===bankAccountId);
   const linkedMethods=[...document.querySelectorAll('#cs-linked-methods input[type=checkbox]:checked')].map(el=>el.value);
   const data={method,isDebit,
     closingDay:isDebit?null:parseInt($('cs-closing-day').value),
@@ -4704,7 +4755,8 @@ function saveCardSettingModal(){
     confirmDay:(isDebit||confirmVal==='')?null:parseInt(confirmVal),
     tentativeDay:(isDebit||tentativeVal==='')?null:parseInt(tentativeVal),
     limit:(isDebit||limitVal==='')?null:parseInt(limitVal),
-    bankAccount:isDebit?null:(bankAccountVal||null),
+    bankAccount:isDebit?null:(bankAcc?bankAcc.name:null),
+    bankAccountId:isDebit?null:(bankAcc?bankAcc.id:null),
     linkedMethods:isDebit?[]:linkedMethods,
     holidayRule:isDebit?null:$('cs-holiday-rule').value};
   if(editingCardSettingId){
@@ -4931,6 +4983,198 @@ function getCardLinkedMethods(cs){
   return (cs.linkedMethods&&cs.linkedMethods.length>0) ? cs.linkedMethods : [cs.method];
 }
 
+// ============================================================
+// 銀行口座の預金残高と、クレジットカードの引き落とし判定
+// ============================================================
+// 口座: S.bankAccounts[{id,name,balance,balanceUpdatedAt}]（残高は手入力）／給料: S.salaryEntries[{id,accountId,date,amount,memo}]（都度入力）
+// 判定: 「残高を更新した日より後」の給料(＋)と引き落とし(−)を日付順に並べ、残高から順に差し引く（同じ日は給料→引き落としの順）。
+//       引き落とし予定はカード設定の「引き落とし口座」ごとに、今月分と来月分（来月分は締め日前なら現時点の利用額）を見る。
+function bankEsc(x){return String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function bankYen(n){ return (n<0?'−':'')+'¥'+Math.abs(Math.round(n)).toLocaleString(); }
+function bankDateOnly(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+function bankParseYmd(str){ const m=(str||'').match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; }
+function bankFmtMD(d){ return (d.getMonth()+1)+'/'+d.getDate(); }
+function bankTouch(){ touchSettingsGroup('bank'); save(); renderMonthlyDebitCard(); if(document.getElementById('bank-modal-overlay')&&document.getElementById('bank-modal-overlay').style.display!=='none') renderBankModal(); refreshCsBankSelect(); }
+
+// 既存カードの「引き落とし口座」(テキスト)から口座を自動作成し、カードに紐づける（idは名前から決めるので端末間でも同じになる）
+function ensureBankAccountsFromCards(){
+  if(!S.bankAccounts) S.bankAccounts=[];
+  (S.cardSettings||[]).forEach(cs=>{
+    if(!cs||cs.bankAccountId||!cs.bankAccount) return;
+    const name=String(cs.bankAccount).trim(); if(!name) return;
+    let acc=S.bankAccounts.find(a=>a.name===name);
+    if(!acc){ acc={id:'ba_'+name,name,balance:null,balanceUpdatedAt:null}; S.bankAccounts.push(acc); }
+    cs.bankAccountId=acc.id;
+  });
+}
+
+function refreshCsBankSelect(cs){
+  const sel=document.getElementById('cs-bank-account'); if(!sel) return;
+  const cur=cs?(cs.bankAccountId||''):sel.value;
+  sel.innerHTML='<option value="">未設定</option>'+(S.bankAccounts||[]).map(a=>`<option value="${bankEsc(a.id)}">${bankEsc(a.name)}</option>`).join('');
+  let v=cur;
+  if(cs&&!v&&cs.bankAccount){ const f=(S.bankAccounts||[]).find(a=>a.name===cs.bankAccount); if(f) v=f.id; }
+  sel.value=v||'';
+}
+
+function openBankModal(){
+  const d=document.getElementById('bank-sal-date'); if(d&&!d.value){ const n=new Date(); d.value=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+  renderBankModal(); showModal('bank-modal-overlay');
+}
+
+function renderBankModal(){
+  const accs=S.bankAccounts||[];
+  const list=document.getElementById('bank-acc-list');
+  if(list){
+    list.innerHTML=accs.length?accs.map(a=>`
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span style="font-size:12px;font-weight:700;color:var(--text);">🏦 ${bankEsc(a.name)}</span>
+          <button type="button" onclick="removeBankAccount('${bankEsc(a.id)}')" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;">削除</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin:3px 0 6px;">${a.balance==null?'残高は未入力です':'現在の残高 '+bankYen(a.balance)+'　'+(a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'に更新':'')}</div>
+        <div style="display:flex;gap:6px;">
+          <input id="bank-bal-${bankEsc(a.id)}" type="number" inputmode="numeric" placeholder="新しい残高" style="flex:1;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
+          <button type="button" class="btn" onclick="updateBankBalance('${bankEsc(a.id)}')" style="font-size:11.5px;">残高を更新</button>
+        </div>
+      </div>`).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">まだ口座がありません。下から追加してください。</div>';
+  }
+  const sel=document.getElementById('bank-sal-acc');
+  if(sel){ const prev=sel.value; sel.innerHTML=accs.map(a=>`<option value="${bankEsc(a.id)}">${bankEsc(a.name)}</option>`).join(''); if(prev&&accs.some(a=>a.id===prev)) sel.value=prev; }
+  const sl=document.getElementById('bank-sal-list');
+  if(sl){
+    const today=bankDateOnly(new Date()); const from=new Date(today.getFullYear(),today.getMonth()-1,today.getDate());
+    const items=(S.salaryEntries||[]).map(e=>({e,d:bankParseYmd(e.date)})).filter(x=>x.d&&x.d>=from).sort((a,b)=>a.d-b.d);
+    sl.innerHTML=items.length?items.map(({e,d})=>{
+      const acc=accs.find(a=>a.id===e.accountId);
+      return `<div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);padding:6px 10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;">
+        <span style="font-family:monospace;">${bankFmtMD(d)}</span>
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bankEsc(acc?acc.name:'(口座なし)')}${e.memo?'　'+bankEsc(e.memo):''}</span>
+        <span style="font-weight:700;font-family:monospace;color:var(--text);">+${bankYen(e.amount)}</span>
+        <button type="button" onclick="removeSalaryEntry('${bankEsc(e.id)}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;">削除</button></div>`;
+    }).join(''):'<div style="font-size:10.5px;color:var(--text3);">直近の給料の入力はありません。</div>';
+  }
+}
+
+function addBankAccount(){
+  const name=(document.getElementById('bank-new-name').value||'').trim();
+  const bv=document.getElementById('bank-new-balance').value;
+  if(!name){ toast('口座名を入力してください','error'); return; }
+  if((S.bankAccounts||[]).some(a=>a.name===name)){ toast('同じ名前の口座がすでにあります','error'); return; }
+  const bal=(bv===''||isNaN(parseFloat(bv)))?null:Math.round(parseFloat(bv));
+  S.bankAccounts=S.bankAccounts||[];
+  S.bankAccounts.push({id:'ba_'+uid(),name,balance:bal,balanceUpdatedAt:bal==null?null:new Date().toISOString()});
+  document.getElementById('bank-new-name').value=''; document.getElementById('bank-new-balance').value='';
+  bankTouch(); toast('口座を追加しました','success');
+}
+function updateBankBalance(id, fromInlineEl){
+  const el=fromInlineEl||document.getElementById('bank-bal-'+id); if(!el) return;
+  const v=parseFloat(el.value); if(isNaN(v)){ toast('残高を数字で入力してください','error'); return; }
+  const acc=(S.bankAccounts||[]).find(a=>a.id===id); if(!acc) return;
+  acc.balance=Math.round(v); acc.balanceUpdatedAt=new Date().toISOString();
+  el.value=''; bankTouch(); toast('残高を更新しました','success');
+}
+function quickUpdateBankBalance(id){ updateBankBalance(id, document.getElementById('bank-q-'+id)); }
+function removeBankAccount(id){
+  const acc=(S.bankAccounts||[]).find(a=>a.id===id); if(!acc) return;
+  if(!confirm(`口座「${acc.name}」を削除しますか？この口座あての給料の入力も削除され、カード設定の引き落とし口座は未設定に戻ります。`)) return;
+  S.bankAccounts=S.bankAccounts.filter(a=>a.id!==id);
+  S.salaryEntries=(S.salaryEntries||[]).filter(e=>e.accountId!==id);
+  (S.cardSettings||[]).forEach(cs=>{ if(cs.bankAccountId===id){ cs.bankAccountId=null; cs.bankAccount=null; } });
+  bankTouch();
+}
+function addSalaryEntry(){
+  const accId=document.getElementById('bank-sal-acc').value;
+  const dv=document.getElementById('bank-sal-date').value;
+  const av=parseFloat(document.getElementById('bank-sal-amount').value);
+  const memo=(document.getElementById('bank-sal-memo').value||'').trim();
+  if(!accId){ toast('先に口座を追加してください','error'); return; }
+  if(!dv||isNaN(av)||av<=0){ toast('入金日と金額（1円以上）を入力してください','error'); return; }
+  S.salaryEntries=S.salaryEntries||[];
+  S.salaryEntries.push({id:'sal_'+uid(),accountId:accId,date:dv.replace(/-/g,'/'),amount:Math.round(av),memo});
+  document.getElementById('bank-sal-amount').value=''; document.getElementById('bank-sal-memo').value='';
+  bankTouch(); toast('給料を追加しました','success');
+}
+function removeSalaryEntry(id){
+  S.salaryEntries=(S.salaryEntries||[]).filter(e=>e.id!==id);
+  bankTouch();
+}
+
+// 口座ごとの見込み：残高 → 日付順に給料(＋)・引き落とし(−)を反映。戻り値: {acc,unset,rows,status,minAfter}
+function calcBankForecast(acc){
+  if(acc.balance==null) return {acc,unset:true,rows:[],status:'unset'};
+  const since=acc.balanceUpdatedAt?bankDateOnly(new Date(acc.balanceUpdatedAt)):null;
+  const today=bankDateOnly(new Date());
+  const events=[];
+  (S.cardSettings||[]).forEach(cs=>{
+    if(isDebitMethod(cs.method)||cs.bankAccountId!==acc.id) return;
+    const t=new Date(); const y=t.getFullYear(), m=t.getMonth()+1;
+    const th=getThisMonthDebitInfo(cs), nx=getNextMonthDebitInfo(cs);
+    const closeNext=bankDateOnly(getCreditCycleRange(cs,y,m).end);
+    [{info:th,partial:false},{info:nx,partial:closeNext>=today}].forEach(x=>{
+      const dd=bankDateOnly(x.info.debitDate);
+      if((since&&dd<=since)||!(x.info.total>0)) return;
+      events.push({type:'debit',date:dd,amount:x.info.total,label:cs.method,partial:x.partial});
+    });
+  });
+  const debitDates=events.map(e=>e.date.getTime());
+  const horizon=debitDates.length?Math.max(...debitDates):null;
+  (S.salaryEntries||[]).forEach(e=>{
+    if(e.accountId!==acc.id) return; const d=bankParseYmd(e.date); if(!d) return;
+    if((since&&d<=since)||horizon==null||d.getTime()>horizon) return;
+    events.push({type:'salary',date:d,amount:e.amount||0,label:e.memo||'給料'});
+  });
+  events.sort((a,b)=>(a.date-b.date)||((a.type==='salary'?0:1)-(b.type==='salary'?0:1)));
+  let bal=acc.balance, minAfter=bal, status='ok';
+  events.forEach(ev=>{
+    bal+=ev.type==='salary'?ev.amount:-ev.amount;
+    ev.after=bal; if(bal<minAfter) minAfter=bal;
+    if(ev.type==='debit'&&bal<0){ ev.short=-bal; status='short'; }
+  });
+  return {acc,rows:events,status:events.some(e=>e.type==='debit')?status:'none',minAfter,end:bal};
+}
+
+function renderBankJudge(){
+  const box=document.getElementById('bank-judge'); if(!box) return;
+  const accs=S.bankAccounts||[];
+  const credit=(S.cardSettings||[]).filter(cs=>!isDebitMethod(cs.method));
+  const unlinked=credit.filter(cs=>!cs.bankAccountId||!accs.some(a=>a.id===cs.bankAccountId));
+  const warnUnlinked=unlinked.length?`<div style="font-size:10px;color:var(--text3);line-height:1.6;">引き落とし口座が未設定のカード: ${unlinked.map(c=>bankEsc(c.method)).join('、')}（カードの引き落とし設定で口座を選ぶと判定に入ります）</div>`:'';
+  if(!accs.length){
+    box.innerHTML=`<div style="font-size:11px;color:var(--text3);line-height:1.7;padding:4px 0;">口座を登録して残高を入力すると、カードの引き落としができるかをここで判定します。</div>`+warnUnlinked;
+    return;
+  }
+  const badge={ok:['✅ 引き落とせます','#16a34a'],short:['⚠️ 残高が足りません','#dc2626'],unset:['残高を入力してください','var(--text3)'],none:['引き落とし予定なし','var(--text3)']};
+  box.innerHTML=accs.map(a=>{
+    const f=calcBankForecast(a); const b=badge[f.status];
+    const rows=(f.rows||[]).map(ev=>{
+      const isDeb=ev.type==='debit'; const passed=ev.date<bankDateOnly(new Date());
+      const right=isDeb?(ev.short?`<span style="color:#dc2626;font-weight:800;">⚠️ ${bankYen(ev.short)} 不足</span>`:`<span style="color:#16a34a;font-weight:700;">✅ 残 ${bankYen(ev.after)}</span>`):`<span style="color:var(--text3);">残 ${bankYen(ev.after)}</span>`;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--border);font-size:11px;">
+        <span style="font-family:monospace;color:var(--text3);min-width:34px;">${bankFmtMD(ev.date)}</span>
+        <span style="flex:1;min-width:0;color:var(--text2);">${isDeb?'💳':'💰'} ${bankEsc(ev.label)}${ev.partial?'<span style="font-size:9px;color:var(--text3);">（現時点の利用額）</span>':''}${passed?'<span style="font-size:9px;color:var(--text3);">（日付経過・残高未更新）</span>':''}</span>
+        <span style="font-family:monospace;font-weight:700;color:${isDeb?'var(--text)':'#16a34a'};">${isDeb?'−':'+'}${bankYen(ev.amount)}</span>
+        <span style="font-family:monospace;min-width:110px;text-align:right;">${right}</span></div>`;
+    }).join('');
+    const updated=a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'更新':'';
+    return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+        <span style="font-size:12px;font-weight:700;color:var(--text);">🏦 ${bankEsc(a.name)}</span>
+        <span style="font-size:10.5px;font-weight:700;color:${b[1]};">${b[0]}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+        <span style="font-size:11px;color:var(--text3);">残高</span>
+        <span style="font-size:14px;font-weight:800;color:var(--text);font-family:monospace;">${a.balance==null?'未入力':bankYen(a.balance)}</span>
+        <span style="font-size:9.5px;color:var(--text3);">${updated}</span>
+        <input id="bank-q-${bankEsc(a.id)}" type="number" inputmode="numeric" placeholder="新しい残高" style="flex:1;min-width:90px;max-width:140px;padding:5px 8px;font-size:11px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
+        <button type="button" class="btn" onclick="quickUpdateBankBalance('${bankEsc(a.id)}')" style="font-size:10.5px;">更新</button>
+      </div>
+      ${rows}
+      ${f.status==='short'?`<div style="font-size:10px;color:#dc2626;margin-top:6px;line-height:1.6;">引き落とし日までに入金するか、給料の入金日を「口座・給料」で入力してください。</div>`:''}
+    </div>`;
+  }).join('')+warnUnlinked;
+}
+
 // ホームタブ: 今月の引き落とし予定カード（引き落とし日ごとにグループ化）
 function renderMonthlyDebitCard(){
   const wrap=$('monthly-debit-card'); const listEl=$('monthly-debit-list'); const emptyEl=$('monthly-debit-empty'); const totalEl=$('monthly-debit-total');
@@ -4972,6 +5216,7 @@ function renderMonthlyDebitCard(){
   setText('monthly-debit-total',`¥${grandTotal.toLocaleString()}`);
   if(emptyEl) emptyEl.style.display=keys.length===0?'block':'none';
   wrap.style.display=settings.length===0?'none':'block';
+  renderBankJudge();
 }
 
 // ウォレットタブ: カード別請求情報（プルダウン展開式）
@@ -6686,7 +6931,8 @@ async function gdriveDownload(opts){
       const lMeta=localCfg.settingsUpdatedAt||{}, cMeta=cloudCfg.settingsUpdatedAt||{};
       const groups={
         budget:['budgetLimit','budgetMode','catBudgets','monthlyBudgets','pinnedCats'],
-        school:['schoolDays']
+        school:['schoolDays'],
+        bank:['bankAccounts','salaryEntries']
       };
       const meta=Object.assign({}, cMeta);
       Object.keys(groups).forEach(g=>{
