@@ -5078,7 +5078,7 @@ function updateBankBalance(id, fromInlineEl){
   acc.balance=Math.round(v); acc.balanceUpdatedAt=new Date().toISOString();
   el.value=''; bankTouch(); toast('残高を更新しました','success');
 }
-function quickUpdateBankBalance(id){ updateBankBalance(id, document.getElementById('bank-q-'+id)); }
+function quickUpdateBankBalance(id){ _bankEditing[id]=false; updateBankBalance(id, document.getElementById('bank-q-'+id)); }
 function removeBankAccount(id){
   const acc=(S.bankAccounts||[]).find(a=>a.id===id); if(!acc) return;
   if(!confirm(`口座「${acc.name}」を削除しますか？この口座あての給料の入力も削除され、カード設定の引き落とし口座は未設定に戻ります。`)) return;
@@ -5138,6 +5138,9 @@ function calcBankForecast(acc){
   return {acc,rows:events,status:events.some(e=>e.type==='debit')?status:'none',minAfter,end:bal};
 }
 
+const _bankExpanded={}, _bankEditing={};
+function toggleBankMore(id){ _bankExpanded[id]=!_bankExpanded[id]; renderBankJudge(); }
+function toggleBankEdit(id){ _bankEditing[id]=!_bankEditing[id]; renderBankJudge(); if(_bankEditing[id]){ const el=document.getElementById('bank-q-'+id); if(el) el.focus(); } }
 function renderBankJudge(){
   const box=document.getElementById('bank-judge'); if(!box) return;
   const accs=S.bankAccounts||[];
@@ -5148,31 +5151,44 @@ function renderBankJudge(){
     box.innerHTML=`<div style="font-size:11px;color:var(--text3);line-height:1.7;padding:4px 0;">口座を登録して残高を入力すると、カードの引き落としができるかをここで判定します。</div>`+warnUnlinked;
     return;
   }
-  const badge={ok:['✅ 引き落とせます','#16a34a'],short:['⚠️ 残高が足りません','#dc2626'],unset:['残高を入力してください','var(--text3)'],none:['引き落とし予定なし','var(--text3)']};
+  const band={ok:['✅ 引き落とせます','#16a34a','rgba(22,163,74,.12)'],short:['⚠️ 残高が足りません','#dc2626','rgba(220,38,38,.12)'],unset:['残高を入力してください','var(--text3)','var(--card)'],none:['✅ 引き落とし予定なし','var(--text3)','var(--card)']};
+  const SHOW=3;
+  const today=bankDateOnly(new Date());
   box.innerHTML=accs.map(a=>{
-    const f=calcBankForecast(a); const b=badge[f.status];
-    const rows=(f.rows||[]).map(ev=>{
-      const isDeb=ev.type==='debit'; const passed=ev.date<bankDateOnly(new Date());
-      const right=isDeb?(ev.short?`<span style="color:#dc2626;font-weight:800;">⚠️ ${bankYen(ev.short)} 不足</span>`:`<span style="color:#16a34a;font-weight:700;">✅ 残 ${bankYen(ev.after)}</span>`):`<span style="color:var(--text3);">残 ${bankYen(ev.after)}</span>`;
-      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--border);font-size:11px;">
-        <span style="font-family:monospace;color:var(--text3);min-width:34px;">${bankFmtMD(ev.date)}</span>
-        <span style="flex:1;min-width:0;color:var(--text2);">${isDeb?'💳':'💰'} ${bankEsc(ev.label)}${ev.partial?'<span style="font-size:9px;color:var(--text3);">（現時点の利用額）</span>':''}${passed?'<span style="font-size:9px;color:var(--text3);">（日付経過・残高未更新）</span>':''}</span>
-        <span style="font-family:monospace;font-weight:700;color:${isDeb?'var(--text)':'#16a34a'};">${isDeb?'−':'+'}${bankYen(ev.amount)}</span>
-        <span style="font-family:monospace;min-width:110px;text-align:right;">${right}</span></div>`;
-    }).join('');
-    const updated=a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'更新':'';
+    const f=calcBankForecast(a); const b=band[f.status]; const id=bankEsc(a.id);
+    const rowHtml=(ev,faded)=>{
+      const isDeb=ev.type==='debit'; const passed=ev.date<today; const short=isDeb&&ev.short;
+      const note=(ev.partial?'<span style="font-size:9px;color:var(--text3);">（現時点の利用額）</span>':'')+(passed?'<span style="font-size:9px;color:var(--text3);">（日付経過・残高未更新）</span>':'');
+      const after=short?`<span style="color:#dc2626;font-weight:800;">⚠️ ${bankYen(ev.short)} 不足</span>`:`引き落とし後 残 <span style="font-family:monospace;font-weight:700;color:var(--text2);">${bankYen(ev.after)}</span>`;
+      return `<div style="padding:6px 8px;border-radius:8px;margin-top:4px;${short?'background:rgba(220,38,38,.10);':''}${faded?'opacity:.5;':''}">
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;">
+          <span style="font-family:monospace;color:var(--text3);min-width:34px;">${bankFmtMD(ev.date)}</span>
+          <span style="flex:1;min-width:0;color:var(--text2);">${isDeb?'💳':'💰'} ${bankEsc(ev.label)}${note}</span>
+          <span style="font-family:monospace;font-weight:700;color:${isDeb?'var(--text)':'#16a34a'};">${isDeb?'−':'+'}${bankYen(ev.amount)}</span>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin:2px 0 0 42px;">${after}</div></div>`;
+    };
+    const all=f.rows||[]; const head=all.slice(0,SHOW), rest=all.slice(SHOW);
+    const open=!!_bankExpanded[a.id];
+    let rows=head.map(ev=>rowHtml(ev,false)).join('');
+    if(rest.length){
+      rows+= open ? rest.map(ev=>rowHtml(ev,false)).join('')
+                  : rest.slice(0,1).map(ev=>`<div style="-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent);">${rowHtml(ev,true)}</div>`).join('');
+      rows+=`<button type="button" onclick="toggleBankMore('${id}')" style="display:block;width:100%;margin-top:4px;padding:6px;font-size:10.5px;color:var(--text3);background:none;border:none;opacity:${open?1:.7};cursor:pointer;">${open?'閉じる ▴':`他${rest.length}件を見る ▾`}</button>`;
+    }
+    const updated=a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'時点':'';
+    const editing=!!_bankEditing[a.id];
     return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
-        <span style="font-size:12px;font-weight:700;color:var(--text);">🏦 ${bankEsc(a.name)}</span>
-        <span style="font-size:10.5px;font-weight:700;color:${b[1]};">${b[0]}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-        <span style="font-size:11px;color:var(--text3);">残高</span>
-        <span style="font-size:14px;font-weight:800;color:var(--text);font-family:monospace;">${a.balance==null?'未入力':bankYen(a.balance)}</span>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+        <span style="font-size:12px;font-weight:700;color:var(--text2);">🏦 ${bankEsc(a.name)}</span>
         <span style="font-size:9.5px;color:var(--text3);">${updated}</span>
-        <input id="bank-q-${bankEsc(a.id)}" type="number" inputmode="numeric" placeholder="新しい残高" style="flex:1;min-width:90px;max-width:140px;padding:5px 8px;font-size:11px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
-        <button type="button" class="btn" onclick="quickUpdateBankBalance('${bankEsc(a.id)}')" style="font-size:10.5px;">更新</button>
       </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 8px;">
+        <span style="font-size:24px;font-weight:800;color:var(--text);font-family:monospace;">${a.balance==null?'未入力':bankYen(a.balance)}</span>
+        <button type="button" class="btn" onclick="toggleBankEdit('${id}')" style="font-size:10.5px;">${editing?'閉じる':'残高を更新'}</button>
+      </div>
+      ${editing?`<div style="display:flex;gap:6px;margin-bottom:8px;"><input id="bank-q-${id}" type="number" inputmode="numeric" placeholder="新しい残高" style="flex:1;min-width:0;padding:6px 8px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);"><button type="button" class="btn" onclick="quickUpdateBankBalance('${id}')" style="font-size:11px;">保存</button></div>`:''}
+      <div style="padding:7px 10px;border-radius:8px;background:${b[2]};color:${b[1]};font-size:11.5px;font-weight:700;">${b[0]}</div>
       ${rows}
       ${f.status==='short'?`<div style="font-size:10px;color:#dc2626;margin-top:6px;line-height:1.6;">引き落とし日までに入金するか、給料の入金日を「口座・給料」で入力してください。</div>`:''}
     </div>`;
