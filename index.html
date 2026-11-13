@@ -4089,19 +4089,66 @@ async function downloadPDF(){
     await ensurePdfJapaneseFont(doc);
     doc.setFont('MPLUS1p','normal');
 
-    // ── ビジネス向けカラーパレット（アプリのテーマに依存しない固定配色） ──
+    // ── グリーン基調のモダン配色（アプリのテーマに依存しない固定配色） ──
     const C={
-      ink:'#1f2937', sub:'#5b6472', mute:'#94a0ad',
-      line:'#dfe3e8', panel:'#f6f8f9',
-      brand:'#0f3d2c', brandLine:'#1f6f4a',
+      ink:'#1c2b25', sub:'#53665d', mute:'#8a9a92',
+      line:'#d6e2db', panel:'#f3f8f5', soft:'#e4eee8',
+      brand:'#1b4d3a', brandLine:'#2f8a5f', accent:'#4fae7f',
       green:'#1f7a4d', red:'#b0362c', amber:'#a6650f'
     };
-    const PALETTE=['#1f6f4a','#2f855a','#4a5568','#68a89f','#a0aec0','#7c3aed','#c2410c','#b45309','#334155','#0e7490'];
+    const PALETTE=['#1b6b4a','#2f8a5f','#4fae7f','#7cc4a0','#3f6f63','#88a89a','#a6650f','#5b7c99','#6b8f71','#2c5f6e'];
+    const yen=n=>'¥'+Math.abs(n).toLocaleString();
+    const sgn=n=>(n>=0?'+':'−')+yen(n);
+
+    // ── 決済手段の画像（登録カード画像・ブランドロゴ）をPNG化して用意 ──
+    const _imgCache={};
+    async function toPng(src){
+      if(!src) return null;
+      if(_imgCache[src]!==undefined) return _imgCache[src];
+      try{
+        const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});
+        const w=img.naturalWidth||img.width, hh=img.naturalHeight||img.height;
+        if(!w||!hh) throw 0;
+        const sc=Math.min(1,240/Math.max(w,hh));
+        const cv=document.createElement('canvas'); cv.width=Math.max(1,Math.round(w*sc)); cv.height=Math.max(1,Math.round(hh*sc));
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        return (_imgCache[src]={url:cv.toDataURL('image/png'),ratio:cv.width/cv.height});
+      }catch(_){ return (_imgCache[src]=null); }
+    }
+    const methodArt={};
+    async function loadMethodArt(name){
+      if(methodArt[name]!==undefined) return;
+      const brand=S.methodBrands&&S.methodBrands[name];
+      methodArt[name]={
+        card:await toPng(S.methodLogos&&S.methodLogos[name]),
+        brand:await toPng(brand&&S.brandLogos&&S.brandLogos[brand])
+      };
+    }
+    // 決済手段バッジ（カード画像→無ければ色付き丸＋頭文字）。描画した横幅(mm)を返す
+    function drawMethodBadge(name,x,yy,hgt){
+      const art=methodArt[name]||{}; let w=hgt;
+      if(art.card){
+        w=Math.min(hgt*art.card.ratio,hgt*1.7);
+        doc.addImage(art.card.url,'PNG',x,yy,w,hgt,undefined,'FAST');
+      }else{
+        let col=''; try{col=getMethodColor(name);}catch(_){}
+        if(!/^#[0-9a-f]{6}$/i.test(col||'')) col=C.brandLine;
+        doc.setFillColor(col); doc.circle(x+hgt/2,yy+hgt/2,hgt/2,'F');
+        doc.setFont('MPLUS1p','bold'); doc.setFontSize(hgt*2.1); doc.setTextColor('#ffffff');
+        doc.text((name||'?').charAt(0),x+hgt/2,yy+hgt*0.68,{align:'center'});
+        doc.setTextColor(C.ink);
+      }
+      if(art.brand){
+        const bh=hgt*0.62, bw=bh*art.brand.ratio;
+        doc.addImage(art.brand.url,'PNG',x+w+1.2,yy+(hgt-bh)/2,bw,bh,undefined,'FAST'); w+=1.2+bw;
+      }
+      return w;
+    }
 
     // ── ヘッダー・フッター描画 ──
     function drawHeader(title){
-      doc.setFillColor(C.brand);
-      doc.rect(0,0,PW,16,'F');
+      doc.setFillColor(C.brand); doc.rect(0,0,PW,16,'F');
+      doc.setFillColor(C.accent); doc.rect(0,16,PW,1.1,'F');
       doc.setTextColor('#ffffff');
       doc.setFont('MPLUS1p','bold'); doc.setFontSize(11);
       doc.text('Finboo 家計簿レポート',MX,10.5);
@@ -4122,13 +4169,40 @@ async function downloadPDF(){
       }
     }
     function sectionTitle(label,yy){
-      doc.setFont('MPLUS1p','bold'); doc.setFontSize(13); doc.setTextColor(C.ink);
-      doc.text(label,MX,yy);
-      doc.setDrawColor(C.brandLine); doc.setLineWidth(0.6);
-      doc.line(MX,yy+2.2,PW-MX,yy+2.2);
+      doc.setFillColor(C.brandLine); doc.roundedRect(MX,yy-4.6,1.6,6.2,0.8,0.8,'F');
+      doc.setFont('MPLUS1p','bold'); doc.setFontSize(13); doc.setTextColor(C.brand);
+      doc.text(label,MX+4,yy);
+      doc.setDrawColor(C.line); doc.setLineWidth(0.3);
+      doc.line(MX,yy+2.6,PW-MX,yy+2.6);
       doc.setTextColor(C.ink);
       return yy+10;
     }
+    function noteBox(lines,yy,opts={}){
+      const lh=4.6, pad=4, hgt=lines.length*lh+pad*2-1;
+      doc.setFillColor(opts.fill||C.panel); doc.setDrawColor(opts.stroke||C.line); doc.setLineWidth(0.25);
+      doc.roundedRect(MX,yy,PW-MX*2,hgt,2.5,2.5,'FD');
+      doc.setFillColor(opts.bar||C.brandLine); doc.roundedRect(MX,yy,1.6,hgt,0.8,0.8,'F');
+      lines.forEach((ln,i)=>{
+        const bold=typeof ln==='object'; const txt=bold?ln.t:ln;
+        doc.setFont('MPLUS1p',bold?'bold':'normal'); doc.setFontSize(bold?9.5:8.6); doc.setTextColor(bold?C.brand:C.sub);
+        doc.text(txt,MX+5,yy+pad+3+i*lh);
+      });
+      doc.setTextColor(C.ink);
+      return yy+hgt+6;
+    }
+
+    // 立替・収支の内訳データ（収支の差異が出ないよう明細つきで開示する）
+    const kae=S.transactions.filter(isKaetate).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const kaeTotal=kae.reduce((s,t)=>s+t.amount,0);
+    const kaeRecT=kae.filter(t=>t.recovered), kaeUnT=kae.filter(t=>!t.recovered);
+    const kaeRec=kaeRecT.reduce((s,t)=>s+t.amount,0), kaeUn=kaeTotal-kaeRec;
+    const kaeIncome=S.transactions.filter(isKaetateRecovery).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const kaeIncomeSum=kaeIncome.reduce((s,t)=>s+t.amount,0);
+    const ptPay=S.summary.totalPointPayment||0;
+
+    setProgress(20,'決済手段の画像を準備中...');
+    const allMethodNames=[...new Set([...Object.keys(S.paymentMethods||{}),...S.transactions.map(t=>t.method).filter(Boolean)])];
+    for(const n of allMethodNames) await loadMethodArt(n);
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PAGE 1 — 表紙・サマリー
@@ -4145,28 +4219,50 @@ async function downloadPDF(){
 
     doc.autoTable({
       startY:48, margin:{left:MX,right:MX},
-      head:[['項目','金額 / 件数']],
+      head:[['収支の内訳（計算式）','金額']],
       body:[
-        ['収入合計', `¥${inc.toLocaleString()}`],
-        ['支出合計', `¥${exp.toLocaleString()}`],
-        ['収支', `${bal>=0?'+':'-'}¥${Math.abs(bal).toLocaleString()}`],
-        ['獲得予定ポイント', `${pc.total.toLocaleString()} pt`],
+        ['収入合計'+(kaeIncomeSum>0?`（うち立替回収の入金 ${yen(kaeIncomeSum)}）`:''), '+'+yen(inc)],
+        ['支出合計（立替・ポイント払いを除く実質支出）', '−'+yen(exp)],
+        ['立替の回収済み分（回収済みフラグ分）', '+'+yen(kaeRec)],
+        ['収支 ＝ 収入 − 支出 ＋ 回収済み立替', sgn(bal)],
       ],
-      styles:{font:'MPLUS1p',fontSize:10.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:4},
+      styles:{font:'MPLUS1p',fontSize:10.2,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:3.6},
       headStyles:{fillColor:C.brand,textColor:'#ffffff',fontStyle:'bold'},
-      columnStyles:{0:{cellWidth:80},1:{halign:'right',fontStyle:'bold'}},
+      columnStyles:{0:{cellWidth:'auto'},1:{halign:'right',fontStyle:'bold',cellWidth:42}},
       alternateRowStyles:{fillColor:C.panel},
+      didParseCell:(d)=>{ if(d.section==='body'&&d.row.index===3){ d.cell.styles.fillColor=C.soft; d.cell.styles.fontStyle='bold'; d.cell.styles.textColor=bal>=0?C.green:C.red; } }
     });
-    let cursorY=doc.lastAutoTable.finalY+10;
+    let cursorY=doc.lastAutoTable.finalY+3;
+    doc.setFont('MPLUS1p','normal'); doc.setFontSize(8); doc.setTextColor(C.sub);
+    doc.text(`参考: 獲得予定ポイント ${pc.total.toLocaleString()} pt（収支には含まれません）`,MX,cursorY+3);
+    doc.setTextColor(C.ink);
+    cursorY+=10;
 
-    if((S.summary.totalKaetate||0)>0){
-      doc.setFillColor(C.panel); doc.setDrawColor(C.line); doc.setLineWidth(0.2);
-      doc.roundedRect(MX,cursorY,PW-MX*2,10,2,2,'FD');
-      doc.setFont('MPLUS1p','normal'); doc.setFontSize(9.5); doc.setTextColor(C.sub);
-      doc.text(`※ 立替: ¥${(S.summary.totalKaetate||0).toLocaleString()}（上記支出合計から除外済み）`,MX+4,cursorY+6.5);
-      doc.setTextColor(C.ink);
-      cursorY+=16;
-    }
+    // 立替の状況
+    doc.autoTable({
+      startY:cursorY, margin:{left:MX,right:MX},
+      head:[['立替の状況（今月分）','件数','金額']],
+      body:[
+        ['立替の総額（支出合計には含めない）',`${kae.length}件`,yen(kaeTotal)],
+        ['　うち 回収済み（収支に加算済み）',`${kaeRecT.length}件`,yen(kaeRec)],
+        ['　うち 未回収（収支に影響しない）',`${kaeUnT.length}件`,yen(kaeUn)],
+      ],
+      styles:{font:'MPLUS1p',fontSize:9.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:3},
+      headStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold'},
+      columnStyles:{1:{halign:'right',cellWidth:22},2:{halign:'right',cellWidth:34,fontStyle:'bold'}},
+    });
+    cursorY=doc.lastAutoTable.finalY+7;
+
+    // AI・第三者が読むときの前提（収支の差異に見えやすい点を明記）
+    cursorY=noteBox([
+      {t:'この収支の読み方（分析時の前提）'},
+      '・収支は「収入合計 − 支出合計 ＋ 回収済み立替」で算出しており、この計算式どおりで差異はありません。',
+      '・立替は支出合計に含めていません。立替の明細は専用ページに記載しています。',
+      '・回収済みの立替は、元の支出が集計から除外されているため、収支にのみ加算しています。',
+      '・未回収の立替は収支に影響しません（回収されるまで、立て替えた金額は収支に現れません）。',
+      `・収入合計に含まれる「立替回収」の入金（${yen(kaeIncomeSum)}）は、上記の回収済み分と別に数えています。`,
+      `・ポイント払い（${yen(ptPay)}）は支出合計に含めていません。「対象外」の取引は集計外です。`,
+    ],cursorY);
 
     // 決済手段別サマリー（簡易表）
     const payKeysAll=Object.keys(S.paymentMethods).filter(k=>(S.paymentMethods[k]||0)>0).sort((a,b)=>S.paymentMethods[b]-S.paymentMethods[a]);
@@ -4176,10 +4272,11 @@ async function downloadPDF(){
         startY:cursorY, margin:{left:MX,right:MX},
         head:[['決済手段','金額','構成比']],
         body:payKeysAll.map(k=>[k,`¥${S.paymentMethods[k].toLocaleString()}`,`${exp>0?((S.paymentMethods[k]/exp)*100).toFixed(1):'0.0'}%`]),
-        styles:{font:'MPLUS1p',fontSize:9.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:3},
-        headStyles:{fillColor:'#e9edf0',textColor:C.ink,fontStyle:'bold'},
-        columnStyles:{1:{halign:'right'},2:{halign:'right',cellWidth:24}},
+        styles:{font:'MPLUS1p',fontSize:9.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:{top:3,bottom:3,left:3,right:3},minCellHeight:10},
+        headStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold'},
+        columnStyles:{0:{cellPadding:{top:3,bottom:3,left:22,right:3}},1:{halign:'right'},2:{halign:'right',cellWidth:24}},
         alternateRowStyles:{fillColor:C.panel},
+        didDrawCell:(d)=>{ if(d.section==='body'&&d.column.index===0){ drawMethodBadge(payKeysAll[d.row.index],d.cell.x+2,d.cell.y+1.4,7.2); } },
       });
     }
 
@@ -4246,7 +4343,7 @@ async function downloadPDF(){
       head:[['項目','支出','予算','達成率']],
       body:[['全体', `¥${exp.toLocaleString()}`, `¥${effBudget.toLocaleString()}`, `${Math.round(pct)}%${over?'（超過）':''}`]],
       styles:{font:'MPLUS1p',fontSize:9.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:3},
-      headStyles:{fillColor:'#e9edf0',textColor:C.ink,fontStyle:'bold'},
+      headStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold'},
       columnStyles:{1:{halign:'right'},2:{halign:'right'},3:{halign:'right',textColor:over?C.red:C.green,fontStyle:'bold'}},
     });
     by=doc.lastAutoTable.finalY+6;
@@ -4266,7 +4363,7 @@ async function downloadPDF(){
         head:[['カテゴリ / 内訳','支出','予算','達成率']],
         body:budgetRows.map(r=>r.slice(0,4)),
         styles:{font:'MPLUS1p',fontSize:9,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:2.6},
-        headStyles:{fillColor:'#e9edf0',textColor:C.ink,fontStyle:'bold'},
+        headStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold'},
         columnStyles:{1:{halign:'right'},2:{halign:'right'},3:{halign:'right'}},
         alternateRowStyles:{fillColor:C.panel},
         didParseCell:(data)=>{
@@ -4274,6 +4371,59 @@ async function downloadPDF(){
             data.cell.styles.textColor=C.red; data.cell.styles.fontStyle='bold';
           }
         }
+      });
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 立替 明細
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    setProgress(65,'立替明細を作成中...');
+    doc.addPage();
+    drawHeader(monthStr);
+    let ky=sectionTitle('立替の明細',26);
+    ky=noteBox([
+      '立替は支出合計・カテゴリ集計・予算に含めていません。回収済み（回収フラグON）の分だけを収支に加算しています。',
+      '決済手段別の取引明細（次ページ以降）にも立替は載せていないため、立替はこのページで確認してください。',
+    ],ky-2);
+    if(kae.length===0){
+      doc.setFont('MPLUS1p','normal'); doc.setFontSize(10); doc.setTextColor(C.sub);
+      doc.text('この月に立替の記録はありません。',MX,ky+4); doc.setTextColor(C.ink); ky+=12;
+    }else{
+      doc.autoTable({
+        startY:ky, margin:{left:MX,right:MX},
+        head:[['日付','店舗名','決済手段','メモ','金額','状態']],
+        body:kae.map(t=>[t.date||'--',t.shop||'--',t.method||'--',t.memo||'-',yen(t.amount),t.recovered?'回収済み':'未回収']),
+        foot:[
+          [{content:'回収済み 小計（収支に加算）',colSpan:4,styles:{halign:'right'}},yen(kaeRec),`${kaeRecT.length}件`],
+          [{content:'未回収 小計（収支に影響なし）',colSpan:4,styles:{halign:'right'}},yen(kaeUn),`${kaeUnT.length}件`],
+          [{content:'立替 合計',colSpan:4,styles:{halign:'right'}},yen(kaeTotal),`${kae.length}件`],
+        ],
+        showFoot:'lastPage',
+        styles:{font:'MPLUS1p',fontSize:8.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:2.4},
+        headStyles:{fillColor:C.brand,textColor:'#ffffff',fontStyle:'bold',fontSize:8.5},
+        footStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold',fontSize:8.5},
+        columnStyles:{0:{cellWidth:22},2:{cellWidth:24},4:{halign:'right',cellWidth:24},5:{cellWidth:20,halign:'center'}},
+        alternateRowStyles:{fillColor:C.panel},
+        didParseCell:(d)=>{ if(d.section==='body'&&d.column.index===5){ const rc=kae[d.row.index].recovered; d.cell.styles.textColor=rc?C.green:C.amber; d.cell.styles.fontStyle='bold'; } },
+        didDrawPage:()=>{ drawHeader(monthStr); },
+      });
+      ky=doc.lastAutoTable.finalY+8;
+    }
+    if(kaeIncome.length>0){
+      if(ky>PH-60){ doc.addPage(); drawHeader(monthStr); ky=26; }
+      doc.setFont('MPLUS1p','bold'); doc.setFontSize(10); doc.setTextColor(C.brand);
+      doc.text('参考: 収入に計上されている「立替回収」の入金（収入合計に含む・上記の回収済み分とは別計算）',MX,ky);
+      doc.setTextColor(C.ink);
+      doc.autoTable({
+        startY:ky+3, margin:{left:MX,right:MX},
+        head:[['日付','内容','メモ','金額']],
+        body:kaeIncome.map(t=>[t.date||'--',t.shop||'立替回収',t.memo||'-',yen(t.amount)]),
+        foot:[[{content:'立替回収 入金合計',colSpan:3,styles:{halign:'right'}},yen(kaeIncomeSum)]],
+        styles:{font:'MPLUS1p',fontSize:8.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:2.4},
+        headStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold'},
+        footStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold'},
+        columnStyles:{0:{cellWidth:22},3:{halign:'right',cellWidth:28}},
+        didDrawPage:()=>{ drawHeader(monthStr); },
       });
     }
 
@@ -4300,18 +4450,19 @@ async function downloadPDF(){
       const total=list.reduce((s,t)=>s+t.amount,0);
       if(idx>0) dy+=4;
       if(dy>PH-40){ doc.addPage(); drawHeader(monthStr); dy=26; }
+      const bw=drawMethodBadge(method,MX,dy-5,7);
       doc.setFont('MPLUS1p','bold'); doc.setFontSize(10.5); doc.setTextColor(C.ink);
-      doc.text(`${method}`,MX,dy);
+      doc.text(`${method}`,MX+bw+2.5,dy);
       doc.setFont('MPLUS1p','bold'); doc.setFontSize(10.5); doc.setTextColor(C.brand);
       doc.text(`¥${total.toLocaleString()}`,PW-MX,dy,{align:'right'});
       doc.setTextColor(C.ink);
-      dy+=3;
+      dy+=4;
       doc.autoTable({
         startY:dy, margin:{left:MX,right:MX},
         head:[['日付','店舗名','カテゴリ','小カテゴリ','金額']],
         body:list.map(t=>[t.date||'--',(t.shop||'--')+(isExcludedFromAggregate(t)?'　※対象外':''),t.categoryMajor||'その他',t.categoryMinor||'-',`¥${t.amount.toLocaleString()}`]),
         styles:{font:'MPLUS1p',fontSize:8.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:2.4},
-        headStyles:{fillColor:'#e9edf0',textColor:C.ink,fontStyle:'bold',fontSize:8.5},
+        headStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold',fontSize:8.5},
         columnStyles:{0:{cellWidth:22},2:{cellWidth:26},3:{cellWidth:26},4:{halign:'right',cellWidth:24}},
         alternateRowStyles:{fillColor:C.panel},
         didDrawPage:()=>{ drawHeader(monthStr); },
