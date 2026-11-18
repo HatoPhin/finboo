@@ -1135,8 +1135,12 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
     <div id="asset-bank-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
   <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">証券口座</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--text2);">証券口座</span><button type="button" class="btn" onclick="openBrokerModal()" style="font-size:11px;">📈 管理</button></div>
     <div id="asset-broker-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">証券の内訳</div>
+    <div id="asset-broker-break"></div>
   </div>
 </div>
 
@@ -1544,13 +1548,11 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
       <button onclick="hideModal('broker-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
     </div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
-      <div style="font-size:10px;color:var(--text3);line-height:1.6;">評価額は手入力です（株価の自動取得はしません）。元本（入金額の合計）を入れると、含み損益を表示します。</div>
+      <div style="font-size:10px;color:var(--text3);line-height:1.6;">証券会社ごとに「口座の種類（NISA・特定など）×資産クラス（国内株式・外国株式など）」の保有区分を作り、評価額を手入力します（株価の自動取得はしません）。元本を入れると含み損益を表示します。</div>
       <div id="broker-list" style="display:flex;flex-direction:column;gap:8px;"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <input id="broker-new-name" type="text" placeholder="証券会社名（例: SBI証券）" style="flex:2;min-width:140px;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
-        <input id="broker-new-value" type="number" inputmode="numeric" placeholder="評価額" style="flex:1;min-width:90px;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
-        <input id="broker-new-principal" type="number" inputmode="numeric" placeholder="元本（任意）" style="flex:1;min-width:90px;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
-        <button type="button" class="btn btn-primary" onclick="addBroker()" style="font-size:11.5px;">追加</button>
+        <input id="broker-new-name" type="text" placeholder="証券会社名（例: SBI証券）" style="flex:1;min-width:140px;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+        <button type="button" class="btn btn-primary" onclick="addBroker()" style="font-size:11.5px;">証券口座を追加</button>
       </div></div>
   </div>
 </div>
@@ -3574,6 +3576,7 @@ function load(){
       if(cfg.bankTx) S.bankTx = cfg.bankTx;
       if(cfg.brokerAccounts) S.brokerAccounts = cfg.brokerAccounts;
       if(cfg.assetHistory) S.assetHistory = cfg.assetHistory;
+      normalizeBrokers();
       if(cfg.jcbCampaign!==undefined) S.jcbCampaign = cfg.jcbCampaign;
     }
   }catch(e){console.warn('load error:',e);}
@@ -5380,10 +5383,32 @@ function calcBankForecast(acc){
 // S.assetHistory[{d:'YYYY-MM-DD',bank,broker}]：残高を更新するたびに1日1件に上書きして記録（過去分は遡れない）
 // いずれも同期グループ「bank」に入れている（Drive/Supabaseの同期コードは変更なし）
 function ymdKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+const BK_ACCT={tokutei:'特定口座',ippan:'一般口座',nisa_g:'NISA成長投資枠',nisa_t:'NISAつみたて投資枠',ideco:'iDeCo',unk:'未分類'};
+const BK_CLS={jp:'国内株式',fs:'外国株式',fund:'投資信託',bond:'債券',cash:'現金（預り金）',other:'その他',unk:'未分類'};
+// 保有区分(holdings)がある証券口座は、評価額(value)を区分の合計に保つ。旧データ(区分なし・評価額あり)は「未分類」の区分1件に変換（idは固定なので端末間で同じになる）
+function syncBrokerValue(b){
+  if(!b.holdings||!b.holdings.length) return;
+  const vs=b.holdings.filter(x=>x.value!=null);
+  b.value=vs.length?vs.reduce((s,x)=>s+x.value,0):null;
+  const ts=b.holdings.map(x=>x.updatedAt).filter(Boolean).sort();
+  if(ts.length) b.valueUpdatedAt=ts[ts.length-1];
+}
+function normalizeBrokers(){
+  (S.brokerAccounts||[]).forEach(b=>{
+    if(!b.holdings){
+      b.holdings=(b.value!=null)?[{id:'h_'+b.id+'_0',acct:'unk',cls:'unk',value:b.value,principal:b.principal!=null?b.principal:null,updatedAt:b.valueUpdatedAt||null}]:[];
+    }
+    syncBrokerValue(b);
+  });
+}
 function calcAssetTotals(){
   let bank=0,broker=0,principal=0,pv=0,nP=0,any=false;
   (S.bankAccounts||[]).forEach(a=>{ if(a.balance!=null){ bank+=a.balance; any=true; } });
-  (S.brokerAccounts||[]).forEach(b=>{ if(b.value!=null){ broker+=b.value; any=true; if(b.principal!=null){ principal+=b.principal; pv+=b.value; nP++; } } });
+  (S.brokerAccounts||[]).forEach(b=>{
+    if(b.holdings&&b.holdings.length){
+      b.holdings.forEach(x=>{ if(x.value!=null){ broker+=x.value; any=true; if(x.principal!=null){ principal+=x.principal; pv+=x.value; nP++; } } });
+    }else if(b.value!=null){ broker+=b.value; any=true; if(b.principal!=null){ principal+=b.principal; pv+=b.value; nP++; } }
+  });
   return {bank,broker,total:bank+broker,gain:pv-principal,principal,nP,any};
 }
 function recordAssetSnapshot(){
@@ -5424,12 +5449,23 @@ function renderAssets(){
       <button type="button" class="btn" onclick="openLedger('${bankEsc(a.id)}')" style="font-size:10.5px;">明細</button></div>`).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">口座がありません。「口座・給料」から追加してください。</div>';
   const brs=S.brokerAccounts||[];
   const sl=document.getElementById('asset-broker-list');
+  const gainTxt=(v,pr)=>{ if(v==null||pr==null) return ''; const g=v-pr; return `<span style="font-weight:700;color:${g>=0?'#16a34a':'#dc2626'};">${g>=0?'+':'−'}${bankYen(Math.abs(g))}</span>`; };
   if(sl) sl.innerHTML=brs.length?brs.map(b=>{
-    const g=(b.value!=null&&b.principal!=null)?b.value-b.principal:null;
-    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
-      <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">📈 ${bankEsc(b.name)}</div><div style="font-size:9.5px;color:var(--text3);">${b.valueUpdatedAt?bankFmtMD(new Date(b.valueUpdatedAt))+'時点':''}${b.principal!=null?'　元本 '+bankYen(b.principal):''}</div></div>
-      <div style="text-align:right;"><div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${b.value==null?'未入力':bankYen(b.value)}</div>${g!=null?`<div style="font-size:10px;font-weight:700;color:${g>=0?'#16a34a':'#dc2626'};">${g>=0?'+':'−'}${bankYen(Math.abs(g)).replace('−','')}</div>`:''}</div></div>`;
-  }).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">証券口座がありません。「証券を管理」から追加してください。</div>';
+    const hs=b.holdings||[];
+    return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
+      <div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">📈 ${bankEsc(b.name)}</div><div style="font-size:9.5px;color:var(--text3);">${b.valueUpdatedAt?bankFmtMD(new Date(b.valueUpdatedAt))+'時点':''}</div></div>
+        <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${b.value==null?'未入力':bankYen(b.value)}</div></div>
+      ${hs.map(x=>`<div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2);padding:4px 0 0;margin-top:4px;border-top:1px dashed var(--border);"><span style="flex:1;min-width:0;">${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}</span><span style="font-family:monospace;">${x.value==null?'-':bankYen(x.value)}</span><span style="font-family:monospace;min-width:62px;text-align:right;">${gainTxt(x.value,x.principal)}</span></div>`).join('')}
+    </div>`;
+  }).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">証券口座がありません。右上の「管理」から追加してください。</div>';
+  // 証券の内訳（資産クラス別・口座の種類別）
+  const bk=document.getElementById('asset-broker-break');
+  if(bk){
+    const byC={},byA={}; let tot=0;
+    brs.forEach(b=>(b.holdings||[]).forEach(x=>{ if(x.value==null) return; tot+=x.value; byC[x.cls]=(byC[x.cls]||0)+x.value; byA[x.acct]=(byA[x.acct]||0)+x.value; }));
+    const bars=(m,L)=>Object.keys(m).sort((a,b)=>m[b]-m[a]).map(k=>{ const pc=tot>0?m[k]/tot*100:0; return `<div style="margin-bottom:7px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);"><span>${bankEsc(L[k]||k)}</span><span style="font-family:monospace;">${bankYen(m[k])} <span style="color:var(--text3);">${Math.round(pc)}%</span></span></div><div style="height:6px;border-radius:99px;background:var(--border);overflow:hidden;margin-top:3px;"><div style="width:${pc}%;height:100%;background:#5b7c99;"></div></div></div>`; }).join('');
+    bk.innerHTML=tot>0?`<div style="font-size:10.5px;font-weight:700;color:var(--text3);margin-bottom:6px;">資産クラス別</div>${bars(byC,BK_CLS)}<div style="font-size:10.5px;font-weight:700;color:var(--text3);margin:12px 0 6px;">口座の種類別</div>${bars(byA,BK_ACCT)}`:'<div style="font-size:11px;color:var(--text3);">証券口座に保有区分を追加すると、内訳が表示されます。</div>';
+  }
 }
 function renderAssetChart(t){
   const cv=document.getElementById('asset-chart'), msg=document.getElementById('asset-chart-msg'); if(!cv||!msg) return;
@@ -5518,43 +5554,72 @@ function removeLedgerTx(id){
   bankTouch();
 }
 
-// ── 証券口座 ──
+// ── 証券口座（保有区分ごとに、口座の種類×資産クラスで評価額を手入力）──
 function openBrokerModal(){ renderBrokerModal(); showModal('broker-modal-overlay'); }
 function renderBrokerModal(){
   const el=document.getElementById('broker-list'); if(!el) return;
-  const inp='padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);min-width:0;';
+  const inp='padding:7px 9px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);min-width:0;';
+  const opts=(m,sel)=>Object.keys(m).filter(k=>k!=='unk'||sel==='unk').map(k=>`<option value="${k}"${k===sel?' selected':''}>${m[k]}</option>`).join('');
   el.innerHTML=(S.brokerAccounts||[]).length?S.brokerAccounts.map(b=>{ const id=bankEsc(b.id); return `
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:700;color:var(--text);">📈 ${bankEsc(b.name)}</span>
-        <button type="button" onclick="removeBroker('${id}')" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;">削除</button></div>
-      <div style="font-size:10px;color:var(--text3);margin:3px 0 6px;">評価額 ${b.value==null?'未入力':bankYen(b.value)}${b.principal!=null?'　元本 '+bankYen(b.principal):''}${b.valueUpdatedAt?'　'+bankFmtMD(new Date(b.valueUpdatedAt))+'に更新':''}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <input id="broker-v-${id}" type="number" inputmode="numeric" placeholder="新しい評価額" style="flex:1;${inp}">
-        <input id="broker-p-${id}" type="number" inputmode="numeric" placeholder="元本（任意）" style="flex:1;${inp}">
-        <button type="button" class="btn" onclick="updateBroker('${id}')" style="font-size:11.5px;">更新</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:700;color:var(--text);">📈 ${bankEsc(b.name)}　<span style="font-family:monospace;font-weight:600;color:var(--text2);">${b.value==null?'':bankYen(b.value)}</span></span>
+        <button type="button" onclick="removeBroker('${id}')" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;">口座を削除</button></div>
+      ${(b.holdings||[]).map(x=>{ const hid=bankEsc(x.id); return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);"><b>${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}</b><button type="button" onclick="removeHolding('${id}','${hid}')" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;">削除</button></div>
+        <div style="font-size:10px;color:var(--text3);margin:2px 0 5px;">評価額 ${x.value==null?'未入力':bankYen(x.value)}${x.principal!=null?'　元本 '+bankYen(x.principal):''}${x.updatedAt?'　'+bankFmtMD(new Date(x.updatedAt))+'に更新':''}</div>
+        <div style="display:flex;gap:6px;"><input id="hv-${hid}" type="number" inputmode="numeric" placeholder="新しい評価額" style="flex:1;${inp}"><input id="hp-${hid}" type="number" inputmode="numeric" placeholder="元本（任意）" style="flex:1;${inp}"><button type="button" class="btn" onclick="updateHolding('${id}','${hid}')" style="font-size:11px;">更新</button></div>
+        ${x.acct==='unk'||x.cls==='unk'?`<div style="display:flex;gap:6px;margin-top:5px;"><select id="hca-${hid}" style="flex:1;${inp}">${opts(BK_ACCT,'tokutei')}</select><select id="hcc-${hid}" style="flex:1;${inp}">${opts(BK_CLS,'jp')}</select><button type="button" class="btn" onclick="classifyHolding('${id}','${hid}')" style="font-size:11px;">振り分け</button></div>`:''}
+      </div>`; }).join('')}
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
+        <div style="font-size:10.5px;font-weight:700;color:var(--text3);margin-bottom:5px;">保有区分を追加</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;"><select id="hk-a-${id}" style="flex:1;${inp}">${opts(BK_ACCT,'')}</select><select id="hk-c-${id}" style="flex:1;${inp}">${opts(BK_CLS,'')}</select></div>
+        <div style="display:flex;gap:6px;"><input id="hk-v-${id}" type="number" inputmode="numeric" placeholder="評価額" style="flex:1;${inp}"><input id="hk-p-${id}" type="number" inputmode="numeric" placeholder="元本（任意）" style="flex:1;${inp}"><button type="button" class="btn btn-primary" onclick="addHolding('${id}')" style="font-size:11px;">追加</button></div>
+      </div>
     </div>`; }).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">まだ証券口座がありません。下から追加してください。</div>';
 }
 function addBroker(){
   const name=(document.getElementById('broker-new-name').value||'').trim();
-  const v=parseFloat(document.getElementById('broker-new-value').value), p=parseFloat(document.getElementById('broker-new-principal').value);
   if(!name){ toast('証券会社名を入力してください','error'); return; }
   if((S.brokerAccounts||[]).some(b=>b.name===name)){ toast('同じ名前の証券口座がすでにあります','error'); return; }
   S.brokerAccounts=S.brokerAccounts||[];
-  S.brokerAccounts.push({id:'bk_'+uid(),name,value:isNaN(v)?null:Math.round(v),principal:isNaN(p)?null:Math.round(p),valueUpdatedAt:isNaN(v)?null:new Date().toISOString()});
-  ['broker-new-name','broker-new-value','broker-new-principal'].forEach(i=>document.getElementById(i).value='');
-  bankTouch(); toast('証券口座を追加しました','success');
+  S.brokerAccounts.push({id:'bk_'+uid(),name,value:null,principal:null,valueUpdatedAt:null,holdings:[]});
+  document.getElementById('broker-new-name').value='';
+  bankTouch(); toast('証券口座を追加しました。保有区分を追加してください','success');
 }
-function updateBroker(id){
-  const b=(S.brokerAccounts||[]).find(x=>x.id===id); if(!b) return;
-  const v=parseFloat(document.getElementById('broker-v-'+id).value), p=parseFloat(document.getElementById('broker-p-'+id).value);
+function addHolding(bid){
+  const b=(S.brokerAccounts||[]).find(x=>x.id===bid); if(!b) return;
+  const acct=document.getElementById('hk-a-'+bid).value, cls=document.getElementById('hk-c-'+bid).value;
+  const v=parseFloat(document.getElementById('hk-v-'+bid).value), p=parseFloat(document.getElementById('hk-p-'+bid).value);
+  if(isNaN(v)){ toast('評価額を入力してください','error'); return; }
+  b.holdings=b.holdings||[];
+  if(b.holdings.some(x=>x.acct===acct&&x.cls===cls)){ toast('同じ区分がすでにあります。評価額はそちらで更新してください','error'); return; }
+  b.holdings.push({id:'h_'+uid(),acct,cls,value:Math.round(v),principal:isNaN(p)?null:Math.round(p),updatedAt:new Date().toISOString()});
+  syncBrokerValue(b); bankTouch(); toast('保有区分を追加しました','success');
+}
+function updateHolding(bid,hid){
+  const b=(S.brokerAccounts||[]).find(x=>x.id===bid); const x=b&&(b.holdings||[]).find(y=>y.id===hid); if(!x) return;
+  const v=parseFloat(document.getElementById('hv-'+hid).value), p=parseFloat(document.getElementById('hp-'+hid).value);
   if(isNaN(v)&&isNaN(p)){ toast('評価額か元本を入力してください','error'); return; }
-  if(!isNaN(v)){ b.value=Math.round(v); b.valueUpdatedAt=new Date().toISOString(); }
-  if(!isNaN(p)) b.principal=Math.round(p);
-  bankTouch(); toast('更新しました','success');
+  if(!isNaN(v)){ x.value=Math.round(v); x.updatedAt=new Date().toISOString(); }
+  if(!isNaN(p)) x.principal=Math.round(p);
+  syncBrokerValue(b); bankTouch(); toast('更新しました','success');
+}
+function classifyHolding(bid,hid){
+  const b=(S.brokerAccounts||[]).find(x=>x.id===bid); const x=b&&(b.holdings||[]).find(y=>y.id===hid); if(!x) return;
+  const acct=document.getElementById('hca-'+hid).value, cls=document.getElementById('hcc-'+hid).value;
+  if(b.holdings.some(y=>y!==x&&y.acct===acct&&y.cls===cls)){ toast('同じ区分がすでにあります。先にそちらへ統合してください','error'); return; }
+  x.acct=acct; x.cls=cls; bankTouch(); toast('振り分けました','success');
+}
+function removeHolding(bid,hid){
+  const b=(S.brokerAccounts||[]).find(x=>x.id===bid); if(!b) return;
+  if(!confirm('この保有区分を削除しますか？')) return;
+  b.holdings=(b.holdings||[]).filter(x=>x.id!==hid); syncBrokerValue(b);
+  if(!b.holdings.length){ b.value=null; b.valueUpdatedAt=null; }
+  bankTouch();
 }
 function removeBroker(id){
   const b=(S.brokerAccounts||[]).find(x=>x.id===id); if(!b) return;
-  if(!confirm(`証券口座「${b.name}」を削除しますか？`)) return;
+  if(!confirm(`証券口座「${b.name}」を削除しますか？（保有区分もすべて削除されます）`)) return;
   S.brokerAccounts=S.brokerAccounts.filter(x=>x.id!==id); bankTouch();
 }
 
