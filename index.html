@@ -686,6 +686,35 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focu
 #toast{border-radius:12px!important;}
 body.ro-on #btn-settings{opacity:1;}
 body.ro-on #btn-gdrive-login,body.ro-on #btn-gdrive-sync,body.ro-on #btn-gdrive-logout,body.ro-on #btn-reset{opacity:.35;}
+
+/* ===== PC・タブレット幅: タブを左のナビゲーションレールに（折りたたみスマホ向けアプリ風）。スマホ幅は従来どおり ===== */
+@media (min-width:768px){
+  :root{--rail-w:88px;}
+  body{padding-left:var(--rail-w);}
+  .bottom-nav,nav.bottom-nav{display:none!important;}
+  header + div.noscroll,header.m3-scrolled + div.noscroll{
+    position:fixed;left:0;top:0;bottom:0;width:var(--rail-w);z-index:45;
+    overflow-x:hidden;overflow-y:auto;border-bottom:none!important;border-right:1px solid var(--border);
+    background:var(--bg)!important;padding-top:var(--sat);
+  }
+  header + div.noscroll > div{max-width:none;padding:12px 8px;margin:0;}
+  header + div.noscroll nav{flex-direction:column;min-width:0;gap:4px;}
+  .tab-t{
+    flex-direction:column;justify-content:center;gap:4px;width:100%;
+    padding:10px 4px;font-size:10px;font-weight:600;line-height:1.2;white-space:normal;text-align:center;
+    border:none!important;border-radius:14px;color:var(--text3);
+  }
+  .tab-t svg,.tab-t .icon-sm{width:22px;height:22px;}
+  .tab-t:hover{background:var(--card2);color:var(--text);}
+  .tab-t.active{background:var(--card2);color:var(--text);font-weight:700;}
+  .tab-t.active svg{color:var(--primary);}
+}
+@media (min-width:1100px){
+  :root{--rail-w:224px;}
+  header + div.noscroll > div{padding:16px 12px;}
+  .tab-t{flex-direction:row;justify-content:flex-start;gap:12px;padding:11px 14px;font-size:13.5px;text-align:left;}
+  .tab-t svg,.tab-t .icon-sm{width:18px;height:18px;}
+}
 </style>
 <style>body.ro-on #btn-gdrive-login,body.ro-on #btn-gdrive-sync,body.ro-on #btn-gdrive-logout,body.ro-on #btn-reset,body.ro-on #btn-edit-budget,body.ro-on #btn-add-tx,body.ro-on #btn-sync-dash,body.ro-on #btn-sync-sync{opacity:.35;}</style>
 </head>
