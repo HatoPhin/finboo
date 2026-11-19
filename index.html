@@ -56,9 +56,9 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@500;600&display=swap');
 *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
-body{font-family:'Manrope','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);margin:0;transition:background-color .25s,color .25s;letter-spacing:-.01em;}
+body{font-family:'DM Sans','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);margin:0;transition:background-color .25s,color .25s;letter-spacing:-.01em;}
 h1,h2,h3,.stat-value{letter-spacing:-.02em;}
 
 /* ===== Safe Area ===== */
@@ -615,7 +615,79 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
 @supports not (background-color: AccentColor){
   body.dark{--primary:var(--indigo);--primary-light:var(--indigo-light);--primary-border:rgba(134,217,154,.30);}
 }
+
+/* =====================================================================
+   Calm Minimal テーマ層（Anthropic風: 生成り色の紙面・細い罫線・セリフ体の数字）
+   機能・構造は変えず、色・形・文字だけを上書き
+   ===================================================================== */
+:root{
+  --bg:#faf9f5; --card:#ffffff; --card2:#f5f4ed;
+  --border:#e8e6dc; --border2:#efede4;
+  --text:#141413; --text2:#5e5d59; --text3:#87867f;
+  --indigo:#2f6b4a; --indigo-dim:#3d805b; --indigo-light:#e8efe9; --indigo-text:#1f4a33;
+  --primary:#2f6b4a; --primary-text:#ffffff; --primary-light:#e8efe9; --primary-border:rgba(47,107,74,.28);
+  --green:#2f7d57; --green-light:#e8f1ea; --red:#b5443a; --red-light:#f6e6e3; --amber:#a8741a; --amber-light:#f7eedb;
+  --shadow:none; --shadow-md:0 8px 24px rgba(20,20,19,.10);
+  --nav-bg:#faf9f5; --nav-border:#e8e6dc;
+  --m3-r-card:14px; --m3-r-lg:20px;
+  --serif:'Source Serif 4','Noto Serif JP',Georgia,serif;
+}
+body.dark{
+  --bg:#1f1e1d; --card:#262624; --card2:#30302e;
+  --border:#3a3937; --border2:#2f2e2c;
+  --text:#faf9f5; --text2:#b0aea5; --text3:#87867f;
+  --indigo:#8fcfa6; --indigo-dim:#a5dcb8; --indigo-light:#2b3a31; --indigo-text:#b9e6c9;
+  --primary:#8fcfa6; --primary-text:#10261a; --primary-light:#2b3a31; --primary-border:rgba(143,207,166,.3);
+  --green:#8fcfa6; --green-light:#243229; --red:#e8837a; --red-light:#3d2623; --amber:#e0b25c; --amber-light:#38301d;
+  --nav-bg:#1f1e1d; --nav-border:#3a3937;
+}
+body{background:var(--bg);font-feature-settings:"palt" 1;}
+header{border-bottom:1px solid var(--border)!important;}
+header.m3-scrolled{background:var(--bg)!important;}
+header + div.noscroll,header.m3-scrolled + div.noscroll{background:var(--bg)!important;border-bottom:1px solid var(--border)!important;}
+.card,.stat-card{border:1px solid var(--border);box-shadow:none;background:var(--card);}
+.stat-card{padding:16px;}
+.stat-label{font-weight:500;color:var(--text3);font-size:11px;letter-spacing:.02em;}
+[style*="border-radius:12px"]{border-radius:10px!important;}
+[style*="border-radius:14px"],[style*="border-radius:16px"]{border-radius:14px!important;}
+[style*="border-radius:20px"]{border-radius:20px!important;}
+.card input:not([type=checkbox]):not([type=radio]):not([type=range]),.card select,.card textarea{background:var(--card);}
+/* 数字・見出しはセリフ体 */
+.stat-value,#ui-expense,#ui-budget-lim,#ui-total-pts,
+[style*="font-size:32px"],[style*="font-size:28px"],[style*="font-size:26px"],[style*="font-size:24px"],[style*="font-size:22px"],[style*="font-size:20px"]{font-family:var(--serif)!important;font-weight:500!important;letter-spacing:-.01em!important;}
+/* ボタン: 角丸ピルをやめ、控えめな矩形寄りに */
+.btn{border-radius:10px;min-height:38px;padding:0 16px;font-weight:600;}
+.btn-primary{background:var(--primary);color:var(--primary-text);}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--card2);filter:none;}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red);}
+header .btn{min-height:34px;padding:0 10px;}
+.chart-tgl{border-radius:8px;}
+.chart-tgl.active-tgl{background:var(--card2);color:var(--text);border:1px solid var(--border);}
+/* 入力欄: 通常の細枠 */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea{
+  background:var(--card);border:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:10px!important;}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light);}
+/* タブ */
+.tab-t.active{color:var(--text);border-bottom-color:var(--text);}
+.tab-b.tab-b-active svg{background:var(--card2);color:var(--text);}
+/* ホームのポイント帯: 暗いグラデーションをやめて紙面に合わせる */
+[onclick^="openPtBreakdownModal"]{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border);box-shadow:none!important;}
+[onclick^="openPtBreakdownModal"] [style*="rgba(255,255,255,.0"]{display:none!important;}
+[onclick^="openPtBreakdownModal"] [style*="color:#86efac"]{color:var(--text3)!important;}
+[onclick^="openPtBreakdownModal"] [style*="color:#64748b"],[onclick^="openPtBreakdownModal"] [style*="color:#94a3b8"]{color:var(--text3)!important;}
+[onclick^="openPtBreakdownModal"] [style*="color:#fbbf24"]{color:var(--primary)!important;}
+[onclick^="openPtBreakdownModal"] [style*="color:#bbf7d0"]{color:var(--text2)!important;}
+/* モーダル */
+[id$="-overlay"]{background:rgba(20,20,19,.38)!important;}
+[id$="-overlay"]>div,#tx-modal{border:1px solid var(--border);box-shadow:var(--shadow-md);}
+#tx-modal{background:var(--card);}
+#toast{border-radius:12px!important;}
+body.ro-on #btn-settings{opacity:1;}
+body.ro-on #btn-gdrive-login,body.ro-on #btn-gdrive-sync,body.ro-on #btn-gdrive-logout,body.ro-on #btn-reset{opacity:.35;}
 </style>
+<style>body.ro-on #btn-gdrive-login,body.ro-on #btn-gdrive-sync,body.ro-on #btn-gdrive-logout,body.ro-on #btn-reset,body.ro-on #btn-edit-budget,body.ro-on #btn-add-tx,body.ro-on #btn-sync-dash,body.ro-on #btn-sync-sync{opacity:.35;}</style>
 </head>
 <body class="min-h-screen flex flex-col pb-safe md:pb-0">
 <div id="top-bar"><div id="top-fill"></div></div>
@@ -644,24 +716,10 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
           <svg id="icon-dark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
 
-        <!-- Drive連携（未ログイン） -->
-        <button id="btn-gdrive-login" class="btn btn-ghost" style="font-size:10px;gap:4px;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M4.433 22.396l2.237-3.873H22.01l-2.238 3.873zm3.982-6.89L6.178 12.25 12.005 2l2.237 3.873zm13.585 3.017H17.35l-5.826-10.09 2.237-3.873z"/></svg>
-          Drive
+        <!-- 設定（連携・同期・初期化はここに集約） -->
+        <button id="btn-settings" type="button" class="btn btn-ghost" title="設定" aria-label="設定" onclick="showModal('settings-modal-overlay')" style="padding:6px 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
-
-        <!-- Drive連携（ログイン済み） -->
-        <div id="gdrive-status" style="display:none;align-items:center;gap:4px;">
-          <div style="display:flex;align-items:center;gap:3px;background:var(--green-light);border:1px solid var(--border);border-radius:8px;padding:3px 8px;">
-            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0;"></span>
-            <span id="gdrive-user-name" style="font-size:10px;font-weight:600;color:var(--green);max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">連携中</span>
-          </div>
-          <button id="btn-gdrive-sync" class="btn btn-ghost" style="font-size:10px;padding:4px 8px;">同期</button>
-          <button id="btn-gdrive-logout" class="btn btn-ghost" style="font-size:10px;padding:4px 8px;">切断</button>
-        </div>
-
-        <!-- 初期化 -->
-        <button id="btn-reset" class="btn btn-ghost" style="font-size:10px;padding:5px 8px;">初期化</button>
       </div>
     </div>
 
@@ -740,18 +798,6 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
 
 <!-- ======= ダッシュボード ======= -->
 <div id="pane-dashboard" class="tab-pane active space-y-6">
-  <!-- 同期バナー -->
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
-    <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-      スプレッドシート同期 / CSVインポート
-    </div>
-    <div class="flex gap-2">
-      <input id="url-dash" type="url" placeholder="CSV公開URLを貼り付け" style="flex:1;min-width:0;padding:7px 12px;font-size:11px;">
-      <button id="btn-sync-dash" class="btn btn-primary" style="font-size:11px;white-space:nowrap;">同期</button>
-    </div>
-  </div>
-
   <!-- 上段: ポイントバナー + 予算 -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="md:col-span-2" onclick="openPtBreakdownModal()" style="cursor:pointer;background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 90%,#000) 0%,color-mix(in srgb,var(--primary) 50%,#0d1117) 50%,#0d1117 100%);border-radius:12px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;color:#fff;position:relative;overflow:hidden;">
@@ -770,7 +816,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
     <div id="budget-card-wrap" class="card p-4 flex flex-col" role="button" tabindex="0" title="タップで今月の収支を表示" onclick="openBalanceModal(event)" onkeydown="if(event.key==='Enter')openBalanceModal(event)" style="min-height:120px;transition:background .3s;cursor:pointer;">
       <!-- ヘッダー行 -->
       <div class="flex items-center justify-between" style="margin-bottom:10px;">
-        <span style="font-size:11px;font-weight:600;color:var(--text3);">今月の予算 <span style="font-size:9px;font-weight:600;color:var(--primary);">・タップで収支</span></span>
+        <span style="font-size:11px;font-weight:600;color:var(--text3);">今月の予算 <span style="font-size:9px;font-weight:600;color:var(--primary);">・タップで収支</span><span style="display:block;font-size:9px;font-weight:400;color:var(--text3);margin-top:2px;">選択月の取引日ベース・立替／集計対象外は含まない</span></span>
         <div style="display:flex;align-items:center;gap:6px;">
           <span id="ui-budget-status-badge" style="display:none;font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;"></span>
           <button id="btn-edit-budget" style="font-size:10px;color:var(--primary);font-weight:600;background:none;border:none;cursor:pointer;padding:0;">編集</button>
@@ -866,6 +912,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
   </div>
 
   <!-- 収支サマリーカード -->
+  <div id="def-home-summary" style="font-size:10px;color:var(--text3);line-height:1.6;padding:0 2px;">📐 集計の定義：選択した月の1日〜末日（取引日ベース）。支出合計（実質）は「立替」と「集計対象外」の取引を除きます。収支結果＝収入合計 − 支出合計（実質）＋回収済みの立替。</div>
   <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
     <div class="stat-card">
       <div class="stat-label">収入合計</div>
@@ -1069,6 +1116,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
   <!-- 請求情報（カード別） -->
   <div id="wallet-cards-section">
     <div id="wallet-cards-empty" style="display:none;font-size:11px;color:var(--text3);padding:16px;text-align:center;background:var(--card2);border-radius:14px;">引き落とし設定済みのカードがありません。「同期」タブの「引き落とし設定」から登録できます。</div>
+    <div id="def-wallet" style="font-size:10px;color:var(--text3);line-height:1.6;padding:0 2px 8px;">📐 集計の定義：カードの請求額は、各カードの締め日で区切った利用期間（取引日ベース）の合計です。「集計対象外」の取引も請求額には含むため、ホームの月合計（暦月・集計対象外を除く）とは一致しないことがあります。</div>
     <div id="wallet-cards-wrap">
       <div id="wallet-cards-list" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:12px;scrollbar-width:none;"></div>
       <button type="button" id="wc-prev" class="wc-arrow wc-prev" aria-label="前のカードへ" hidden onclick="walletCardsScrollBy(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -1136,6 +1184,14 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
       </div>
     </div>
   </div>
+  <!-- 全取引履歴（テキスト・読み取り専用） -->
+  <details id="tx-text-card" class="card" style="padding:0;" ontoggle="if(this.open)renderTxTextAll()">
+    <summary style="cursor:pointer;padding:14px 20px;font-size:13px;font-weight:700;color:var(--text);list-style:none;">📄 全取引履歴（テキスト・日付順）<span style="display:block;font-size:10px;font-weight:400;color:var(--text3);margin-top:2px;">全期間を1か所に表示します（閲覧のみ・編集はできません）</span></summary>
+    <div style="padding:0 20px 16px;">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;"><span id="tx-text-meta" style="font-size:10px;color:var(--text3);flex:1;"></span><button type="button" class="btn btn-ghost" style="font-size:10.5px;" onclick="copyTxTextAll()">コピー</button></div>
+      <pre id="tx-text-out" style="margin:0;max-height:60vh;overflow:auto;font-size:10.5px;line-height:1.55;white-space:pre;color:var(--text2);background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;"></pre>
+    </div>
+  </details>
 </div>
 
 <!-- ======= 同期・インポート ======= -->
@@ -1578,6 +1634,58 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
         <input id="broker-new-name" type="text" placeholder="証券会社名（例: SBI証券）" style="flex:1;min-width:140px;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
         <button type="button" class="btn btn-primary" onclick="addBroker()" style="font-size:11.5px;">証券口座を追加</button>
       </div></div>
+  </div>
+</div>
+
+<!-- ==================== 設定モーダル ==================== -->
+<div id="settings-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:8400;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)hideModal('settings-modal-overlay')">
+  <div style="background:var(--card);border:1px solid var(--border);width:min(440px,100%);max-height:90vh;overflow-y:auto;position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span style="font-size:15px;font-weight:700;color:var(--text);">設定</span>
+      <button type="button" onclick="hideModal('settings-modal-overlay')" aria-label="閉じる" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:20px;">
+      <section>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.06em;margin-bottom:8px;">連携・同期</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px;">Googleドライブと連携すると、端末間でデータを同期できます。</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+<button id="btn-gdrive-login" class="btn btn-ghost" style="font-size:12px;gap:6px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M4.433 22.396l2.237-3.873H22.01l-2.238 3.873zm3.982-6.89L6.178 12.25 12.005 2l2.237 3.873zm13.585 3.017H17.35l-5.826-10.09 2.237-3.873z"/></svg>
+          Drive
+        </button>
+<div id="gdrive-status" style="display:none;align-items:center;gap:4px;">
+          <div style="display:flex;align-items:center;gap:3px;background:var(--green-light);border:1px solid var(--border);border-radius:8px;padding:3px 8px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0;"></span>
+            <span id="gdrive-user-name" style="font-size:10px;font-weight:600;color:var(--green);max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">連携中</span>
+          </div>
+          <button id="btn-gdrive-sync" class="btn btn-ghost" style="font-size:12px;">同期</button>
+          <button id="btn-gdrive-logout" class="btn btn-ghost" style="font-size:12px;">切断</button>
+        </div>
+        </div>
+      </section>
+      <section>
+        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.06em;margin-bottom:8px;">データの取り込み</div>
+  <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+    <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      スプレッドシート同期 / CSVインポート
+    </div>
+    <div class="flex gap-2">
+      <input id="url-dash" type="url" placeholder="CSV公開URLを貼り付け" style="flex:1;min-width:0;padding:7px 12px;font-size:11px;">
+      <button id="btn-sync-dash" class="btn btn-primary" style="font-size:11px;white-space:nowrap;">同期</button>
+    </div>
+  </div>
+
+        <button type="button" class="btn btn-ghost" style="font-size:12px;" onclick="hideModal('settings-modal-overlay');switchTab('sync')">CSV取込・同期の画面を開く</button>
+      </section>
+      <details style="border-top:1px solid var(--border);padding-top:14px;">
+        <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--red);letter-spacing:.06em;list-style:none;">⚠ 危険な操作</summary>
+        <div style="margin-top:10px;font-size:11px;color:var(--text3);line-height:1.6;">家計簿データを初期状態に戻します。元に戻せません。実行には「初期化」と手入力する必要があります。</div>
+        <div style="margin-top:10px;">
+<button id="btn-reset" type="button" class="btn btn-danger" title="全データを初期状態に戻します（危険）" style="font-size:12px;">初期化</button>
+        </div>
+      </details>
+    </div>
   </div>
 </div>
 
@@ -5654,6 +5762,28 @@ function removeBrokerRule(id){
   if(!confirm('この積立ルールを削除しますか？（加算済みの金額は戻りません）')) return;
   S.brokerAutoRules=(S.brokerAutoRules||[]).filter(r=>r.id!==id); bankTouch(); renderBrokerRules();
 }
+function buildTxTextAll(){
+  const all=[];
+  for(let i=0;i<localStorage.length;i++){
+    const mm=/^finboo_tx_(\d{4})_(\d{2})$/.exec(localStorage.key(i)||'');
+    if(mm) (loadTx(parseInt(mm[1],10),parseInt(mm[2],10))||[]).forEach(t=>all.push(t));
+  }
+  all.sort((a,b)=>(a.date||'')<(b.date||'')?-1:(a.date||'')>(b.date||'')?1:0);
+  const lines=all.map(t=>{
+    const fl=[]; if(isKaetate(t)) fl.push(t.recovered?'立替・回収済':'立替・未回収'); if(t.type==='expense'&&isExcludedFromAggregate(t)) fl.push('集計対象外');
+    return [t.date,t.type==='income'?'収入':'支出',(t.amount||0)+'円',t.shop||'',t.method||'',t.categoryMajor||'',t.categoryMinor||'',(t.memo||'').replace(/\s+/g,' '),fl.join('/')].join(' | ');
+  });
+  return {n:all.length,from:all[0]&&all[0].date,to:all.length&&all[all.length-1].date,text:'日付 | 種別 | 金額 | 利用先 | 決済手段 | 大分類 | 小分類 | メモ | 備考\n'+lines.join('\n')};
+}
+function renderTxTextAll(){
+  const o=document.getElementById('tx-text-out'); if(!o) return;
+  const r=buildTxTextAll(); o.textContent=r.text;
+  const m=document.getElementById('tx-text-meta'); if(m) m.textContent=r.n?`${r.n}件（${r.from}〜${r.to}）`:'取引がありません';
+}
+function copyTxTextAll(){
+  const r=buildTxTextAll();
+  if(navigator.clipboard) navigator.clipboard.writeText(r.text).then(()=>toast('コピーしました','success'),()=>toast('コピーに失敗しました','error'));
+}
 window.addEventListener('load',()=>setTimeout(()=>brokerAutoScan(),1500));
 function brokerAutoScan(){
   try{
@@ -9563,7 +9693,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   var bn=document.createElement('div'); bn.id='ro-banner';
   bn.style.cssText='display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:76px;z-index:9000;background:var(--amber,#f59e0b);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none;';
   bn.textContent='🔒 閲覧専用モード（変更はできません）'; document.body.appendChild(bn);
-  function paint(){ var on=ro(); btn.textContent=on?'🔒':'🔓'; btn.title=on?'閲覧専用モード中（タップで解除）':'タップで閲覧専用モードにする'; btn.style.background=on?'var(--amber,#f59e0b)':''; bn.style.display=on?'block':'none'; }
+  function paint(){ var on=ro(); btn.textContent=on?'🔒':'🔓'; btn.title=on?'閲覧専用モード中（タップで解除）':'タップで閲覧専用モードにする'; btn.style.background=on?'var(--amber,#f59e0b)':''; document.body.classList.toggle('ro-on',on); bn.style.display=on?'block':'none'; }
   btn.addEventListener('click',function(){
     if(ro()){ if(!confirm('閲覧専用モードを解除しますか？（解除すると編集・削除・初期化ができるようになります）')) return; try{localStorage.setItem(RK,'0');}catch(e){} toast('閲覧専用モードを解除しました','success'); }
     else{ try{localStorage.setItem(RK,'1');}catch(e){} toast('🔒 閲覧専用モードにしました','success'); }
