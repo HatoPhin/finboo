@@ -20,6 +20,29 @@
     });
   }
 </script>
+<script>
+// ===== 閲覧専用モード（AIエージェント等の誤操作対策）: 保存・外部書き込みの下層ガード =====
+(function(){
+  var RK='finboo_readonly';
+  function ro(){ try{ return localStorage.getItem(RK)==='1'; }catch(e){ return false; } }
+  window.finbooRO=ro;
+  var P=Storage.prototype, setI=P.setItem, remI=P.removeItem, clr=P.clear;
+  function blocked(k){ return ro()&&typeof k==='string'&&/^finboo/i.test(k)&&k!==RK&&!/notify/i.test(k); }
+  var warned=false;
+  function warn(){ if(warned) return; warned=true; setTimeout(function(){ warned=false; },4000); try{ if(typeof toast==='function') toast('🔒 閲覧専用モード中のため、変更は保存されません','error'); }catch(e){} }
+  P.setItem=function(k,v){ if(this===window.localStorage&&blocked(k)){ warn(); return; } return setI.apply(this,arguments); };
+  P.removeItem=function(k){ if(this===window.localStorage&&blocked(k)){ warn(); return; } return remI.apply(this,arguments); };
+  P.clear=function(){ if(this===window.localStorage&&ro()){ warn(); return; } return clr.apply(this,arguments); };
+  var f=window.fetch;
+  if(f) window.fetch=function(u,o){
+    var m=((o&&o.method)||(u&&u.method)||'GET').toUpperCase(), url=String((u&&u.url)||u);
+    if(ro()&&m!=='GET'&&m!=='HEAD'&&/supabase\.co\/(rest|functions)|googleapis\.com\/(upload|drive)/.test(url)){
+      return Promise.resolve(new Response('{"error":"read-only mode"}',{status:403}));
+    }
+    return f.apply(this,arguments);
+  };
+})();
+</script>
 <title>Finboo</title>
 
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
@@ -9497,6 +9520,57 @@ document.addEventListener('DOMContentLoaded',()=>{
   const fcCancel=$('fc-cancel-btn');if(fcCancel)fcCancel.addEventListener('click',()=>hideModal('fixed-cost-modal-overlay'));
   const fcClose=$('fc-modal-close');if(fcClose)fcClose.addEventListener('click',()=>hideModal('fixed-cost-modal-overlay'));
 });
+</script>
+<script>
+// ===== 閲覧専用モード: 変更系操作のブロック・ロックボタン =====
+(function(){
+  var RK='finboo_readonly';
+  function ro(){ return window.finbooRO&&window.finbooRO(); }
+  var names=['openAddModal','openEditModal','saveTxModal','deleteTx','bulkDeleteTx','toggleRecovered','deleteSelectedDups','resolveDup','parseCsvAndApply','parseTotalCsv','doSync',
+   'saveCardSettingModal','deleteCardSetting','addBankAccount','removeBankAccount','addSalaryEntry','removeSalaryEntry','addLedgerTx','removeLedgerTx',
+   'saveBrokerRule','addBrokerRuleAlloc','removeBrokerRule','brokerAutoScan','addBroker','addHolding','updateHolding','classifyHolding','removeHolding','removeBroker',
+   'toggleRakutenOffsetDone','addFixedCostFromCandidate','saveFixedCostModal','deleteFixedCost','saveBudgetModal','toggleSchoolDay',
+   'gdriveSync','gdriveUpload','gdriveLogin','sbUpsertTransaction','sbDeleteTransaction','sbSaveSettingsSnapshot','sbImportCurrentData','sbLogin','sbLogout',
+   'addStorePointRule','toggleStorePointType','removeStorePointRule','addMinorCat','removeMinorCat','addCustomMethod','removeCustomMethod','addChargePair','removeChargePair',
+   'addJcbPartnerShop','addJcbPartnerRate','removeJcbPartnerRate','removeJcbPartnerShop','saveJcbCampaign','addCustomShopBrand','removeMethodLogo','removePointLogo','removeShopLogo','removeBrandLogo','removeCat','syncFixedCostTransactions'];
+  var silent={brokerAutoScan:1,syncFixedCostTransactions:1,gdriveUpload:1,sbUpsertTransaction:1,sbDeleteTransaction:1,sbSaveSettingsSnapshot:1};
+  names.forEach(function(n){
+    var fn=window[n]; if(typeof fn!=='function') return;
+    window[n]=function(){
+      if(ro()){ if(!silent[n]) toast('🔒 閲覧専用モード中のため操作できません（右上の鍵で解除）','error'); return (n.indexOf('sb')===0||n.indexOf('gdrive')===0)?Promise.resolve(false):undefined; }
+      return fn.apply(this,arguments);
+    };
+  });
+  // 初期化ボタン：閲覧専用中は不可。解除中でも「初期化」と手入力しないと実行できない
+  var rb=document.getElementById('btn-reset');
+  if(rb) rb.addEventListener('click',function(e){
+    if(ro()){ e.stopImmediatePropagation(); e.preventDefault(); toast('🔒 閲覧専用モード中は初期化できません','error'); return; }
+    var v=prompt('全データを初期状態に戻します。続けるには「初期化」と入力してください');
+    if(v!=='初期化'){ e.stopImmediatePropagation(); e.preventDefault(); if(v!==null) toast('入力が違うため初期化しませんでした','error'); }
+  },true);
+  // 入力欄の変更（スライダー等）も閲覧専用中は元に戻す
+  document.addEventListener('change',function(e){
+    if(!ro()) return; var t=e.target; if(!t||t.closest('#ro-ignore')) return;
+    if(t.id==='slider-vprog'||t.id==='slider-seven'){ e.stopImmediatePropagation(); toast('🔒 閲覧専用モード中は変更できません','error'); }
+  },true);
+  document.addEventListener('input',function(e){
+    if(!ro()) return; var t=e.target; if(t&&(t.id==='slider-vprog'||t.id==='slider-seven')){ e.stopImmediatePropagation(); }
+  },true);
+  // ロックボタン
+  var dark=document.getElementById('btn-dark');
+  var btn=document.createElement('button'); btn.id='btn-ro'; btn.className='btn btn-ghost'; btn.style.cssText='padding:6px 8px;font-size:14px;'; btn.type='button';
+  if(dark&&dark.parentNode) dark.parentNode.insertBefore(btn,dark);
+  var bn=document.createElement('div'); bn.id='ro-banner';
+  bn.style.cssText='display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:76px;z-index:9000;background:var(--amber,#f59e0b);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none;';
+  bn.textContent='🔒 閲覧専用モード（変更はできません）'; document.body.appendChild(bn);
+  function paint(){ var on=ro(); btn.textContent=on?'🔒':'🔓'; btn.title=on?'閲覧専用モード中（タップで解除）':'タップで閲覧専用モードにする'; btn.style.background=on?'var(--amber,#f59e0b)':''; bn.style.display=on?'block':'none'; }
+  btn.addEventListener('click',function(){
+    if(ro()){ if(!confirm('閲覧専用モードを解除しますか？（解除すると編集・削除・初期化ができるようになります）')) return; try{localStorage.setItem(RK,'0');}catch(e){} toast('閲覧専用モードを解除しました','success'); }
+    else{ try{localStorage.setItem(RK,'1');}catch(e){} toast('🔒 閲覧専用モードにしました','success'); }
+    paint();
+  });
+  paint();
+})();
 </script>
 <script>
 /* Material You: Top App Bar はスクロールで色が変わる（見た目のみ） */
