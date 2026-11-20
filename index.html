@@ -1803,7 +1803,7 @@ body.dark .mkt-down{background:rgba(255,154,142,.16);color:#ff9a8e;}
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
       <div>
         <div style="font-size:11.5px;font-weight:700;color:var(--text);margin-bottom:4px;">GAS WebアプリURL</div>
-        <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:6px;">Googleスプレッドシートの <code style="font-size:10px;">=GOOGLEFINANCE()</code> を配信するGASのURLを貼り付けます（この端末のみに保存）。</div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:6px;">Googleスプレッドシートの <code style="font-size:10px;">=GOOGLEFINANCE()</code> を配信するGASのURLを貼り付けます（クラウド同期でPC・スマホ・タブレットにも自動反映されます）。</div>
         <div style="display:flex;gap:6px;">
           <input id="mkt-gas-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;min-width:0;padding:8px 10px;font-size:11.5px;border-radius:10px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
           <button type="button" class="btn btn-primary" onclick="saveMarketGasUrl()" style="font-size:11.5px;flex:none;">保存</button>
@@ -2855,6 +2855,7 @@ const INIT={
   brokerAutoRules:[],    // 積立ルール [{id,brokerId,keyword,startDate,allocations:[{acct,cls,amount}]}]
   brokerAutoLog:{},      // 積立ルール適用済み {ruleId_txId:true, spot_txId:true}
   brokerSpots:[],        // スポット買付の記録 [{id,date,brokerId,holdingId,label,amount,pay,txId}]
+  marketCfg:null,        // 株価・指数推移の設定 {gasUrl,tickers,overrides}
   brokerAccounts:[],     // 証券口座 [{id,name,value,principal,valueUpdatedAt}]
   assetHistory:[],       // 資産の推移 [{d,bank,broker}]
   salaryEntries:[],      // 給料の入金 [{id,accountId,date:'YYYY/MM/DD',amount,memo}]。都度入力（家計簿の収入取引とは別管理で、収支・予算には影響しない）
@@ -3839,6 +3840,7 @@ function saveSettings(opts){
       brokerAutoRules:S.brokerAutoRules||[],
       brokerAutoLog:S.brokerAutoLog||{},
       brokerSpots:S.brokerSpots||[],
+      marketCfg:S.marketCfg||null,
       assetHistory:S.assetHistory||[],
       jcbCampaign:S.jcbCampaign||null
     };
@@ -3953,6 +3955,7 @@ function load(){
       if(cfg.brokerAutoRules) S.brokerAutoRules = cfg.brokerAutoRules;
       if(cfg.brokerAutoLog) S.brokerAutoLog = cfg.brokerAutoLog;
       if(cfg.brokerSpots) S.brokerSpots = cfg.brokerSpots;
+      if(cfg.marketCfg&&typeof cfg.marketCfg==='object') S.marketCfg = cfg.marketCfg;
       if(cfg.assetHistory) S.assetHistory = cfg.assetHistory;
       normalizeBrokers();
       if(cfg.jcbCampaign!==undefined) S.jcbCampaign = cfg.jcbCampaign;
@@ -5932,7 +5935,19 @@ const MKT_STOP_WORDS = new Set(['NISA','ETF','USD','JPY','SLIM','MAXIS','EMAXIS'
 
 function loadMarketCfg(){
   try {
-    const raw = JSON.parse(localStorage.getItem(MKT_CFG_KEY) || '{}');
+    let raw = (typeof S !== 'undefined' && S.marketCfg && typeof S.marketCfg === 'object') ? S.marketCfg : null;
+    if (!raw || (!raw.gasUrl && !(raw.tickers && raw.tickers.length) && !(raw.overrides && Object.keys(raw.overrides).length))) {
+      const localRaw = JSON.parse(localStorage.getItem(MKT_CFG_KEY) || '{}');
+      if (localRaw && (localRaw.gasUrl || (localRaw.tickers && localRaw.tickers.length) || (localRaw.overrides && Object.keys(localRaw.overrides).length))) {
+        raw = localRaw;
+        if (typeof S !== 'undefined') S.marketCfg = {
+          gasUrl: typeof raw.gasUrl === 'string' ? raw.gasUrl.trim() : '',
+          tickers: Array.isArray(raw.tickers) ? raw.tickers.filter(x => x && x.ticker) : [],
+          overrides: (raw.overrides && typeof raw.overrides === 'object' && !Array.isArray(raw.overrides)) ? raw.overrides : {}
+        };
+      }
+    }
+    raw = raw || {};
     return {
       gasUrl: typeof raw.gasUrl === 'string' ? raw.gasUrl.trim() : '',
       tickers: Array.isArray(raw.tickers) ? raw.tickers.filter(x => x && x.ticker) : [],
@@ -5941,7 +5956,17 @@ function loadMarketCfg(){
   } catch(_) { return { gasUrl: '', tickers: [], overrides: {} }; }
 }
 function saveMarketCfg(cfg){
-  try { localStorage.setItem(MKT_CFG_KEY, JSON.stringify(cfg)); } catch(_) {}
+  const clean = {
+    gasUrl: typeof cfg.gasUrl === 'string' ? cfg.gasUrl.trim() : '',
+    tickers: Array.isArray(cfg.tickers) ? cfg.tickers.filter(x => x && x.ticker) : [],
+    overrides: (cfg.overrides && typeof cfg.overrides === 'object' && !Array.isArray(cfg.overrides)) ? cfg.overrides : {}
+  };
+  if (typeof S !== 'undefined') {
+    S.marketCfg = clean;
+    (S.settingsUpdatedAt = S.settingsUpdatedAt || {}).bank = new Date().toISOString();
+  }
+  try { localStorage.setItem(MKT_CFG_KEY, JSON.stringify(clean)); } catch(_) {}
+  if (typeof saveSettings === 'function') saveSettings();
 }
 function loadMarketCache(){
   try {
@@ -8418,7 +8443,7 @@ async function gdriveDownload(opts){
       const groups={
         budget:['budgetLimit','budgetMode','catBudgets','monthlyBudgets','pinnedCats'],
         school:['schoolDays'],
-        bank:['bankAccounts','salaryEntries','bankTx','brokerAccounts','assetHistory','brokerAutoRules','brokerAutoLog','brokerSpots']
+        bank:['bankAccounts','salaryEntries','bankTx','brokerAccounts','assetHistory','brokerAutoRules','brokerAutoLog','brokerSpots','marketCfg']
       };
       const meta=Object.assign({}, cMeta);
       Object.keys(groups).forEach(g=>{
