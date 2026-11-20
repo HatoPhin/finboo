@@ -2949,6 +2949,22 @@ async function sbSyncDownAll(){
     localStorage.setItem(key,JSON.stringify(Array.from(map.values())));
   });
   S.transactions=loadTx(S.viewYear,S.viewMonth);
+  // Supabaseのsettingsから株価設定(marketCfg)を安全に取り込む（他設定は上書きしない）
+  try{
+    const {data:sRow}=await sbClient.from('settings').select('data').eq('user_id',sbUser.id).maybeSingle();
+    if(sRow&&sRow.data&&sRow.data.marketCfg&&typeof sRow.data.marketCfg==='object'){
+      const cMkt=sRow.data.marketCfg;
+      const cT=new Date((sRow.data.settingsUpdatedAt&&sRow.data.settingsUpdatedAt.bank)||0).getTime();
+      const lT=new Date((S.settingsUpdatedAt&&S.settingsUpdatedAt.bank)||0).getTime();
+      const localHasUrl=!!(S.marketCfg&&S.marketCfg.gasUrl);
+      if(cMkt.gasUrl&&(!localHasUrl||cT>lT)){
+        S.marketCfg=cMkt;
+        try{localStorage.setItem(MKT_CFG_KEY,JSON.stringify(cMkt));}catch(_){}
+        saveSettings({auto:true});
+        if(typeof renderMarketCard==='function') renderMarketCard();
+      }
+    }
+  }catch(e){console.warn('sbSyncDownAll marketCfg error:',e);}
   recalc();renderAll();renderFixedCosts();
 }
 
@@ -3084,7 +3100,9 @@ function sbStartRealtime(){
         if(payload.eventType!=='DELETE'&&payload.new&&payload.new.data){
           Object.assign(S,payload.new.data);
           localStorage.setItem(SETTINGS_KEY,JSON.stringify(payload.new.data));
+          if(payload.new.data.marketCfg){ try{localStorage.setItem(MKT_CFG_KEY,JSON.stringify(payload.new.data.marketCfg));}catch(_){} }
           renderAll();
+          if(typeof renderAssets==='function') renderAssets();
         }
       })
     .subscribe();
