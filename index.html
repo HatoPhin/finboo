@@ -797,6 +797,9 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])
 #home-hero .hh-btn-ghost{background:rgba(255,255,255,.14);color:#fff;}
 #home-hero .hh-btn-solid{background:#fff;color:#12201c;}
 [data-hero-src]{display:none!important;}
+#home-hero.hh-neg #hh-balance,#home-hero.hh-neg .hh-yen{color:#ffb4a6;}
+#home-hero.hh-neg .hh-main{border-color:rgba(255,180,166,.55);background:rgba(181,68,58,.18);}
+#home-hero.hh-neg .hh-tag{background:#b5443a;color:#fff;font-weight:600;}
 body.ro-on #home-hero .hh-btn{opacity:.45;}
 /* ライムのアクセントカード（ポイント） */
 [onclick^="openPtBreakdownModal"]{background:var(--accent)!important;border:none!important;color:var(--accent-text)!important;}
@@ -915,7 +918,7 @@ body.ro-on #home-hero .hh-btn{opacity:.45;}
 <div id="pane-dashboard" class="tab-pane active space-y-6">
   <!-- ホーム ヒーローカード（収支をひと目で。値は下の各集計と同期） -->
   <section id="home-hero" aria-label="今月の収支">
-    <div class="hh-top"><span id="hh-month" class="hh-chip">—</span><span class="hh-tag">収支結果</span></div>
+    <div class="hh-top"><span id="hh-month" class="hh-chip">—</span><span id="hh-tag" class="hh-tag">収支結果</span></div>
     <div class="hh-main">
       <div class="hh-num"><span id="hh-yen" class="hh-yen">¥</span><span id="hh-balance">0</span></div>
       <div id="hh-sub" class="hh-sub">収入 ¥0　・　支出 ¥0</div>
@@ -1758,6 +1761,7 @@ body.ro-on #home-hero .hh-btn{opacity:.45;}
       <div style="font-size:10px;color:var(--text3);line-height:1.6;">証券会社ごとに「口座の種類（NISA・特定など）×資産クラス（国内株式・外国株式など）」の保有区分を作り、評価額を手入力します（株価の自動取得はしません）。元本を入れると含み損益を表示します。</div>
       <div id="broker-list" style="display:flex;flex-direction:column;gap:8px;"></div>
       <div id="broker-rules" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div id="broker-spot"></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <input id="broker-new-name" type="text" placeholder="証券会社名（例: SBI証券）" style="flex:1;min-width:140px;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
         <button type="button" class="btn btn-primary" onclick="addBroker()" style="font-size:11.5px;">証券口座を追加</button>
@@ -2766,7 +2770,8 @@ const INIT={
   bankAccounts:[],       // 銀行口座 [{id,name,balance(数値|null),balanceUpdatedAt(ISO)}]。残高は手入力のみ。カード設定の引き落とし口座(bankAccountId)から参照
   bankTx:[],             // 口座の入出金明細（下の「資産」ブロック参照）
   brokerAutoRules:[],    // 積立ルール [{id,brokerId,keyword,startDate,allocations:[{acct,cls,amount}]}]
-  brokerAutoLog:{},      // 積立ルール適用済み {ruleId_txId:true}
+  brokerAutoLog:{},      // 積立ルール適用済み {ruleId_txId:true, spot_txId:true}
+  brokerSpots:[],        // スポット買付の記録 [{id,date,brokerId,holdingId,label,amount,pay,txId}]
   brokerAccounts:[],     // 証券口座 [{id,name,value,principal,valueUpdatedAt}]
   assetHistory:[],       // 資産の推移 [{d,bank,broker}]
   salaryEntries:[],      // 給料の入金 [{id,accountId,date:'YYYY/MM/DD',amount,memo}]。都度入力（家計簿の収入取引とは別管理で、収支・予算には影響しない）
@@ -3750,6 +3755,7 @@ function saveSettings(opts){
       brokerAccounts:S.brokerAccounts||[],
       brokerAutoRules:S.brokerAutoRules||[],
       brokerAutoLog:S.brokerAutoLog||{},
+      brokerSpots:S.brokerSpots||[],
       assetHistory:S.assetHistory||[],
       jcbCampaign:S.jcbCampaign||null
     };
@@ -3863,6 +3869,7 @@ function load(){
       if(cfg.brokerAccounts) S.brokerAccounts = cfg.brokerAccounts;
       if(cfg.brokerAutoRules) S.brokerAutoRules = cfg.brokerAutoRules;
       if(cfg.brokerAutoLog) S.brokerAutoLog = cfg.brokerAutoLog;
+      if(cfg.brokerSpots) S.brokerSpots = cfg.brokerSpots;
       if(cfg.assetHistory) S.assetHistory = cfg.assetHistory;
       normalizeBrokers();
       if(cfg.jcbCampaign!==undefined) S.jcbCampaign = cfg.jcbCampaign;
@@ -4955,7 +4962,7 @@ function renderStats(){
   setText('ui-lunch',`¥${S.summary.univLunchExpense.toLocaleString()}`);
   const balEl=$('ui-balance');
   if(balEl){
-    balEl.textContent=(bal>=0?'+':'')+'¥'+Math.abs(bal).toLocaleString();
+    balEl.textContent=(bal>=0?'+':'−')+'¥'+Math.abs(bal).toLocaleString();
     balEl.style.color=bal>=0?'var(--green)':'var(--red)';
   }
 
@@ -5846,6 +5853,7 @@ function removeLedgerTx(id){
 
 // ── 証券口座（保有区分ごとに、口座の種類×資産クラスで評価額を手入力）──
 function openBrokerModal(){ renderBrokerModal(); renderBrokerRules(); showModal('broker-modal-overlay'); }
+function bkHoldLabel(x){ return (BK_ACCT[x.acct]||'')+'・'+(BK_CLS[x.cls]||'')+(x.name?'・'+x.name:''); }
 function renderBrokerModal(){
   const el=document.getElementById('broker-list'); if(!el) return;
   const inp='padding:7px 9px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);min-width:0;';
@@ -5855,13 +5863,14 @@ function renderBrokerModal(){
       <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:700;color:var(--text);">📈 ${bankEsc(b.name)}　<span style="font-family:monospace;font-weight:600;color:var(--text2);">${b.value==null?'':bankYen(b.value)}</span></span>
         <button type="button" onclick="removeBroker('${id}')" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;">口座を削除</button></div>
       ${(b.holdings||[]).map(x=>{ const hid=bankEsc(x.id); return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);"><b>${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}</b><button type="button" onclick="removeHolding('${id}','${hid}')" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;">削除</button></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);"><b>${bankEsc(bkHoldLabel(x))}</b><button type="button" onclick="removeHolding('${id}','${hid}')" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;">削除</button></div>
         <div style="font-size:10px;color:var(--text3);margin:2px 0 5px;">評価額 ${x.value==null?'未入力':bankYen(x.value)}${x.principal!=null?'　元本 '+bankYen(x.principal):''}${x.updatedAt?'　'+bankFmtMD(new Date(x.updatedAt))+'に更新':''}</div>
         <div style="display:flex;gap:6px;"><input id="hv-${hid}" type="number" inputmode="numeric" placeholder="新しい評価額" style="flex:1;${inp}"><input id="hp-${hid}" type="number" inputmode="numeric" placeholder="元本（任意）" style="flex:1;${inp}"><button type="button" class="btn" onclick="updateHolding('${id}','${hid}')" style="font-size:11px;">更新</button></div>
         ${x.acct==='unk'||x.cls==='unk'?`<div style="display:flex;gap:6px;margin-top:5px;"><select id="hca-${hid}" style="flex:1;${inp}">${opts(BK_ACCT,'tokutei')}</select><select id="hcc-${hid}" style="flex:1;${inp}">${opts(BK_CLS,'jp')}</select><button type="button" class="btn" onclick="classifyHolding('${id}','${hid}')" style="font-size:11px;">振り分け</button></div>`:''}
       </div>`; }).join('')}
       <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
         <div style="font-size:10.5px;font-weight:700;color:var(--text3);margin-bottom:5px;">保有区分を追加</div>
+        <input id="hk-n-${id}" type="text" placeholder="銘柄名（任意　例: eMAXIS Slim 全世界株式）" style="width:100%;margin-bottom:6px;${inp}">
         <div style="display:flex;gap:6px;margin-bottom:6px;"><select id="hk-a-${id}" style="flex:1;${inp}">${opts(BK_ACCT,'')}</select><select id="hk-c-${id}" style="flex:1;${inp}">${opts(BK_CLS,'')}</select></div>
         <div style="display:flex;gap:6px;"><input id="hk-v-${id}" type="number" inputmode="numeric" placeholder="評価額" style="flex:1;${inp}"><input id="hk-p-${id}" type="number" inputmode="numeric" placeholder="元本（任意）" style="flex:1;${inp}"><button type="button" class="btn btn-primary" onclick="addHolding('${id}')" style="font-size:11px;">追加</button></div>
       </div>
@@ -5877,7 +5886,7 @@ function renderBrokerRules(){
   const rules=(S.brokerAutoRules||[]).map(r=>{ const b=brs.find(x=>x.id===r.brokerId); const tot=(r.allocations||[]).reduce((a,x)=>a+x.amount,0);
     return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:11px;color:var(--text2);">
       <div style="display:flex;justify-content:space-between;"><b>「${bankEsc(r.keyword)}」→ ${bankEsc(b?b.name:'(削除済み口座)')}</b><button type="button" onclick="removeBrokerRule('${bankEsc(r.id)}')" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;">削除</button></div>
-      ${(r.allocations||[]).map(a=>`<div>${bankEsc(BK_ACCT[a.acct]||'')}・${bankEsc(BK_CLS[a.cls]||'')}　${bankYen(a.amount)}</div>`).join('')}
+      ${(r.allocations||[]).map(a=>`<div>${bankEsc(bkHoldLabel(a))}　${bankYen(a.amount)}</div>`).join('')}
       <div style="color:var(--text3);font-size:10px;margin-top:3px;">合計 ${bankYen(tot)}／${bankEsc(r.startDate)}以降の決済が対象</div></div>`; }).join('');
   el.innerHTML=`<div style="border-top:1px solid var(--border);padding-top:10px;"><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🔁 積立ルール</div>
     <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:6px;">取引の利用先に下のキーワードを含む支出があると、登録した金額を評価額と元本に自動で加算します（登録日以降の取引のみ・金額が合計と違うときは加算せず警告）。</div>
@@ -5885,21 +5894,23 @@ function renderBrokerRules(){
     ${brs.length?`<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
       <select id="br-broker" style="${inp}">${brs.map(b=>`<option value="${bankEsc(b.id)}">${bankEsc(b.name)}</option>`).join('')}</select>
       <input id="br-kw" type="text" placeholder="利用先キーワード（例: SBI投信積立）" style="${inp}">
+      <input id="br-n" type="text" placeholder="銘柄名（任意　例: オルカン）" style="${inp}">
       <div style="display:flex;gap:6px;"><select id="br-a" style="flex:1;${inp}">${opts(BK_ACCT)}</select><select id="br-c" style="flex:1;${inp}">${opts(BK_CLS)}</select></div>
       <input id="br-amt" type="number" inputmode="numeric" placeholder="毎月の積立額（円）" style="${inp}">
       <button type="button" class="btn" onclick="addBrokerRuleAlloc()" style="font-size:11px;">＋ 配分に追加</button>
       <div id="br-draft" style="font-size:11px;color:var(--text2);"></div>
       <button type="button" class="btn btn-primary" onclick="saveBrokerRule()" style="font-size:11.5px;">ルールを登録</button></div>`:'<div style="font-size:10.5px;color:var(--text3);">先に証券口座を追加してください。</div>'}</div>`;
-  renderBrokerRuleDraft();
+  renderBrokerRuleDraft(); renderBrokerSpot();
 }
 let _brDraft=[];
 function renderBrokerRuleDraft(){ const d=document.getElementById('br-draft'); if(!d) return;
-  d.innerHTML=_brDraft.map((a,i)=>`<div>${bankEsc(BK_ACCT[a.acct])}・${bankEsc(BK_CLS[a.cls])}　${bankYen(a.amount)} <button type="button" onclick="_brDraft.splice(${i},1);renderBrokerRuleDraft()" style="background:none;border:none;color:var(--text3);cursor:pointer;">✕</button></div>`).join('')+(_brDraft.length?`<div style="color:var(--text3);">合計 ${bankYen(_brDraft.reduce((s,a)=>s+a.amount,0))}</div>`:''); }
+  d.innerHTML=_brDraft.map((a,i)=>`<div>${bankEsc(bkHoldLabel(a))}　${bankYen(a.amount)} <button type="button" onclick="_brDraft.splice(${i},1);renderBrokerRuleDraft()" style="background:none;border:none;color:var(--text3);cursor:pointer;">✕</button></div>`).join('')+(_brDraft.length?`<div style="color:var(--text3);">合計 ${bankYen(_brDraft.reduce((s,a)=>s+a.amount,0))}</div>`:''); }
 function addBrokerRuleAlloc(){
   const acct=document.getElementById('br-a').value, cls=document.getElementById('br-c').value, amt=Math.round(parseFloat(document.getElementById('br-amt').value));
   if(!(amt>0)){ toast('積立額を入力してください','error'); return; }
-  if(_brDraft.some(a=>a.acct===acct&&a.cls===cls)){ toast('同じ区分がすでにあります','error'); return; }
-  _brDraft.push({acct,cls,amount:amt}); document.getElementById('br-amt').value=''; renderBrokerRuleDraft();
+  const nm=((document.getElementById('br-n')||{}).value||'').trim();
+  if(_brDraft.some(a=>a.acct===acct&&a.cls===cls&&(a.name||'')===nm)){ toast('同じ区分・銘柄がすでにあります','error'); return; }
+  _brDraft.push({acct,cls,name:nm||undefined,amount:amt}); document.getElementById('br-amt').value=''; if(document.getElementById('br-n')) document.getElementById('br-n').value=''; renderBrokerRuleDraft();
 }
 function saveBrokerRule(){
   const bid=document.getElementById('br-broker').value, kw=(document.getElementById('br-kw').value||'').trim();
@@ -5909,6 +5920,43 @@ function saveBrokerRule(){
   S.brokerAutoRules=S.brokerAutoRules||[];
   S.brokerAutoRules.push({id:'br_'+uid(),brokerId:bid,keyword:kw,startDate,allocations:_brDraft.slice()});
   _brDraft=[]; bankTouch(); renderBrokerRules(); toast('積立ルールを登録しました','success');
+}
+
+// ===== スポット買付の記録：評価額・元本の両方に加算（支払いは現金／ポイント）。現金で引き落とし取引があればひも付けて、積立ルールとの二重加算を防ぐ =====
+const BK_PAY={cash:'現金（口座から）',vpt:'Vポイント',other:'その他のポイント'};
+function renderBrokerSpot(){
+  const el=document.getElementById('broker-spot'); if(!el) return;
+  const brs=S.brokerAccounts||[];
+  const inp='padding:7px 9px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);min-width:0;';
+  const hs=[]; brs.forEach(b=>(b.holdings||[]).forEach(x=>hs.push({b,x})));
+  const today=new Date(), ymd=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const txs=[]; for(let k=0;k<2;k++){ const d=new Date(today.getFullYear(),today.getMonth()-k,1); (loadTx(d.getFullYear(),d.getMonth()+1)||[]).forEach(t=>{ if(t.type==='expense'&&t.id&&!(S.brokerAutoLog||{})['spot_'+t.id]) txs.push(t); }); }
+  txs.sort((a,b)=>a.date<b.date?1:-1);
+  const recent=(S.brokerSpots||[]).slice(-5).reverse().map(r=>`<div>${bankEsc(r.date)}　${bankEsc(r.label)}　${bankYen(r.amount)}（${bankEsc(BK_PAY[r.pay]||'')}）</div>`).join('');
+  el.innerHTML=`<div style="border-top:1px solid var(--border);padding-top:10px;"><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🛒 スポット買付を記録</div>
+    <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:6px;">ポイントや現金で買った分を、保有の評価額と元本に加算します。記録の取り消しはできません（間違えたときは保有の評価額・元本を直してください）。ポイント残高は減りません。</div>
+    ${hs.length?`<div style="display:flex;flex-direction:column;gap:6px;">
+      <select id="sp-h" style="${inp}">${hs.map(o=>`<option value="${bankEsc(o.b.id)}|${bankEsc(o.x.id)}">${bankEsc(o.b.name)}／${bankEsc(bkHoldLabel(o.x))}</option>`).join('')}</select>
+      <div style="display:flex;gap:6px;"><input id="sp-amt" type="number" inputmode="numeric" placeholder="買付金額（円）" style="flex:1;${inp}"><input id="sp-date" type="date" value="${ymd}" style="flex:1;${inp}"></div>
+      <select id="sp-pay" onchange="document.getElementById('sp-tx-wrap').style.display=this.value==='cash'?'block':'none'" style="${inp}">${Object.keys(BK_PAY).map(k=>`<option value="${k}">${BK_PAY[k]}</option>`).join('')}</select>
+      <div id="sp-tx-wrap"><select id="sp-tx" style="width:100%;${inp}"><option value="">取引とひも付けない</option>${txs.slice(0,60).map(t=>`<option value="${bankEsc(t.id)}">${bankEsc(t.date)}　${bankEsc(t.shop||'')}　${bankYen(t.amount)}</option>`).join('')}</select>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;">引き落としが取引履歴にあれば選ぶと、積立ルールで二重に加算されません。</div></div>
+      <button type="button" class="btn btn-primary" onclick="saveBrokerSpot()" style="font-size:11.5px;">買付を記録して加算</button>
+    </div>`:'<div style="font-size:10.5px;color:var(--text3);">先に保有区分を追加してください。</div>'}
+    ${recent?`<div style="font-size:10.5px;color:var(--text3);margin-top:8px;line-height:1.7;">最近の記録<br>${recent}</div>`:''}</div>`;
+}
+function saveBrokerSpot(){
+  const [bid,hid]=(document.getElementById('sp-h').value||'|').split('|');
+  const b=(S.brokerAccounts||[]).find(x=>x.id===bid), h=b&&(b.holdings||[]).find(x=>x.id===hid);
+  const amt=Math.round(parseFloat(document.getElementById('sp-amt').value)), date=document.getElementById('sp-date').value||'';
+  const pay=document.getElementById('sp-pay').value, txId=pay==='cash'?(document.getElementById('sp-tx').value||''):'';
+  if(!h){ toast('保有先を選んでください','error'); return; }
+  if(!(amt>0)){ toast('買付金額を入力してください','error'); return; }
+  h.value=(h.value||0)+amt; if(h.principal!=null) h.principal+=amt; h.updatedAt=new Date().toISOString();
+  syncBrokerValue(b);
+  S.brokerSpots=S.brokerSpots||[]; S.brokerSpots.push({id:'sp_'+uid(),date:date.replace(/-/g,'/'),brokerId:bid,holdingId:hid,label:bkHoldLabel(h),amount:amt,pay,txId:txId||undefined});
+  if(txId){ S.brokerAutoLog=S.brokerAutoLog||{}; S.brokerAutoLog['spot_'+txId]=true; }
+  bankTouch(); renderBrokerSpot(); toast('スポット買付を加算しました','success');
 }
 function removeBrokerRule(id){
   if(!confirm('この積立ルールを削除しますか？（加算済みの金額は戻りません）')) return;
@@ -5946,7 +5994,7 @@ function brokerAutoScan(){
     while(y<now.getFullYear()||(y===now.getFullYear()&&m<=now.getMonth()+1)){
       const txs=(y===S.viewYear&&m===S.viewMonth)?S.transactions:loadTx(y,m);
       (txs||[]).forEach(t=>{
-        if(!t||t.type!=='expense'||!t.id) return;
+        if(!t||t.type!=='expense'||!t.id||S.brokerAutoLog['spot_'+t.id]) return;
         rules.forEach(r=>{
           const key=r.id+'_'+t.id;
           if(S.brokerAutoLog[key]||t.date<r.startDate||!(t.shop||'').toLowerCase().includes(r.keyword.toLowerCase())) return;
@@ -5958,8 +6006,8 @@ function brokerAutoScan(){
           }
           b.holdings=b.holdings||[];
           r.allocations.forEach(a=>{
-            let h=b.holdings.find(x=>x.acct===a.acct&&x.cls===a.cls);
-            if(!h){ h={id:'h_'+uid(),acct:a.acct,cls:a.cls,value:0,principal:0,updatedAt:null}; b.holdings.push(h); }
+            let h=b.holdings.find(x=>x.acct===a.acct&&x.cls===a.cls&&(x.name||'')===(a.name||''));
+            if(!h){ h={id:'h_'+uid(),acct:a.acct,cls:a.cls,name:a.name,value:0,principal:0,updatedAt:null}; b.holdings.push(h); }
             h.value=(h.value||0)+a.amount; if(h.principal!=null) h.principal+=a.amount;
             h.updatedAt=new Date().toISOString();
           });
@@ -5986,8 +6034,9 @@ function addHolding(bid){
   const v=parseFloat(document.getElementById('hk-v-'+bid).value), p=parseFloat(document.getElementById('hk-p-'+bid).value);
   if(isNaN(v)){ toast('評価額を入力してください','error'); return; }
   b.holdings=b.holdings||[];
-  if(b.holdings.some(x=>x.acct===acct&&x.cls===cls)){ toast('同じ区分がすでにあります。評価額はそちらで更新してください','error'); return; }
-  b.holdings.push({id:'h_'+uid(),acct,cls,value:Math.round(v),principal:isNaN(p)?null:Math.round(p),updatedAt:new Date().toISOString()});
+  const nm=((document.getElementById('hk-n-'+bid)||{}).value||'').trim();
+  if(b.holdings.some(x=>x.acct===acct&&x.cls===cls&&(x.name||'')===nm)){ toast('同じ区分・銘柄がすでにあります。評価額はそちらで更新してください','error'); return; }
+  b.holdings.push({id:'h_'+uid(),acct,cls,name:nm||undefined,value:Math.round(v),principal:isNaN(p)?null:Math.round(p),updatedAt:new Date().toISOString()});
   syncBrokerValue(b); bankTouch(); toast('保有区分を追加しました','success');
 }
 function updateHolding(bid,hid){
@@ -6001,7 +6050,7 @@ function updateHolding(bid,hid){
 function classifyHolding(bid,hid){
   const b=(S.brokerAccounts||[]).find(x=>x.id===bid); const x=b&&(b.holdings||[]).find(y=>y.id===hid); if(!x) return;
   const acct=document.getElementById('hca-'+hid).value, cls=document.getElementById('hcc-'+hid).value;
-  if(b.holdings.some(y=>y!==x&&y.acct===acct&&y.cls===cls)){ toast('同じ区分がすでにあります。先にそちらへ統合してください','error'); return; }
+  if(b.holdings.some(y=>y!==x&&y.acct===acct&&y.cls===cls&&(y.name||'')===(x.name||''))){ toast('同じ区分がすでにあります。先にそちらへ統合してください','error'); return; }
   x.acct=acct; x.cls=cls; bankTouch(); toast('振り分けました','success');
 }
 function removeHolding(bid,hid){
@@ -7833,7 +7882,7 @@ async function gdriveDownload(opts){
       const groups={
         budget:['budgetLimit','budgetMode','catBudgets','monthlyBudgets','pinnedCats'],
         school:['schoolDays'],
-        bank:['bankAccounts','salaryEntries','bankTx','brokerAccounts','assetHistory','brokerAutoRules','brokerAutoLog']
+        bank:['bankAccounts','salaryEntries','bankTx','brokerAccounts','assetHistory','brokerAutoRules','brokerAutoLog','brokerSpots']
       };
       const meta=Object.assign({}, cMeta);
       Object.keys(groups).forEach(g=>{
@@ -9820,7 +9869,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   function ro(){ return window.finbooRO&&window.finbooRO(); }
   var names=['openAddModal','openEditModal','saveTxModal','deleteTx','bulkDeleteTx','toggleRecovered','deleteSelectedDups','resolveDup','parseCsvAndApply','parseTotalCsv','doSync',
    'saveCardSettingModal','deleteCardSetting','addBankAccount','removeBankAccount','addSalaryEntry','removeSalaryEntry','addLedgerTx','removeLedgerTx',
-   'saveBrokerRule','addBrokerRuleAlloc','removeBrokerRule','brokerAutoScan','addBroker','addHolding','updateHolding','classifyHolding','removeHolding','removeBroker',
+   'saveBrokerRule','saveBrokerSpot','addBrokerRuleAlloc','removeBrokerRule','brokerAutoScan','addBroker','addHolding','updateHolding','classifyHolding','removeHolding','removeBroker',
    'toggleRakutenOffsetDone','addFixedCostFromCandidate','saveFixedCostModal','deleteFixedCost','saveBudgetModal','toggleSchoolDay',
    'gdriveSync','gdriveUpload','gdriveLogin','sbUpsertTransaction','sbDeleteTransaction','sbSaveSettingsSnapshot','sbImportCurrentData','sbLogin','sbLogout',
    'addStorePointRule','toggleStorePointType','removeStorePointRule','addMinorCat','removeMinorCat','addCustomMethod','removeCustomMethod','addChargePair','removeChargePair',
@@ -9868,7 +9917,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   function g(id){ var e=document.getElementById(id); return e?e.textContent.trim():''; }
   function update(){
     var m=/^([+\-−])?\s*¥?\s*(.*)$/.exec(g('ui-balance')||'¥0'), hb=document.getElementById('hh-balance'); if(!hb) return;
-    hb.textContent=m[2]||'0'; document.getElementById('hh-yen').textContent=(m[1]&&m[1]!=='+'?'−':'')+'¥';
+    hb.textContent=m[2]||'0'; var neg=!!(m[1]&&m[1]!=='+'); document.getElementById('hh-yen').textContent=(neg?'−':'')+'¥'; var hr=document.getElementById('home-hero'); hr.classList.toggle('hh-neg',neg); document.getElementById('hh-tag').textContent=neg?'赤字':'収支結果';
     document.getElementById('hh-month').textContent=(S.viewMonth||'')+'月';
     document.getElementById('hh-sub').textContent='収入 '+(g('ui-income')||'¥0')+'　・　支出 '+(g('ui-expense2')||'¥0');
     var ps=document.getElementById('ui-point-sub'), hp=document.getElementById('hh-pt');
