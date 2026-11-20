@@ -817,6 +817,17 @@ header,header.m3-scrolled{background:transparent!important;isolation:isolate;}
 header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
   background:var(--hdr-glass);
   -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);}
+/* 株価・指数推移カード（Bento銀行系デザイン統一） */
+.mkt-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.mkt-chips::-webkit-scrollbar{display:none;}
+.mkt-chip{flex:0 0 auto;padding:6px 12px;font-size:11px;font-weight:700;border-radius:999px;border:1px solid var(--border);background:var(--card2);color:var(--text2);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,border-color .15s;}
+.mkt-chip.active{background:var(--primary);color:var(--primary-text);border-color:var(--primary);}
+.mkt-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;}
+.mkt-up{background:rgba(47,125,87,.12);color:#2f7d57;}
+.mkt-down{background:rgba(181,68,58,.12);color:#b5443a;}
+body.dark .mkt-up{background:rgba(143,207,166,.16);color:#8fcfa6;}
+body.dark .mkt-down{background:rgba(255,154,142,.16);color:#ff9a8e;}
+.mkt-preset{padding:5px 10px;font-size:10.5px;font-weight:600;border-radius:999px;border:1px solid var(--border);background:var(--card2);color:var(--text2);cursor:pointer;}
 /* プッシュ通知UIは非表示 */
 #finboo-banner-host,.card:has(#finboo-notify-status){display:none!important;}
 </style>
@@ -1363,6 +1374,23 @@ header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:no
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--text2);">証券口座</span><button type="button" class="btn" onclick="openBrokerModal()" style="font-size:11px;">📈 管理</button></div>
     <div id="asset-broker-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
+  <div id="asset-market-card" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+      <div style="min-width:0;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);">株価・指数推移</div>
+        <div id="mkt-updated" style="font-size:9.5px;color:var(--text3);margin-top:1px;"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex:none;">
+        <button type="button" id="mkt-refresh-btn" class="btn" onclick="fetchMarketData(true)" style="font-size:11px;padding:5px 11px;">↻ 更新</button>
+        <button type="button" class="btn" onclick="openMarketModal()" style="font-size:11px;padding:5px 11px;">⚙ 設定</button>
+      </div>
+    </div>
+    <div id="mkt-chips" class="mkt-chips"></div>
+    <div id="mkt-quote" style="display:none;margin-bottom:10px;"></div>
+    <div id="mkt-range" style="display:none;gap:6px;margin-bottom:10px;"></div>
+    <div id="mkt-chart-wrap" style="display:none;position:relative;height:200px;"><canvas id="mkt-chart"></canvas></div>
+    <div id="mkt-msg" style="font-size:11px;color:var(--text3);line-height:1.7;padding:14px 4px;text-align:center;">右上の「⚙ 設定」からGAS URLと銘柄を登録すると、株価・指数の推移グラフが表示されます。</div>
+  </div>
   <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
     <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">証券の内訳</div>
     <div id="asset-broker-break"></div>
@@ -1763,6 +1791,41 @@ header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:no
       <div style="display:flex;align-items:center;justify-content:space-between;"><button type="button" onclick="shiftLedgerMonth(-1)" class="btn" style="font-size:12px;">◀</button><span id="ledger-month" style="font-size:12.5px;font-weight:700;color:var(--text);"></span><button type="button" onclick="shiftLedgerMonth(1)" class="btn" style="font-size:12px;">▶</button></div>
       <div id="ledger-sum" style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;font-family:monospace;"></div>
       <div id="ledger-list" style="display:flex;flex-direction:column;gap:6px;"></div></div>
+  </div>
+</div>
+
+<div id="mkt-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8310;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);" onclick="if(event.target===this)hideModal('mkt-modal-overlay')">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(460px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span style="font-size:14px;font-weight:700;color:var(--text);">📈 株価・指数推移の設定</span>
+      <button type="button" onclick="hideModal('mkt-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--text);margin-bottom:4px;">GAS WebアプリURL</div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:6px;">Googleスプレッドシートの <code style="font-size:10px;">=GOOGLEFINANCE()</code> を配信するGASのURLを貼り付けます（この端末のみに保存）。</div>
+        <div style="display:flex;gap:6px;">
+          <input id="mkt-gas-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;min-width:0;padding:8px 10px;font-size:11.5px;border-radius:10px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <button type="button" class="btn btn-primary" onclick="saveMarketGasUrl()" style="font-size:11.5px;flex:none;">保存</button>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text);margin-bottom:6px;">登録銘柄（Google Financeティッカー）</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
+          <button type="button" class="mkt-preset" onclick="quickAddMarketTicker('オルカン代替','NYSEARCA:VT')">＋ 全世界株 (VT)</button>
+          <button type="button" class="mkt-preset" onclick="quickAddMarketTicker('S&P500','NYSEARCA:VOO')">＋ S&amp;P500 (VOO)</button>
+          <button type="button" class="mkt-preset" onclick="quickAddMarketTicker('NASDAQ100','NASDAQ:QQQ')">＋ NASDAQ100 (QQQ)</button>
+          <button type="button" class="mkt-preset" onclick="quickAddMarketTicker('ドル円','CURRENCY:USDJPY')">＋ ドル円 (USDJPY)</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input id="mkt-add-label" type="text" placeholder="表示名（例: NVIDIA）" style="flex:1;min-width:0;padding:8px 10px;font-size:11.5px;border-radius:10px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <input id="mkt-add-ticker" type="text" placeholder="ティッカー（例: NASDAQ:NVDA）" style="flex:1;min-width:0;padding:8px 10px;font-size:11.5px;border-radius:10px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+        </div>
+        <button type="button" class="btn btn-primary" onclick="addMarketTicker()" style="width:100%;font-size:11.5px;">銘柄を追加</button>
+        <div style="font-size:10px;color:var(--text3);line-height:1.5;margin-top:6px;">例：米国株 <code style="font-size:10px;">NASDAQ:NVDA</code> / <code style="font-size:10px;">NYSEARCA:VT</code>、日本株 <code style="font-size:10px;">TYO:7203</code>、為替 <code style="font-size:10px;">CURRENCY:USDJPY</code></div>
+        <div id="mkt-ticker-list" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -5753,6 +5816,7 @@ function renderAssets(){
   const rb=document.getElementById('asset-range');
   if(rb) rb.innerHTML=[['1m','1か月'],['3m','3か月'],['1y','1年'],['all','全期間']].map(([k,l])=>`<button type="button" onclick="setAssetRange('${k}')" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border-radius:8px;border:none;cursor:pointer;background:${_assetUI.range===k?'var(--primary)':'var(--card2)'};color:${_assetUI.range===k?'#fff':'var(--text3)'};">${l}</button>`).join('');
   renderAssetChart(t);
+  if(typeof renderMarketCard==='function') renderMarketCard();
   const accs=S.bankAccounts||[];
   const bl=document.getElementById('asset-bank-list');
   if(bl) bl.innerHTML=accs.length?accs.map(a=>`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
@@ -5803,6 +5867,291 @@ function renderAssetChart(t){
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
       plugins:{legend:{labels:{boxWidth:10,boxHeight:10,color:txt,font:{size:10}}},tooltip:{callbacks:{label:c=>c.dataset.label+' '+bankYen(c.parsed.y)}}},
       scales:{x:{grid:{display:false},ticks:{color:txt,font:{size:10},maxTicksLimit:6}},y:{grid:{color:grid},ticks:{color:txt,font:{size:10},callback:v=>fmtMan(v)}}}}});
+}
+
+
+// ── 株価・指数推移（Googleスプレッドシート =GOOGLEFINANCE() ＋ GAS 連携・表示専用）──
+const MKT_CFG_KEY = 'finboo_market_cfg_v1';
+const MKT_CACHE_KEY = 'finboo_market_cache_v1';
+let _mktChart = null;
+const _mktUI = { selected: null, range: '3m', loading: false, autoTried: false };
+
+function loadMarketCfg(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(MKT_CFG_KEY) || '{}');
+    return {
+      gasUrl: typeof raw.gasUrl === 'string' ? raw.gasUrl.trim() : '',
+      tickers: Array.isArray(raw.tickers) ? raw.tickers.filter(x => x && x.ticker) : []
+    };
+  } catch(_) { return { gasUrl: '', tickers: [] }; }
+}
+function saveMarketCfg(cfg){
+  try { localStorage.setItem(MKT_CFG_KEY, JSON.stringify(cfg)); } catch(_) {}
+}
+function loadMarketCache(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(MKT_CACHE_KEY) || '{}');
+    return { updatedAt: raw.updatedAt || null, items: raw.items || {} };
+  } catch(_) { return { updatedAt: null, items: {} }; }
+}
+function saveMarketCache(cache){
+  try { localStorage.setItem(MKT_CACHE_KEY, JSON.stringify(cache)); } catch(_) {}
+}
+function mktFmtPrice(val, cur, ticker){
+  if (val == null || !isFinite(val)) return '—';
+  const n = Number(val);
+  const c = (cur || '').toUpperCase();
+  const isFx = /^CURRENCY:/i.test(ticker || '');
+  if (c === 'JPY' && !isFx) return '¥' + Math.round(n).toLocaleString('ja-JP');
+  const dec = (isFx || n < 1000) ? 2 : (Math.abs(n % 1) < 0.005 ? 0 : 2);
+  const numStr = n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  if (c === 'USD') return '$' + numStr;
+  if (c === 'JPY') return '¥' + numStr;
+  return c ? (numStr + ' ' + c) : numStr;
+}
+function openMarketModal(){
+  const cfg = loadMarketCfg();
+  const inp = document.getElementById('mkt-gas-url');
+  if (inp) inp.value = cfg.gasUrl || '';
+  renderMarketTickerList();
+  showModal('mkt-modal-overlay');
+}
+function renderMarketTickerList(){
+  const el = document.getElementById('mkt-ticker-list'); if (!el) return;
+  const cfg = loadMarketCfg();
+  if (!cfg.tickers.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px 0;">まだ銘柄が登録されていません。上のボタンや入力欄から追加してください。</div>';
+    return;
+  }
+  el.innerHTML = cfg.tickers.map((t, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:700;color:var(--text);">${bankEsc(t.label || t.ticker)}</div>
+        <div style="font-size:10px;color:var(--text3);font-variant-numeric:tabular-nums;">${bankEsc(t.ticker)}</div>
+      </div>
+      <button type="button" class="btn" onclick="removeMarketTicker(${i})" style="font-size:10.5px;padding:4px 10px;color:var(--red);">削除</button>
+    </div>`).join('');
+}
+function saveMarketGasUrl(){
+  const inp = document.getElementById('mkt-gas-url');
+  const url = (inp && inp.value || '').trim();
+  if (url && !/^https:\/\/script\.google\.com\//.test(url)) {
+    toast('GASのWebアプリURL（https://script.google.com/...）を入力してください', 'error'); return;
+  }
+  const cfg = loadMarketCfg(); cfg.gasUrl = url; saveMarketCfg(cfg);
+  toast(url ? 'GAS URLを保存しました' : 'GAS URLをクリアしました', 'success');
+  renderMarketCard();
+  if (url && cfg.tickers.length) fetchMarketData(true);
+}
+function quickAddMarketTicker(label, ticker){
+  const cfg = loadMarketCfg();
+  const tk = ticker.trim().toUpperCase();
+  if (cfg.tickers.some(x => x.ticker.toUpperCase() === tk)) { toast('すでに登録されています', 'info'); return; }
+  cfg.tickers.push({ label, ticker: tk });
+  saveMarketCfg(cfg);
+  _mktUI.selected = tk;
+  renderMarketTickerList();
+  renderMarketCard();
+  toast(label + ' を追加しました', 'success');
+  if (cfg.gasUrl) fetchMarketData(true);
+}
+function addMarketTicker(){
+  const lEl = document.getElementById('mkt-add-label'), tEl = document.getElementById('mkt-add-ticker');
+  const tk = ((tEl && tEl.value) || '').trim().toUpperCase();
+  const lb = ((lEl && lEl.value) || '').trim() || tk;
+  if (!tk) { toast('ティッカーを入力してください（例: NYSEARCA:VT）', 'error'); return; }
+  const cfg = loadMarketCfg();
+  if (cfg.tickers.some(x => x.ticker.toUpperCase() === tk)) { toast('同じティッカーがすでにあります', 'error'); return; }
+  cfg.tickers.push({ label: lb, ticker: tk });
+  saveMarketCfg(cfg);
+  if (lEl) lEl.value = ''; if (tEl) tEl.value = '';
+  _mktUI.selected = tk;
+  renderMarketTickerList();
+  renderMarketCard();
+  toast(lb + ' を追加しました', 'success');
+  if (cfg.gasUrl) fetchMarketData(true);
+}
+function removeMarketTicker(idx){
+  const cfg = loadMarketCfg();
+  if (idx < 0 || idx >= cfg.tickers.length) return;
+  const removed = cfg.tickers.splice(idx, 1)[0];
+  saveMarketCfg(cfg);
+  if (_mktUI.selected === removed.ticker) _mktUI.selected = cfg.tickers[0] ? cfg.tickers[0].ticker : null;
+  renderMarketTickerList();
+  renderMarketCard();
+}
+function selectMarketTicker(tk){ _mktUI.selected = tk; renderMarketCard(); }
+function setMarketRange(r){ _mktUI.range = r; renderMarketCard(); }
+
+async function fetchMarketData(manual){
+  const cfg = loadMarketCfg();
+  if (!cfg.gasUrl) { if (manual) { toast('先に「⚙ 設定」からGAS URLを登録してください', 'info'); openMarketModal(); } return; }
+  if (!cfg.tickers.length) { if (manual) { toast('先に「⚙ 設定」から銘柄を追加してください', 'info'); openMarketModal(); } return; }
+  if (_mktUI.loading) return;
+  _mktUI.loading = true;
+  const btn = document.getElementById('mkt-refresh-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '取得中…'; }
+  try {
+    const tks = cfg.tickers.map(x => x.ticker).join(',');
+    const sep = cfg.gasUrl.includes('?') ? '&' : '?';
+    const url = cfg.gasUrl + sep + 'tickers=' + encodeURIComponent(tks) + '&_t=' + Date.now();
+    const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if (!json || !json.items) throw new Error(json && json.error ? json.error : 'データ形式が不正です');
+    saveMarketCache({ updatedAt: json.updatedAt || new Date().toISOString(), items: json.items });
+    if (manual) toast('株価・指数を更新しました', 'success');
+  } catch(err) {
+    console.warn('Market fetch error:', err);
+    if (manual) toast('取得に失敗しました（GASのURL・公開設定を確認してください）', 'error');
+  } finally {
+    _mktUI.loading = false;
+    if (btn) { btn.disabled = false; btn.textContent = '↻ 更新'; }
+    renderMarketCard();
+  }
+}
+
+function renderMarketCard(){
+  const card = document.getElementById('asset-market-card'); if (!card) return;
+  const cfg = loadMarketCfg(), cache = loadMarketCache();
+  const chipsEl = document.getElementById('mkt-chips');
+  const quoteEl = document.getElementById('mkt-quote');
+  const rangeEl = document.getElementById('mkt-range');
+  const wrapEl = document.getElementById('mkt-chart-wrap');
+  const msgEl = document.getElementById('mkt-msg');
+  const updEl = document.getElementById('mkt-updated');
+
+  if (updEl) {
+    if (cache.updatedAt) {
+      const d = new Date(cache.updatedAt);
+      updEl.textContent = isNaN(d) ? '' : `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} 時点（約15〜20分遅延）`;
+    } else updEl.textContent = '';
+  }
+
+  if (!cfg.tickers.length) {
+    if (chipsEl) chipsEl.innerHTML = '';
+    if (quoteEl) quoteEl.style.display = 'none';
+    if (rangeEl) rangeEl.style.display = 'none';
+    if (wrapEl) wrapEl.style.display = 'none';
+    if (msgEl) { msgEl.style.display = 'block'; msgEl.textContent = '右上の「⚙ 設定」からGAS URLと銘柄を登録すると、株価・指数の推移グラフが表示されます。'; }
+    if (_mktChart) { try { _mktChart.destroy(); } catch(_){} _mktChart = null; }
+    return;
+  }
+
+  if (!_mktUI.selected || !cfg.tickers.some(x => x.ticker === _mktUI.selected)) {
+    _mktUI.selected = cfg.tickers[0].ticker;
+  }
+  const activeMeta = cfg.tickers.find(x => x.ticker === _mktUI.selected) || cfg.tickers[0];
+
+  if (chipsEl) {
+    chipsEl.innerHTML = cfg.tickers.map(t => `<button type="button" class="mkt-chip${t.ticker===activeMeta.ticker?' active':''}" onclick="selectMarketTicker('${bankEsc(t.ticker)}')">${bankEsc(t.label || t.ticker)}</button>`).join('');
+  }
+
+  // Auto-fetch once if GAS URL is set and cache is missing or > 15 min old
+  const stale = !cache.updatedAt || (Date.now() - new Date(cache.updatedAt).getTime() > 15 * 60 * 1000) || !cache.items[activeMeta.ticker];
+  if (cfg.gasUrl && stale && !_mktUI.autoTried && !_mktUI.loading) {
+    _mktUI.autoTried = true;
+    fetchMarketData(false);
+  }
+
+  const item = cache.items[activeMeta.ticker];
+  if (!item || !Array.isArray(item.history) || !item.history.length) {
+    if (quoteEl) quoteEl.style.display = 'none';
+    if (rangeEl) rangeEl.style.display = 'none';
+    if (wrapEl) wrapEl.style.display = 'none';
+    if (msgEl) {
+      msgEl.style.display = 'block';
+      msgEl.textContent = !cfg.gasUrl
+        ? '「⚙ 設定」からGAS URLを登録して「↻ 更新」を押してください。'
+        : (_mktUI.loading ? 'Google Financeから取得しています…（初回銘柄は数秒かかります）' : 'データがありません。「↻ 更新」を押してください（ティッカー形式も確認してください）。');
+    }
+    if (_mktChart) { try { _mktChart.destroy(); } catch(_){} _mktChart = null; }
+    return;
+  }
+
+  // Slice history by selected range (1m / 3m / 1y)
+  const mo = { '1m': 1, '3m': 3, '1y': 12 }[_mktUI.range] || 3;
+  const cut = new Date(); cut.setMonth(cut.getMonth() - mo);
+  const cutKey = ymdKey(cut);
+  let pts = item.history.filter(p => p && p.d >= cutKey && p.c != null && isFinite(p.c));
+  if (pts.length < 2) pts = item.history.filter(p => p && p.c != null && isFinite(p.c));
+
+  const lastPrice = (item.price != null && isFinite(item.price)) ? Number(item.price) : (pts.length ? pts[pts.length - 1].c : null);
+  let dayPct = (item.changePct != null && isFinite(item.changePct)) ? Number(item.changePct) : null;
+  if (dayPct == null && pts.length >= 2 && pts[pts.length - 2].c > 0) {
+    dayPct = (pts[pts.length - 1].c - pts[pts.length - 2].c) / pts[pts.length - 2].c * 100;
+  }
+  const periodPct = (pts.length >= 2 && pts[0].c > 0 && lastPrice != null) ? ((lastPrice - pts[0].c) / pts[0].c * 100) : null;
+  const rLabel = { '1m': '1か月', '3m': '3か月', '1y': '1年' }[_mktUI.range] || '3か月';
+
+  if (quoteEl) {
+    const dayBadge = dayPct != null
+      ? `<span class="mkt-badge ${dayPct>=0?'mkt-up':'mkt-down'}">前日比 ${dayPct>=0?'+':'−'}${Math.abs(dayPct).toFixed(2)}%</span>` : '';
+    const perTxt = periodPct != null
+      ? `<span style="font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;">${rLabel} <b style="color:${periodPct>=0?'#2f7d57':'#b5443a'};">${periodPct>=0?'+':'−'}${Math.abs(periodPct).toFixed(1)}%</b></span>` : '';
+    quoteEl.style.display = 'block';
+    quoteEl.innerHTML = `
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:11px;color:var(--text3);">${bankEsc(activeMeta.label || item.name || activeMeta.ticker)} <span style="opacity:.75;">${bankEsc(activeMeta.ticker)}</span></div>
+          <div style="font-size:26px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--text);line-height:1.2;margin-top:2px;">${bankEsc(mktFmtPrice(lastPrice, item.currency, activeMeta.ticker))}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">${dayBadge}${perTxt}</div>
+      </div>`;
+  }
+
+  if (rangeEl) {
+    rangeEl.style.display = 'flex';
+    rangeEl.innerHTML = [['1m','1か月'],['3m','3か月'],['1y','1年']].map(([k,l]) =>
+      `<button type="button" onclick="setMarketRange('${k}')" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border-radius:999px;border:none;cursor:pointer;background:${_mktUI.range===k?'var(--primary)':'var(--card2)'};color:${_mktUI.range===k?'var(--primary-text)':'var(--text3)'};">${l}</button>`
+    ).join('');
+  }
+
+  if (pts.length < 2 || typeof Chart === 'undefined') {
+    if (wrapEl) wrapEl.style.display = 'none';
+    if (msgEl) { msgEl.style.display = 'block'; msgEl.textContent = '推移データが不足しています。'; }
+    return;
+  }
+
+  if (msgEl) msgEl.style.display = 'none';
+  if (wrapEl) wrapEl.style.display = 'block';
+  const cv = document.getElementById('mkt-chart');
+  if (_mktChart) { try { _mktChart.destroy(); } catch(_){} _mktChart = null; }
+  const css = getComputedStyle(document.documentElement);
+  const primary = (css.getPropertyValue('--primary') || '').trim() || '#1f4a44';
+  const grid = (css.getPropertyValue('--border') || '').trim() || '#e4e9e2';
+  const txt = (css.getPropertyValue('--text3') || '').trim() || '#8a958f';
+  const labels = pts.map(p => { const m = p.d.split('-'); return (+m[1]) + '/' + (+m[2]); });
+  _mktChart = new Chart(cv, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: activeMeta.label || activeMeta.ticker,
+        data: pts.map(p => p.c),
+        borderColor: primary,
+        backgroundColor: primary + '1f',
+        borderWidth: 2.2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.22,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ' ' + mktFmtPrice(c.parsed.y, item.currency, activeMeta.ticker) } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: txt, font: { size: 10 }, maxTicksLimit: 6 } },
+        y: { grid: { color: grid }, ticks: { color: txt, font: { size: 10 }, maxTicksLimit: 5 } }
+      }
+    }
+  });
 }
 
 // ── 入出金明細 ──
