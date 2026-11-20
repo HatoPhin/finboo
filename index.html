@@ -56,9 +56,9 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
 *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
-body{font-family:'DM Sans','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);margin:0;transition:background-color .25s,color .25s;letter-spacing:-.01em;}
+body{font-family:'Figtree','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);margin:0;transition:background-color .25s,color .25s;letter-spacing:-.01em;}
 h1,h2,h3,.stat-value{letter-spacing:-.02em;}
 
 /* ===== Safe Area ===== */
@@ -630,7 +630,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
   --shadow:none; --shadow-md:0 8px 24px rgba(20,20,19,.10);
   --nav-bg:#faf9f5; --nav-border:#e8e6dc;
   --m3-r-card:14px; --m3-r-lg:20px;
-  --serif:'DM Sans','Noto Sans JP',sans-serif;
+  --serif:'Figtree','Noto Sans JP',sans-serif;
 }
 body.dark{
   --bg:#1f1e1d; --card:#262624; --card2:#30302e;
@@ -763,6 +763,8 @@ button.btn,button[style*="padding:8px 16px"],button[style*="padding:10px 20px"],
   --indigo:#1f4a44; --indigo-dim:#2b5f57; --indigo-light:#e3ede8; --indigo-text:#163832;
   --accent:#d9e8a4; --accent-text:#2c3a16; --hero:#1d3f3b;
   --nav-bg:#f1f4f0; --nav-border:#e4e9e2; --m3-r-card:24px; --m3-r-lg:28px;
+  --hdr-glass:rgba(241,244,240,.78);
+  --card-shadow:0 1px 2px rgba(18,32,28,.04),0 6px 18px -8px rgba(18,32,28,.10);
 }
 body.dark{
   --bg:#0f1714; --card:#18211e; --card2:#212b27; --border:#2a3631; --border2:#222d28;
@@ -770,8 +772,10 @@ body.dark{
   --primary:#8fcfa6; --primary-text:#0f2418; --primary-light:#22352c; --primary-border:rgba(143,207,166,.3);
   --indigo:#8fcfa6; --indigo-dim:#a5dcb8; --indigo-light:#22352c; --indigo-text:#b9e6c9;
   --accent:#32401f; --accent-text:#dbeaa8; --hero:#1b3b36; --nav-bg:#0f1714; --nav-border:#2a3631;
+  --hdr-glass:rgba(15,23,20,.78);
+  --card-shadow:0 1px 2px rgba(0,0,0,.30),0 6px 18px -8px rgba(0,0,0,.45);
 }
-.card,.stat-card{border-radius:24px;border:1px solid var(--border);}
+.card,.stat-card{border-radius:24px;border:1px solid var(--border);box-shadow:var(--card-shadow);}
 [style*="border-radius:12px"]{border-radius:14px!important;}
 [style*="border-radius:14px"],[style*="border-radius:16px"]{border-radius:22px!important;}
 [style*="border-radius:20px"]{border-radius:28px!important;}
@@ -788,7 +792,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])
 #home-hero .hh-chip{background:var(--accent);color:var(--accent-text);border-radius:999px;padding:4px 14px;font-size:13px;font-weight:600;}
 #home-hero .hh-tag{background:rgba(255,255,255,.14);border-radius:999px;padding:3px 12px;font-size:12px;}
 #home-hero .hh-main{border:1.5px dashed rgba(255,255,255,.22);border-radius:22px;padding:18px 12px;text-align:center;}
-#home-hero .hh-num{font-family:'DM Sans','Noto Sans JP',sans-serif;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1;}
+#home-hero .hh-num{font-family:'Figtree','Noto Sans JP',sans-serif;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1;}
 #home-hero .hh-yen{font-size:22px;vertical-align:top;margin-right:3px;opacity:.85;}
 #home-hero #hh-balance{font-size:44px;}
 #home-hero .hh-sub{font-size:13px;color:rgba(255,255,255,.72);margin-top:8px;}
@@ -804,6 +808,17 @@ body.ro-on #home-hero .hh-btn{opacity:.45;}
 /* ライムのアクセントカード（ポイント） */
 [onclick^="openPtBreakdownModal"]{background:var(--accent)!important;border:none!important;color:var(--accent-text)!important;}
 [onclick^="openPtBreakdownModal"] *{color:var(--accent-text)!important;}
+/* 数字の視認性・Figtree等幅数字統一・すりガラスヘッダー（Bento銀行系デザインは維持） */
+.stat-value,#ui-expense,#ui-budget-lim,#ui-total-pts,
+[style*="font-size:32px"],[style*="font-size:28px"],[style*="font-size:26px"],[style*="font-size:24px"],[style*="font-size:22px"],[style*="font-size:20px"]{
+  font-weight:700!important;letter-spacing:-.03em!important;font-variant-numeric:tabular-nums;}
+[style*="font-family:monospace"]:not(textarea):not(pre){font-family:var(--serif)!important;font-variant-numeric:tabular-nums;}
+header,header.m3-scrolled{background:transparent!important;isolation:isolate;}
+header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:var(--hdr-glass);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);}
+/* プッシュ通知UIは非表示 */
+#finboo-banner-host,.card:has(#finboo-notify-status){display:none!important;}
 </style>
 <style>body.ro-on #btn-gdrive-login,body.ro-on #btn-gdrive-sync,body.ro-on #btn-gdrive-logout,body.ro-on #btn-reset,body.ro-on #btn-edit-budget,body.ro-on #btn-add-tx,body.ro-on #btn-sync-dash,body.ro-on #btn-sync-sync{opacity:.35;}</style>
 </head>
@@ -1945,7 +1960,7 @@ body.ro-on #home-hero .hh-btn{opacity:.45;}
         <ol>
           <li>同期タブの「💳 引き落とし設定」で <span class="pg-tag">＋ 追加</span></li>
           <li>「決済手段」を選び、<b>締め日</b>と<b>引き落とし日</b>を設定</li>
-          <li>必要なら<b>仮確定日（任意）</b>と<b>確定日</b>を設定（通知やステータス表示に使います）</li>
+          <li>必要なら<b>仮確定日（任意）</b>と<b>確定日</b>を設定（ステータス表示に使います）</li>
           <li>引き落とし日が休日の場合は「前営業日」か「翌営業日」を選択</li>
           <li><b>紐づける決済手段（任意）</b>：PayPayクレジットなど、このカードの請求にまとめたい決済手段にチェック。請求額・ポイントが合算されます</li>
         </ol></div>
@@ -1973,7 +1988,6 @@ body.ro-on #home-hero .hh-btn{opacity:.45;}
         <ul>
           <li>請求額が合わない → 「紐づける決済手段」と締め日を確認。遅れて請求された分は「引き落とし月の調整」。</li>
           <li>ホームに引き落とし予定が出ない → 引き落とし設定が未登録です。</li>
-          <li>通知が来ない → 引き落とし設定の日付（仮確定日・確定日）と、通知の許可を確認。</li>
           <li>決済手段の選択肢にない → 設定画面の決済手段の一覧から追加します。</li>
         </ul></div>
     </div>
@@ -2149,6 +2163,7 @@ body.ro-on #home-hero .hh-btn{opacity:.45;}
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">大カテゴリ *</label>
         <select id="tx-catmaj" onchange="buildMinorSelect();onCatMajChange();" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;"></select>
+        <div id="tx-kaetate-recovery-hint" style="display:none;margin-top:6px;padding:8px 10px;font-size:11px;line-height:1.6;color:var(--amber);background:var(--amber-light);border-radius:8px;">⚠️ 原則は、元の立替取引で「回収済み」をONにしてください。ここで「立替回収」の収入も入力すると、収支が二重に増えます。</div>
       </div>
 
       <!-- 小カテゴリ -->
@@ -5752,7 +5767,7 @@ function renderAssets(){
     return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
       <div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">📈 ${bankEsc(b.name)}</div><div style="font-size:9.5px;color:var(--text3);">${b.valueUpdatedAt?bankFmtMD(new Date(b.valueUpdatedAt))+'時点':''}</div></div>
         <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${b.value==null?'未入力':bankYen(b.value)}</div></div>
-      ${hs.map(x=>`<div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2);padding:4px 0 0;margin-top:4px;border-top:1px dashed var(--border);"><span style="flex:1;min-width:0;">${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}</span><span style="font-family:monospace;">${x.value==null?'-':bankYen(x.value)}</span><span style="font-family:monospace;min-width:62px;text-align:right;">${gainTxt(x.value,x.principal)}</span></div>`).join('')}
+      ${hs.map(x=>`<div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2);padding:4px 0 0;margin-top:4px;border-top:1px dashed var(--border);"><span style="flex:1;min-width:0;line-height:1.35;">${x.name?`<div style="font-weight:600;color:var(--text);word-break:break-word;">${bankEsc(x.name)}</div><div style="font-size:9.5px;color:var(--text3);">${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}</div>`:`${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}`}</span><span style="font-family:monospace;">${x.value==null?'-':bankYen(x.value)}</span><span style="font-family:monospace;min-width:62px;text-align:right;">${gainTxt(x.value,x.principal)}</span></div>`).join('')}
     </div>`;
   }).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">証券口座がありません。右上の「管理」から追加してください。</div>';
   // 証券の内訳（資産クラス別・口座の種類別）
@@ -8155,7 +8170,16 @@ function buildCatSelect(){
 
 // カテゴリで「サブスクリプション」を選ぶと、固定費チェックを自動でオンにする
 // （ユーザーが手動で外すことは可能。他カテゴリへの変更で自動的にオフには戻さない）
+// 収入カテゴリ「立替回収」選択時の注意書き（表示のみ。データ・集計には影響しない）
+function updateKaetateRecoveryHint(){
+  const el=document.getElementById('tx-kaetate-recovery-hint');
+  const majSel=document.getElementById('tx-catmaj');
+  if(!el)return;
+  el.style.display=(txCurrentType==='income'&&majSel&&majSel.value==='立替回収')?'block':'none';
+}
+
 function onCatMajChange(){
+  updateKaetateRecoveryHint();
   const majSel=document.getElementById('tx-catmaj');
   const fcb=document.getElementById('tx-fixedcost');
   if(!majSel||!fcb)return;
@@ -8164,6 +8188,7 @@ function onCatMajChange(){
 
 // 大カテゴリの選択に応じて小カテゴリのプルダウンを再構築
 function buildMinorSelect(keepValue){
+  updateKaetateRecoveryHint();
   const majSel=document.getElementById('tx-catmaj');
   const minSel=document.getElementById('tx-catmin');
   if(!majSel||!minSel)return;
@@ -10163,6 +10188,7 @@ function finbooUpdateNotificationUI(){
   }catch(error){el.textContent='通知設定を保存できません。ブラウザの保存領域を確認してください。';}
 }
 document.addEventListener('DOMContentLoaded',()=>{
+  return; // プッシュ通知UIは非表示
   const section=document.getElementById('wallet-cards-section');
   if(!section)return;
   const panel=document.createElement('div');
