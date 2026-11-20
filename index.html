@@ -1389,7 +1389,7 @@ body.dark .mkt-down{background:rgba(255,154,142,.16);color:#ff9a8e;}
     <div id="mkt-quote" style="display:none;margin-bottom:10px;"></div>
     <div id="mkt-range" style="display:none;gap:6px;margin-bottom:10px;"></div>
     <div id="mkt-chart-wrap" style="display:none;position:relative;height:200px;"><canvas id="mkt-chart"></canvas></div>
-    <div id="mkt-msg" style="font-size:11px;color:var(--text3);line-height:1.7;padding:14px 4px;text-align:center;">右上の「⚙ 設定」からGAS URLと銘柄を登録すると、株価・指数の推移グラフが表示されます。</div>
+    <div id="mkt-msg" style="font-size:11px;color:var(--text3);line-height:1.7;padding:14px 4px;text-align:center;">右上の「⚙ 設定」からGAS URLを登録すると、証券口座の保有銘柄から自動で株価・指数推移が表示されます。</div>
   </div>
   <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
     <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">証券の内訳</div>
@@ -1810,7 +1810,12 @@ body.dark .mkt-down{background:rgba(255,154,142,.16);color:#ff9a8e;}
         </div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:12px;">
-        <div style="font-size:11.5px;font-weight:700;color:var(--text);margin-bottom:6px;">登録銘柄（Google Financeティッカー）</div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--text);margin-bottom:4px;">証券口座からの自動連携</div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.55;margin-bottom:8px;">証券口座の銘柄名からティッカーを自動判定し、取得できた銘柄だけをグラフに表示します（投資信託は類似ETFで代替）。自動判定が違う場合はティッカーを上書きできます。</div>
+        <div id="mkt-auto-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text);margin-bottom:6px;">追加で表示する銘柄（任意・為替など）</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
           <button type="button" class="mkt-preset" onclick="quickAddMarketTicker('オルカン代替','NYSEARCA:VT')">＋ 全世界株 (VT)</button>
           <button type="button" class="mkt-preset" onclick="quickAddMarketTicker('S&P500','NYSEARCA:VOO')">＋ S&amp;P500 (VOO)</button>
@@ -5874,16 +5879,66 @@ function renderAssetChart(t){
 const MKT_CFG_KEY = 'finboo_market_cfg_v1';
 const MKT_CACHE_KEY = 'finboo_market_cache_v1';
 let _mktChart = null;
-const _mktUI = { selected: null, range: '3m', loading: false, autoTried: false };
+const _mktUI = { selected: null, range: '3m', loading: false, lastAutoSig: '' };
+
+const MKT_NAME_MAP = [
+  // 投資信託・指数代替
+  { re: /全世界|オルカン|オール[・\s]?カントリー|ALL\s*COUNTRY/i, ticker: 'NYSEARCA:VT', proxy: true },
+  { re: /全米株式|全米/i, ticker: 'NYSEARCA:VTI', proxy: true },
+  { re: /S&P\s*500|米国株式/i, ticker: 'NYSEARCA:VOO', proxy: true },
+  { re: /NASDAQ\s*100|ナスダック\s*100/i, ticker: 'NASDAQ:QQQ', proxy: true },
+  { re: /FANG[+＋]|ファング/i, ticker: 'NYSEARCA:FNGS', proxy: true },
+  { re: /先進国/i, ticker: 'NYSEARCA:URTH', proxy: true },
+  { re: /新興国/i, ticker: 'NYSEARCA:VWO', proxy: true },
+  { re: /インド/i, ticker: 'NYSEARCA:INDA', proxy: true },
+  { re: /日経225|日経平均/i, ticker: 'TYO:1321', proxy: true },
+  { re: /TOPIX|トピックス/i, ticker: 'TYO:1306', proxy: true },
+  { re: /半導体|SOX/i, ticker: 'NASDAQ:SOXX', proxy: true },
+  { re: /ゴールド|純金/i, ticker: 'NYSEARCA:GLD', proxy: true },
+  { re: /SCHD/i, ticker: 'NYSEARCA:SCHD', proxy: true },
+  { re: /米国高配当|VYM/i, ticker: 'NYSEARCA:VYM', proxy: true },
+  // 主要個別株（米国・日本）
+  { re: /NVIDIA|エヌビディア/i, ticker: 'NASDAQ:NVDA' },
+  { re: /APPLE|アップル/i, ticker: 'NASDAQ:AAPL' },
+  { re: /MICROSOFT|マイクロソフト/i, ticker: 'NASDAQ:MSFT' },
+  { re: /AMAZON|アマゾン/i, ticker: 'NASDAQ:AMZN' },
+  { re: /ALPHABET|GOOGLE|グーグル/i, ticker: 'NASDAQ:GOOGL' },
+  { re: /META|メタ(?!ル)/i, ticker: 'NASDAQ:META' },
+  { re: /TESLA|テスラ/i, ticker: 'NASDAQ:TSLA' },
+  { re: /BROADCOM|ブロードコム/i, ticker: 'NASDAQ:AVGO' },
+  { re: /PALANTIR|パランティア/i, ticker: 'NASDAQ:PLTR' },
+  { re: /ARISTA|アリスタ/i, ticker: 'NYSE:ANET' },
+  { re: /TSMC|台湾セミ/i, ticker: 'NYSE:TSM' },
+  { re: /\bAMD\b|エーエムディー/i, ticker: 'NASDAQ:AMD' },
+  { re: /MICRON|マイクロン/i, ticker: 'NASDAQ:MU' },
+  { re: /NETFLIX|ネットフリックス/i, ticker: 'NASDAQ:NFLX' },
+  { re: /COSTCO|コストコ/i, ticker: 'NASDAQ:COST' },
+  { re: /BERKSHIRE|バークシャー/i, ticker: 'NYSE:BRK.B' },
+  { re: /ELI\s*LILLY|イーライリリー/i, ticker: 'NYSE:LLY' },
+  { re: /コカ[・\s]?コーラ|COCA[\-\s]?COLA/i, ticker: 'NYSE:KO' },
+  { re: /トヨタ|TOYOTA/i, ticker: 'TYO:7203' },
+  { re: /ソニー|SONY/i, ticker: 'TYO:6758' },
+  { re: /任天堂|NINTENDO/i, ticker: 'TYO:7974' },
+  { re: /ソフトバンクG|ソフトバンクグループ/i, ticker: 'TYO:9984' },
+  { re: /三菱UFJ/i, ticker: 'TYO:8306' },
+  { re: /三井住友FG/i, ticker: 'TYO:8316' },
+  { re: /\bNTT\b|日本電信電話/i, ticker: 'TYO:9432' },
+  { re: /キーエンス/i, ticker: 'TYO:6861' },
+  { re: /日立製作所|日立/i, ticker: 'TYO:6501' },
+  { re: /三菱商事/i, ticker: 'TYO:8058' },
+  { re: /伊藤忠/i, ticker: 'TYO:8001' }
+];
+const MKT_STOP_WORDS = new Set(['NISA','ETF','USD','JPY','SLIM','MAXIS','EMAXIS','INDEX','PLUS','SBI','FUND','STOCK','CORE','NEW','USA','US','JP']);
 
 function loadMarketCfg(){
   try {
     const raw = JSON.parse(localStorage.getItem(MKT_CFG_KEY) || '{}');
     return {
       gasUrl: typeof raw.gasUrl === 'string' ? raw.gasUrl.trim() : '',
-      tickers: Array.isArray(raw.tickers) ? raw.tickers.filter(x => x && x.ticker) : []
+      tickers: Array.isArray(raw.tickers) ? raw.tickers.filter(x => x && x.ticker) : [],
+      overrides: (raw.overrides && typeof raw.overrides === 'object' && !Array.isArray(raw.overrides)) ? raw.overrides : {}
     };
-  } catch(_) { return { gasUrl: '', tickers: [] }; }
+  } catch(_) { return { gasUrl: '', tickers: [], overrides: {} }; }
 }
 function saveMarketCfg(cfg){
   try { localStorage.setItem(MKT_CFG_KEY, JSON.stringify(cfg)); } catch(_) {}
@@ -5897,6 +5952,75 @@ function loadMarketCache(){
 function saveMarketCache(cache){
   try { localStorage.setItem(MKT_CACHE_KEY, JSON.stringify(cache)); } catch(_) {}
 }
+
+function resolveBrokerTicker(holding, overrides){
+  const nm = (holding && holding.name || '').trim();
+  if (!nm) return null;
+  if (overrides && Object.prototype.hasOwnProperty.call(overrides, nm)) {
+    const ov = String(overrides[nm] || '').trim().toUpperCase();
+    return ov ? { ticker: ov, proxy: false, overridden: true } : null;
+  }
+  // 1. 明示的な EXCHANGE:SYMBOL 形式（例: NASDAQ:NVDA, TYO:7203）
+  const exM = nm.match(/\b([A-Z]{2,10}:[A-Z0-9._-]{1,12})\b/i);
+  if (exM) return { ticker: exM[1].toUpperCase(), proxy: false };
+  // 2. 辞書マッチ（投資信託の類似指数代替・主要個別株）
+  for (let i = 0; i < MKT_NAME_MAP.length; i++) {
+    if (MKT_NAME_MAP[i].re.test(nm)) {
+      return { ticker: MKT_NAME_MAP[i].ticker, proxy: !!MKT_NAME_MAP[i].proxy };
+    }
+  }
+  // 3. 日本株4桁コード（国内株式区分、または単独4桁数字）
+  const jpM = nm.match(/(?:^|[\s(（])([1-9]\d{3})(?:$|[\s)）])/);
+  if (jpM && (holding.cls === 'jp' || nm === jpM[1])) {
+    const code = jpM[1];
+    if (!/^(19|20)\d\d$/.test(code)) return { ticker: 'TYO:' + code, proxy: false };
+  }
+  // 4. 括弧内の英字ティッカー（例: エヌビディア (NVDA)）または全体が英字ティッカー（例: NVDA, VOO）
+  const parM = nm.match(/[（(]\s*([A-Z]{1,5}(?:\.[A-Z])?)\s*[）)]/);
+  if (parM && !MKT_STOP_WORDS.has(parM[1].toUpperCase())) {
+    return { ticker: parM[1].toUpperCase(), proxy: false };
+  }
+  if (/^[A-Za-z]{1,5}(?:\.[A-Za-z])?$/.test(nm) && !MKT_STOP_WORDS.has(nm.toUpperCase())) {
+    return { ticker: nm.toUpperCase(), proxy: false };
+  }
+  return null;
+}
+
+function getBrokerHoldingsUnique(){
+  const seen = new Set(), out = [];
+  (S.brokerAccounts || []).forEach(b => (b.holdings || []).forEach(h => {
+    const nm = (h && h.name || '').trim();
+    if (!nm || seen.has(nm)) return;
+    seen.add(nm);
+    out.push({ name: nm, cls: h.cls, acct: h.acct });
+  }));
+  return out;
+}
+
+function getMarketTargetList(){
+  const cfg = loadMarketCfg();
+  const seenTk = new Set(), targets = [];
+  // 1. 証券口座の保有銘柄から自動抽出
+  getBrokerHoldingsUnique().forEach(h => {
+    const res = resolveBrokerTicker(h, cfg.overrides);
+    if (!res || !res.ticker || seenTk.has(res.ticker)) return;
+    seenTk.add(res.ticker);
+    targets.push({ label: h.name, ticker: res.ticker, proxy: !!res.proxy, source: 'broker' });
+  });
+  // 2. 手動追加銘柄（為替など保有外で見たいもの）
+  cfg.tickers.forEach(t => {
+    const tk = String(t.ticker || '').trim().toUpperCase();
+    if (!tk || seenTk.has(tk)) return;
+    seenTk.add(tk);
+    targets.push({ label: t.label || tk, ticker: tk, proxy: false, source: 'manual' });
+  });
+  return targets;
+}
+
+function mktHasValidData(item){
+  return !!(item && Array.isArray(item.history) && item.history.filter(p => p && p.c != null && isFinite(p.c)).length >= 2);
+}
+
 function mktFmtPrice(val, cur, ticker){
   if (val == null || !isFinite(val)) return '—';
   const n = Number(val);
@@ -5913,14 +6037,56 @@ function openMarketModal(){
   const cfg = loadMarketCfg();
   const inp = document.getElementById('mkt-gas-url');
   if (inp) inp.value = cfg.gasUrl || '';
+  renderMarketAutoList();
   renderMarketTickerList();
   showModal('mkt-modal-overlay');
+}
+function renderMarketAutoList(){
+  const el = document.getElementById('mkt-auto-list'); if (!el) return;
+  const cfg = loadMarketCfg(), cache = loadMarketCache();
+  const hs = getBrokerHoldingsUnique();
+  if (!hs.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:4px 0;">証券口座に銘柄名が登録されると、ここに自動で表示されます。</div>';
+    return;
+  }
+  el.innerHTML = hs.map((h, i) => {
+    const res = resolveBrokerTicker(h, cfg.overrides);
+    const tk = res ? res.ticker : '';
+    const item = tk ? cache.items[tk] : null;
+    const st = !tk ? '未判定' : (mktHasValidData(item) ? (res.proxy ? '取得済（代替指数）' : '取得済') : (item ? '取得不可（非表示）' : '未取得'));
+    const stCol = mktHasValidData(item) ? '#2f7d57' : 'var(--text3)';
+    return `<div style="padding:8px 10px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;">
+        <span style="font-size:11.5px;font-weight:700;color:var(--text);word-break:break-word;">${bankEsc(h.name)}</span>
+        <span style="font-size:10px;font-weight:600;color:${stCol};flex:none;">${st}</span>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <input id="mkt-ov-${i}" type="text" value="${bankEsc(tk)}" placeholder="ティッカー（空で非表示）" style="flex:1;min-width:0;padding:6px 8px;font-size:11px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
+        <button type="button" class="btn" onclick="saveMarketOverride(${i})" style="font-size:10.5px;padding:4px 10px;flex:none;">適用</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function saveMarketOverride(idx){
+  const hs = getBrokerHoldingsUnique();
+  if (idx < 0 || idx >= hs.length) return;
+  const h = hs[idx];
+  const inp = document.getElementById('mkt-ov-' + idx);
+  const val = ((inp && inp.value) || '').trim().toUpperCase();
+  const cfg = loadMarketCfg();
+  cfg.overrides[h.name] = val;
+  saveMarketCfg(cfg);
+  _mktUI.lastAutoSig = '';
+  renderMarketAutoList();
+  renderMarketCard();
+  toast(val ? `${h.name} → ${val} に設定しました` : `${h.name} を非表示にしました`, 'success');
+  if (val && cfg.gasUrl) fetchMarketData(true);
 }
 function renderMarketTickerList(){
   const el = document.getElementById('mkt-ticker-list'); if (!el) return;
   const cfg = loadMarketCfg();
   if (!cfg.tickers.length) {
-    el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px 0;">まだ銘柄が登録されていません。上のボタンや入力欄から追加してください。</div>';
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:4px 0;">追加銘柄はありません（証券口座の銘柄は上の自動連携で表示されます）。</div>';
     return;
   }
   el.innerHTML = cfg.tickers.map((t, i) => `
@@ -5939,9 +6105,10 @@ function saveMarketGasUrl(){
     toast('GASのWebアプリURL（https://script.google.com/...）を入力してください', 'error'); return;
   }
   const cfg = loadMarketCfg(); cfg.gasUrl = url; saveMarketCfg(cfg);
+  _mktUI.lastAutoSig = '';
   toast(url ? 'GAS URLを保存しました' : 'GAS URLをクリアしました', 'success');
   renderMarketCard();
-  if (url && cfg.tickers.length) fetchMarketData(true);
+  if (url && getMarketTargetList().length) fetchMarketData(true);
 }
 function quickAddMarketTicker(label, ticker){
   const cfg = loadMarketCfg();
@@ -5950,6 +6117,7 @@ function quickAddMarketTicker(label, ticker){
   cfg.tickers.push({ label, ticker: tk });
   saveMarketCfg(cfg);
   _mktUI.selected = tk;
+  _mktUI.lastAutoSig = '';
   renderMarketTickerList();
   renderMarketCard();
   toast(label + ' を追加しました', 'success');
@@ -5966,6 +6134,7 @@ function addMarketTicker(){
   saveMarketCfg(cfg);
   if (lEl) lEl.value = ''; if (tEl) tEl.value = '';
   _mktUI.selected = tk;
+  _mktUI.lastAutoSig = '';
   renderMarketTickerList();
   renderMarketCard();
   toast(lb + ' を追加しました', 'success');
@@ -5976,7 +6145,7 @@ function removeMarketTicker(idx){
   if (idx < 0 || idx >= cfg.tickers.length) return;
   const removed = cfg.tickers.splice(idx, 1)[0];
   saveMarketCfg(cfg);
-  if (_mktUI.selected === removed.ticker) _mktUI.selected = cfg.tickers[0] ? cfg.tickers[0].ticker : null;
+  if (_mktUI.selected === removed.ticker) _mktUI.selected = null;
   renderMarketTickerList();
   renderMarketCard();
 }
@@ -5985,21 +6154,25 @@ function setMarketRange(r){ _mktUI.range = r; renderMarketCard(); }
 
 async function fetchMarketData(manual){
   const cfg = loadMarketCfg();
+  const targets = getMarketTargetList();
   if (!cfg.gasUrl) { if (manual) { toast('先に「⚙ 設定」からGAS URLを登録してください', 'info'); openMarketModal(); } return; }
-  if (!cfg.tickers.length) { if (manual) { toast('先に「⚙ 設定」から銘柄を追加してください', 'info'); openMarketModal(); } return; }
+  if (!targets.length) { if (manual) { toast('証券口座に銘柄名を登録するか、「⚙ 設定」から銘柄を追加してください', 'info'); } return; }
   if (_mktUI.loading) return;
   _mktUI.loading = true;
+  const sig = targets.map(x => x.ticker).join(',');
+  _mktUI.lastAutoSig = sig;
   const btn = document.getElementById('mkt-refresh-btn');
   if (btn) { btn.disabled = true; btn.textContent = '取得中…'; }
   try {
-    const tks = cfg.tickers.map(x => x.ticker).join(',');
     const sep = cfg.gasUrl.includes('?') ? '&' : '?';
-    const url = cfg.gasUrl + sep + 'tickers=' + encodeURIComponent(tks) + '&_t=' + Date.now();
+    const url = cfg.gasUrl + sep + 'tickers=' + encodeURIComponent(sig) + '&_t=' + Date.now();
     const res = await fetch(url, { method: 'GET', redirect: 'follow' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
     if (!json || !json.items) throw new Error(json && json.error ? json.error : 'データ形式が不正です');
-    saveMarketCache({ updatedAt: json.updatedAt || new Date().toISOString(), items: json.items });
+    const prev = loadMarketCache();
+    const merged = Object.assign({}, prev.items, json.items);
+    saveMarketCache({ updatedAt: json.updatedAt || new Date().toISOString(), items: merged });
     if (manual) toast('株価・指数を更新しました', 'success');
   } catch(err) {
     console.warn('Market fetch error:', err);
@@ -6007,6 +6180,7 @@ async function fetchMarketData(manual){
   } finally {
     _mktUI.loading = false;
     if (btn) { btn.disabled = false; btn.textContent = '↻ 更新'; }
+    renderMarketAutoList();
     renderMarketCard();
   }
 }
@@ -6014,6 +6188,7 @@ async function fetchMarketData(manual){
 function renderMarketCard(){
   const card = document.getElementById('asset-market-card'); if (!card) return;
   const cfg = loadMarketCfg(), cache = loadMarketCache();
+  const targets = getMarketTargetList();
   const chipsEl = document.getElementById('mkt-chips');
   const quoteEl = document.getElementById('mkt-quote');
   const rangeEl = document.getElementById('mkt-range');
@@ -6028,48 +6203,44 @@ function renderMarketCard(){
     } else updEl.textContent = '';
   }
 
-  if (!cfg.tickers.length) {
-    if (chipsEl) chipsEl.innerHTML = '';
-    if (quoteEl) quoteEl.style.display = 'none';
-    if (rangeEl) rangeEl.style.display = 'none';
-    if (wrapEl) wrapEl.style.display = 'none';
-    if (msgEl) { msgEl.style.display = 'block'; msgEl.textContent = '右上の「⚙ 設定」からGAS URLと銘柄を登録すると、株価・指数の推移グラフが表示されます。'; }
-    if (_mktChart) { try { _mktChart.destroy(); } catch(_){} _mktChart = null; }
-    return;
-  }
-
-  if (!_mktUI.selected || !cfg.tickers.some(x => x.ticker === _mktUI.selected)) {
-    _mktUI.selected = cfg.tickers[0].ticker;
-  }
-  const activeMeta = cfg.tickers.find(x => x.ticker === _mktUI.selected) || cfg.tickers[0];
-
-  if (chipsEl) {
-    chipsEl.innerHTML = cfg.tickers.map(t => `<button type="button" class="mkt-chip${t.ticker===activeMeta.ticker?' active':''}" onclick="selectMarketTicker('${bankEsc(t.ticker)}')">${bankEsc(t.label || t.ticker)}</button>`).join('');
-  }
-
-  // Auto-fetch once if GAS URL is set and cache is missing or > 15 min old
-  const stale = !cache.updatedAt || (Date.now() - new Date(cache.updatedAt).getTime() > 15 * 60 * 1000) || !cache.items[activeMeta.ticker];
-  if (cfg.gasUrl && stale && !_mktUI.autoTried && !_mktUI.loading) {
-    _mktUI.autoTried = true;
+  // 証券口座の銘柄変更・キャッシュ期限切れ（15分）を検知して自動取得
+  const sig = targets.map(x => x.ticker).join(',');
+  const missingAny = targets.some(t => !Object.prototype.hasOwnProperty.call(cache.items, t.ticker));
+  const stale = !cache.updatedAt || (Date.now() - new Date(cache.updatedAt).getTime() > 15 * 60 * 1000);
+  if (cfg.gasUrl && targets.length && !_mktUI.loading && (missingAny || stale) && _mktUI.lastAutoSig !== sig) {
     fetchMarketData(false);
   }
 
-  const item = cache.items[activeMeta.ticker];
-  if (!item || !Array.isArray(item.history) || !item.history.length) {
+  // データが取得できた銘柄だけを表示対象にする（取れない銘柄は表示しない）
+  const validTargets = targets.filter(t => mktHasValidData(cache.items[t.ticker]));
+
+  if (!validTargets.length) {
+    if (chipsEl) chipsEl.innerHTML = '';
     if (quoteEl) quoteEl.style.display = 'none';
     if (rangeEl) rangeEl.style.display = 'none';
     if (wrapEl) wrapEl.style.display = 'none';
     if (msgEl) {
       msgEl.style.display = 'block';
       msgEl.textContent = !cfg.gasUrl
-        ? '「⚙ 設定」からGAS URLを登録して「↻ 更新」を押してください。'
-        : (_mktUI.loading ? 'Google Financeから取得しています…（初回銘柄は数秒かかります）' : 'データがありません。「↻ 更新」を押してください（ティッカー形式も確認してください）。');
+        ? '右上の「⚙ 設定」からGAS URLを登録すると、証券口座の保有銘柄から自動で株価・指数推移が表示されます。'
+        : (_mktUI.loading
+            ? '証券口座の銘柄から株価を取得しています…（初回銘柄は数秒かかります）'
+            : (targets.length ? '取得できた株価データがまだありません。数秒待って「↻ 更新」を押してください。' : '証券口座に銘柄名を登録すると、取得できる株価・指数が自動で表示されます。'));
     }
     if (_mktChart) { try { _mktChart.destroy(); } catch(_){} _mktChart = null; }
     return;
   }
 
-  // Slice history by selected range (1m / 3m / 1y)
+  if (!_mktUI.selected || !validTargets.some(x => x.ticker === _mktUI.selected)) {
+    _mktUI.selected = validTargets[0].ticker;
+  }
+  const activeMeta = validTargets.find(x => x.ticker === _mktUI.selected) || validTargets[0];
+
+  if (chipsEl) {
+    chipsEl.innerHTML = validTargets.map(t => `<button type="button" class="mkt-chip${t.ticker===activeMeta.ticker?' active':''}" onclick="selectMarketTicker('${bankEsc(t.ticker)}')">${bankEsc(t.label || t.ticker)}</button>`).join('');
+  }
+
+  const item = cache.items[activeMeta.ticker];
   const mo = { '1m': 1, '3m': 3, '1y': 12 }[_mktUI.range] || 3;
   const cut = new Date(); cut.setMonth(cut.getMonth() - mo);
   const cutKey = ymdKey(cut);
@@ -6089,11 +6260,12 @@ function renderMarketCard(){
       ? `<span class="mkt-badge ${dayPct>=0?'mkt-up':'mkt-down'}">前日比 ${dayPct>=0?'+':'−'}${Math.abs(dayPct).toFixed(2)}%</span>` : '';
     const perTxt = periodPct != null
       ? `<span style="font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;">${rLabel} <b style="color:${periodPct>=0?'#2f7d57':'#b5443a'};">${periodPct>=0?'+':'−'}${Math.abs(periodPct).toFixed(1)}%</b></span>` : '';
+    const proxyTag = activeMeta.proxy ? ' <span style="font-size:9.5px;padding:1px 6px;border-radius:999px;background:var(--card2);border:1px solid var(--border);color:var(--text3);">代替指数</span>' : '';
     quoteEl.style.display = 'block';
     quoteEl.innerHTML = `
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:11px;color:var(--text3);">${bankEsc(activeMeta.label || item.name || activeMeta.ticker)} <span style="opacity:.75;">${bankEsc(activeMeta.ticker)}</span></div>
+        <div style="min-width:0;">
+          <div style="font-size:11px;color:var(--text3);">${bankEsc(activeMeta.label || item.name || activeMeta.ticker)} <span style="opacity:.75;">${bankEsc(activeMeta.ticker)}</span>${proxyTag}</div>
           <div style="font-size:26px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--text);line-height:1.2;margin-top:2px;">${bankEsc(mktFmtPrice(lastPrice, item.currency, activeMeta.ticker))}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">${dayBadge}${perTxt}</div>
