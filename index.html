@@ -56,9 +56,9 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
 *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
-body{font-family:'DM Sans','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);margin:0;transition:background-color .25s,color .25s;letter-spacing:-.01em;}
+body{font-family:'Figtree','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);margin:0;transition:background-color .25s,color .25s;letter-spacing:-.01em;}
 h1,h2,h3,.stat-value{letter-spacing:-.02em;}
 
 /* ===== Safe Area ===== */
@@ -629,8 +629,10 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
   --green:#2f7d57; --green-light:#e8f1ea; --red:#b5443a; --red-light:#f6e6e3; --amber:#a8741a; --amber-light:#f7eedb;
   --shadow:none; --shadow-md:0 8px 24px rgba(20,20,19,.10);
   --nav-bg:#faf9f5; --nav-border:#e8e6dc;
-  --m3-r-card:14px; --m3-r-lg:20px;
-  --serif:'DM Sans','Noto Sans JP',sans-serif;
+  --m3-r-card:18px; --m3-r-lg:22px;
+  --serif:'Figtree','Noto Sans JP',sans-serif;
+  --hdr-glass:rgba(250,249,245,.78);
+  --card-shadow:0 1px 2px rgba(20,20,19,.04),0 6px 18px -8px rgba(20,20,19,.10);
 }
 body.dark{
   --bg:#1f1e1d; --card:#262624; --card2:#30302e;
@@ -640,19 +642,21 @@ body.dark{
   --primary:#8fcfa6; --primary-text:#10261a; --primary-light:#2b3a31; --primary-border:rgba(143,207,166,.3);
   --green:#8fcfa6; --green-light:#243229; --red:#e8837a; --red-light:#3d2623; --amber:#e0b25c; --amber-light:#38301d;
   --nav-bg:#1f1e1d; --nav-border:#3a3937;
+  --hdr-glass:rgba(31,30,29,.78);
+  --card-shadow:0 1px 2px rgba(0,0,0,.30),0 6px 18px -8px rgba(0,0,0,.45);
 }
 body{background:var(--bg);font-feature-settings:"palt" 1;}
 header{border-bottom:1px solid var(--border)!important;}
 header.m3-scrolled{background:var(--bg)!important;}
 header + div.noscroll,header.m3-scrolled + div.noscroll{background:var(--bg)!important;border-bottom:1px solid var(--border)!important;}
-.card,.stat-card{border:1px solid var(--border);box-shadow:none;background:var(--card);}
+.card,.stat-card{border:1px solid var(--border2);box-shadow:var(--card-shadow);background:var(--card);}
 .stat-card{padding:16px;}
 .stat-label{font-weight:500;color:var(--text3);font-size:11px;letter-spacing:.02em;}
 [style*="border-radius:12px"]{border-radius:10px!important;}
-[style*="border-radius:14px"],[style*="border-radius:16px"]{border-radius:14px!important;}
+[style*="border-radius:14px"],[style*="border-radius:16px"]{border-radius:16px!important;}
 [style*="border-radius:20px"]{border-radius:20px!important;}
 .card input:not([type=checkbox]):not([type=radio]):not([type=range]),.card select,.card textarea{background:var(--card);}
-/* 数字・見出しはセリフ体 */
+/* 数字・見出し（Figtree。太さ・字間は末尾のハイブリッド層で上書き） */
 .stat-value,#ui-expense,#ui-budget-lim,#ui-total-pts,
 [style*="font-size:32px"],[style*="font-size:28px"],[style*="font-size:26px"],[style*="font-size:24px"],[style*="font-size:22px"],[style*="font-size:20px"]{font-family:var(--serif)!important;font-weight:600!important;letter-spacing:-.02em!important;font-variant-numeric:tabular-nums;}
 /* ボタン: 角丸ピルをやめ、控えめな矩形寄りに */
@@ -752,6 +756,20 @@ button.btn,button[style*="padding:8px 16px"],button[style*="padding:10px 20px"],
 .tab-pane.space-y-4>*+*,.tab-pane.space-y-6>*+*,main.space-y-6>*+*{margin-top:16px!important;}
 .tab-pane>.grid,.tab-pane .grid.gap-3,.tab-pane .grid.gap-4,.tab-pane .grid.gap-2{gap:12px!important;}
 .card.p-4,.stat-card{padding:18px!important;}
+/* =====================================================================
+   iOS × Anthropic ハイブリッド層（生成りの色・深緑は維持し、数字の強弱・カードの奥行き・すりガラスを追加）
+   ===================================================================== */
+/* 大きな数字は 700・字間を詰めて主役に（上の「太さ600統一」より後に置いて優先） */
+.stat-value,#ui-expense,#ui-budget-lim,#ui-total-pts,
+[style*="font-size:32px"],[style*="font-size:28px"],[style*="font-size:26px"],[style*="font-size:24px"],[style*="font-size:22px"],[style*="font-size:20px"]{
+  font-weight:700!important;letter-spacing:-.03em!important;font-variant-numeric:tabular-nums;}
+/* 金額・ポイントの等幅フォント（monospace）も Figtree の等幅数字に統一（貼り付け欄などのテキストエリアは除く） */
+[style*="font-family:monospace"]:not(textarea):not(pre){font-family:var(--serif)!important;font-variant-numeric:tabular-nums;}
+/* ヘッダー: 背景色ベースのすりガラス（header自体にbackdrop-filterを付けると中の固定要素の位置がずれるため、疑似要素に付ける） */
+header,header.m3-scrolled{background:transparent!important;isolation:isolate;}
+header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:var(--hdr-glass);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);}
 </style>
 <style>body.ro-on #btn-gdrive-login,body.ro-on #btn-gdrive-sync,body.ro-on #btn-gdrive-logout,body.ro-on #btn-reset,body.ro-on #btn-edit-budget,body.ro-on #btn-add-tx,body.ro-on #btn-sync-dash,body.ro-on #btn-sync-sync{opacity:.35;}</style>
 </head>
@@ -2083,6 +2101,7 @@ button.btn,button[style*="padding:8px 16px"],button[style*="padding:10px 20px"],
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">大カテゴリ *</label>
         <select id="tx-catmaj" onchange="buildMinorSelect();onCatMajChange();" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;"></select>
+        <div id="tx-kaetate-recovery-hint" style="display:none;margin-top:6px;padding:8px 10px;font-size:11px;line-height:1.6;color:var(--amber);background:var(--amber-light);border-radius:8px;">⚠️ 原則は、元の立替取引で「回収済み」をONにしてください。ここで「立替回収」の収入も入力すると、収支が二重に増えます。</div>
       </div>
 
       <!-- 小カテゴリ -->
@@ -7972,6 +7991,7 @@ function openEditModal(key){
   buildCatSelect();
   document.getElementById('tx-catmaj').value=t.categoryMajor||'食費';
   buildMinorSelect(t.categoryMinor||'');
+  updateKaetateRecoveryHint();
   // 決済手段（ポイント払いを解除してセット）
   const baseMethod=(t.method||'').replace('（ポイント払い）','');
   document.getElementById('tx-method').value=baseMethod;
@@ -8018,8 +8038,17 @@ function buildCatSelect(){
 
 // カテゴリで「サブスクリプション」を選ぶと、固定費チェックを自動でオンにする
 // （ユーザーが手動で外すことは可能。他カテゴリへの変更で自動的にオフには戻さない）
+// 収入カテゴリ「立替回収」選択時の注意書き（表示のみ。データ・集計には影響しない）
+function updateKaetateRecoveryHint(){
+  const el=document.getElementById('tx-kaetate-recovery-hint');
+  const majSel=document.getElementById('tx-catmaj');
+  if(!el)return;
+  el.style.display=(txCurrentType==='income'&&majSel&&majSel.value==='立替回収')?'block':'none';
+}
+
 function onCatMajChange(){
   const majSel=document.getElementById('tx-catmaj');
+  updateKaetateRecoveryHint();
   const fcb=document.getElementById('tx-fixedcost');
   if(!majSel||!fcb)return;
   if(majSel.value==='サブスクリプション') fcb.checked=true;
