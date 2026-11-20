@@ -56,9 +56,9 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
 *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
-body{font-family:'Figtree','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);margin:0;transition:background-color .25s,color .25s;letter-spacing:-.01em;}
+body{font-family:'DM Sans','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);margin:0;transition:background-color .25s,color .25s;letter-spacing:-.01em;}
 h1,h2,h3,.stat-value{letter-spacing:-.02em;}
 
 /* ===== Safe Area ===== */
@@ -629,10 +629,8 @@ input[type=checkbox],input[type=radio]{accent-color:var(--primary);}
   --green:#2f7d57; --green-light:#e8f1ea; --red:#b5443a; --red-light:#f6e6e3; --amber:#a8741a; --amber-light:#f7eedb;
   --shadow:none; --shadow-md:0 8px 24px rgba(20,20,19,.10);
   --nav-bg:#faf9f5; --nav-border:#e8e6dc;
-  --m3-r-card:18px; --m3-r-lg:22px;
-  --serif:'Figtree','Noto Sans JP',sans-serif;
-  --hdr-glass:rgba(250,249,245,.78);
-  --card-shadow:0 1px 2px rgba(20,20,19,.04),0 6px 18px -8px rgba(20,20,19,.10);
+  --m3-r-card:14px; --m3-r-lg:20px;
+  --serif:'DM Sans','Noto Sans JP',sans-serif;
 }
 body.dark{
   --bg:#1f1e1d; --card:#262624; --card2:#30302e;
@@ -642,21 +640,19 @@ body.dark{
   --primary:#8fcfa6; --primary-text:#10261a; --primary-light:#2b3a31; --primary-border:rgba(143,207,166,.3);
   --green:#8fcfa6; --green-light:#243229; --red:#e8837a; --red-light:#3d2623; --amber:#e0b25c; --amber-light:#38301d;
   --nav-bg:#1f1e1d; --nav-border:#3a3937;
-  --hdr-glass:rgba(31,30,29,.78);
-  --card-shadow:0 1px 2px rgba(0,0,0,.30),0 6px 18px -8px rgba(0,0,0,.45);
 }
 body{background:var(--bg);font-feature-settings:"palt" 1;}
 header{border-bottom:1px solid var(--border)!important;}
 header.m3-scrolled{background:var(--bg)!important;}
 header + div.noscroll,header.m3-scrolled + div.noscroll{background:var(--bg)!important;border-bottom:1px solid var(--border)!important;}
-.card,.stat-card{border:1px solid var(--border2);box-shadow:var(--card-shadow);background:var(--card);}
+.card,.stat-card{border:1px solid var(--border);box-shadow:none;background:var(--card);}
 .stat-card{padding:16px;}
 .stat-label{font-weight:500;color:var(--text3);font-size:11px;letter-spacing:.02em;}
 [style*="border-radius:12px"]{border-radius:10px!important;}
-[style*="border-radius:14px"],[style*="border-radius:16px"]{border-radius:16px!important;}
+[style*="border-radius:14px"],[style*="border-radius:16px"]{border-radius:14px!important;}
 [style*="border-radius:20px"]{border-radius:20px!important;}
 .card input:not([type=checkbox]):not([type=radio]):not([type=range]),.card select,.card textarea{background:var(--card);}
-/* 数字・見出し（Figtree。太さ・字間は末尾のハイブリッド層で上書き） */
+/* 数字・見出しはセリフ体 */
 .stat-value,#ui-expense,#ui-budget-lim,#ui-total-pts,
 [style*="font-size:32px"],[style*="font-size:28px"],[style*="font-size:26px"],[style*="font-size:24px"],[style*="font-size:22px"],[style*="font-size:20px"]{font-family:var(--serif)!important;font-weight:600!important;letter-spacing:-.02em!important;font-variant-numeric:tabular-nums;}
 /* ボタン: 角丸ピルをやめ、控えめな矩形寄りに */
@@ -756,20 +752,6 @@ button.btn,button[style*="padding:8px 16px"],button[style*="padding:10px 20px"],
 .tab-pane.space-y-4>*+*,.tab-pane.space-y-6>*+*,main.space-y-6>*+*{margin-top:16px!important;}
 .tab-pane>.grid,.tab-pane .grid.gap-3,.tab-pane .grid.gap-4,.tab-pane .grid.gap-2{gap:12px!important;}
 .card.p-4,.stat-card{padding:18px!important;}
-/* =====================================================================
-   iOS × Anthropic ハイブリッド層（生成りの色・深緑は維持し、数字の強弱・カードの奥行き・すりガラスを追加）
-   ===================================================================== */
-/* 大きな数字は 700・字間を詰めて主役に（上の「太さ600統一」より後に置いて優先） */
-.stat-value,#ui-expense,#ui-budget-lim,#ui-total-pts,
-[style*="font-size:32px"],[style*="font-size:28px"],[style*="font-size:26px"],[style*="font-size:24px"],[style*="font-size:22px"],[style*="font-size:20px"]{
-  font-weight:700!important;letter-spacing:-.03em!important;font-variant-numeric:tabular-nums;}
-/* 金額・ポイントの等幅フォント（monospace）も Figtree の等幅数字に統一（貼り付け欄などのテキストエリアは除く） */
-[style*="font-family:monospace"]:not(textarea):not(pre){font-family:var(--serif)!important;font-variant-numeric:tabular-nums;}
-/* ヘッダー: 背景色ベースのすりガラス（header自体にbackdrop-filterを付けると中の固定要素の位置がずれるため、疑似要素に付ける） */
-header,header.m3-scrolled{background:transparent!important;isolation:isolate;}
-header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:var(--hdr-glass);
-  -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);}
 </style>
 <style>body.ro-on #btn-gdrive-login,body.ro-on #btn-gdrive-sync,body.ro-on #btn-gdrive-logout,body.ro-on #btn-reset,body.ro-on #btn-edit-budget,body.ro-on #btn-add-tx,body.ro-on #btn-sync-dash,body.ro-on #btn-sync-sync{opacity:.35;}</style>
 </head>
@@ -2101,7 +2083,6 @@ header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:no
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">大カテゴリ *</label>
         <select id="tx-catmaj" onchange="buildMinorSelect();onCatMajChange();" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;"></select>
-        <div id="tx-kaetate-recovery-hint" style="display:none;margin-top:6px;padding:8px 10px;font-size:11px;line-height:1.6;color:var(--amber);background:var(--amber-light);border-radius:8px;">⚠️ 原則は、元の立替取引で「回収済み」をONにしてください。ここで「立替回収」の収入も入力すると、収支が二重に増えます。</div>
       </div>
 
       <!-- 小カテゴリ -->
@@ -2127,11 +2108,20 @@ header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:no
       <!-- 楽天ペイの支払い元 -->
       <div id="tx-rpay-wrap" style="display:none;margin-bottom:14px;">
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">楽天ペイの支払い元</label>
-        <select id="tx-rpay-source" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
+        <select id="tx-rpay-source" onchange="updateRpaySplitUi()" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
           <option value="charge">チャージ残高</option>
           <option value="card">楽天カード</option>
           <option value="point">ポイント払い</option>
+          <option value="split">併用（組み合わせて払う）</option>
         </select>
+        <div id="tx-rpay-split-wrap" style="display:none;margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card2);">
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 8px;align-items:center;font-size:12px;color:var(--text2);">
+            <label for="tx-rpay-s-charge">チャージ残高</label><input id="tx-rpay-s-charge" type="number" min="0" inputmode="numeric" placeholder="0" oninput="updateRpaySplitUi()" style="padding:7px 10px;font-size:13px;border-radius:10px;">
+            <label for="tx-rpay-s-card">楽天カード</label><input id="tx-rpay-s-card" type="number" min="0" inputmode="numeric" placeholder="0" oninput="updateRpaySplitUi()" style="padding:7px 10px;font-size:13px;border-radius:10px;">
+            <label for="tx-rpay-s-point">楽天ポイント</label><input id="tx-rpay-s-point" type="number" min="0" inputmode="numeric" placeholder="0" oninput="updateRpaySplitUi()" style="padding:7px 10px;font-size:13px;border-radius:10px;">
+          </div>
+          <div id="tx-rpay-split-note" style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.6;"></div>
+        </div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:4px;line-height:1.5;">楽天カードは楽天カードの請求額に合算、チャージ残高は請求に含まれません。ポイント払いは支払い時にポイントから払うので請求に含めず、支出・実質支出からも除きます（他のポイント払いと同じ）。還元は、いずれも設定画面の月別還元率で付きます。</div>
       </div>
 
@@ -2181,7 +2171,7 @@ header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:no
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">金額 *</label>
         <div style="display:flex;align-items:center;gap:6px;">
           <span style="font-size:14px;font-weight:700;color:var(--text2);">¥</span>
-          <input id="tx-amount" type="number" min="1" placeholder="0" style="flex:1;padding:9px 12px;font-size:14px;font-weight:700;border-radius:10px;font-family:monospace;">
+          <input id="tx-amount" type="number" min="1" placeholder="0" oninput="updateRpaySplitUi()" style="flex:1;padding:9px 12px;font-size:14px;font-weight:700;border-radius:10px;font-family:monospace;">
         </div>
       </div>
 
@@ -2412,6 +2402,19 @@ function isRakutenPay(t){ return t.method==='楽天ペイ'; }
 function rpaySourceOf(t){ return t.method==='楽天ペイ' ? (t.rpaySource||'charge') : ''; }
 const RPAY_SOURCE_LABELS={charge:'チャージ残高',card:'楽天カード',point:'ポイント払い'};
 // カード請求上の決済手段：楽天ペイを楽天カードで払った分は楽天カードの請求に合算する
+// 楽天ペイの併用払い：t.rpaySplit={charge,card,point}（合計=取引金額）。無ければ null
+function updateRpaySplitUi(){
+  const sel=document.getElementById('tx-rpay-source'), w=document.getElementById('tx-rpay-split-wrap'); if(!sel||!w) return;
+  const on=sel.value==='split'; w.style.display=on?'block':'none'; if(!on) return;
+  const amt=parseInt((document.getElementById('tx-amount')||{}).value,10)||0;
+  const g=id=>parseInt((document.getElementById(id)||{}).value,10)||0;
+  const sum=g('tx-rpay-s-charge')+g('tx-rpay-s-card')+g('tx-rpay-s-point'), diff=amt-sum, n=document.getElementById('tx-rpay-split-note');
+  if(n){ n.style.color=(diff===0&&amt>0)?'var(--green)':'var(--red)';
+    n.textContent=amt<=0?'先に金額を入力してください':(diff===0?`合計 ¥${sum.toLocaleString()}（取引金額と一致）　カード請求には楽天カード分のみ合算されます`:(diff>0?`あと ¥${diff.toLocaleString()} 足りません`:`¥${(-diff).toLocaleString()} 超えています`)); }
+}
+function rpaySplitOf(t){ if(!t||t.method!=='楽天ペイ'||!t.rpaySplit) return null; const x=t.rpaySplit; return {charge:+x.charge||0,card:+x.card||0,point:+x.point||0}; }
+function rpaySourceLabel(t){ const sp=rpaySplitOf(t); if(!sp) return RPAY_SOURCE_LABELS[rpaySourceOf(t)];
+  return '併用（'+[sp.charge?'チャージ¥'+sp.charge.toLocaleString():'',sp.card?'カード¥'+sp.card.toLocaleString():'',sp.point?'ポイント¥'+sp.point.toLocaleString():''].filter(Boolean).join('・')+'）'; }
 function billMethodOf(t){ return (t.method==='楽天ペイ'&&t.rpaySource==='card') ? '楽天カード' : t.method; }
 // 楽天ペイの還元率(%)：月別設定(S.rpayRates["YYYY-MM"])。その月の設定が無ければ、直近の過去月の設定を引き継ぐ（全く無ければ0.5%）
 const RPAY_DEFAULT_RATE=0.5;
@@ -4265,7 +4268,7 @@ function recalc(){
     }
 
     totalExp+=t.amount;
-    if(isPointPayment(t)) totalPoint+=t.amount;
+    if(isPointPayment(t)) totalPoint+=t.amount; else { const _sp=rpaySplitOf(t); if(_sp) totalPoint+=_sp.point; }
     if((t.categoryMinor||'').includes('昼食（大学）'))univ+=t.amount;
   });
 
@@ -5397,7 +5400,9 @@ function getMethodUsageInRange(method, startDate, endDate){
       const td=txBillDate(t);
       if(td<s||td>e) return;
       // カード請求集計は「実際にそのカードで支払われた金額」なので立替も含める（支出集計や統計は別途isKaetate()で除外している）
-      if(billMethodOf(t)===method&&!isPointPayment(t)&&!isBillingOffset(t)) sum+=t.amount;
+      { const sp=rpaySplitOf(t);
+        if(sp){ if(method==='楽天カード'&&!isBillingOffset(t)) sum+=sp.card; }
+        else if(billMethodOf(t)===method&&!isPointPayment(t)&&!isBillingOffset(t)) sum+=t.amount; }
       // チャージ払いのチャージ元カード：明細上の決済手段はチャージ先だが、実際にはチャージ元カードでも
       // 同額の引き落とし・請求が発生しているため、チャージ元カードの請求額にも同じ金額を計上する
       if(t.chargeBonusMethod===method) sum+=t.amount;
@@ -6243,9 +6248,10 @@ function openCardDetailModal(csId){
       if(t.type==='income') return;
       cycleAllTxs.push(t);
       // 紐づけ先の決済手段そのものでの利用分
-      if(linkedMethods.includes(billMethodOf(t))){
+      const _sp=rpaySplitOf(t), _bm=_sp?(_sp.card>0?'楽天カード':'楽天ペイ'):billMethodOf(t);
+      if(linkedMethods.includes(_bm)){
         const {pt}=calcPt(t);
-        if(!isPointPayment(t)) pointByMethod[billMethodOf(t)]=(pointByMethod[billMethodOf(t)]||0)+pt;
+        if(!isPointPayment(t)) pointByMethod[_bm]=(pointByMethod[_bm]||0)+pt;
         txInCycle.push(t);
       }
       // チャージ払いのボーナス分：このカードがチャージ元に指定されている場合、明細には出さずポイントと金額だけ加算
@@ -6383,7 +6389,7 @@ function openCardDetailModal(csId){
             ${getShopLogoHtml(t.shop||'?',{size:26})}
             <div style="flex:1;min-width:0;">
               <div style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.shop||'利用先不明'}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}${t.method==='楽天ペイ'?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">${RPAY_SOURCE_LABELS[rpaySourceOf(t)]}</span>`:''}${isPointOffset(t)?(t.method==='楽天カード'?`　<span style="background:#e8f1ea;color:#2b6a45;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当${t.pointOffsetDone?'（処理済み・請求から差引）':'（未処理・請求に含む）'}</span>`:`　<span style="background:#e8f1ea;color:#2b6a45;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当（請求に含めず）</span>`):''}${t.billDelay?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">請求 +${t.billDelay}か月</span>`:''}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}${t.method==='楽天ペイ'?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">${rpaySourceLabel(t)}</span>`:''}${isPointOffset(t)?(t.method==='楽天カード'?`　<span style="background:#e8f1ea;color:#2b6a45;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当${t.pointOffsetDone?'（処理済み・請求から差引）':'（未処理・請求に含む）'}</span>`:`　<span style="background:#e8f1ea;color:#2b6a45;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当（請求に含めず）</span>`):''}${t.billDelay?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">請求 +${t.billDelay}か月</span>`:''}</div>
               ${(t.method==='三井住友カード(Olive)'||t.method==='JCBカードW')?`<div style="font-size:9px;color:var(--text3);margin-top:1px;">${calcPt(t).rule}</div>`:''}
             </div>
             <span style="font-size:12.5px;font-weight:700;color:var(--text);font-family:monospace;white-space:nowrap;">¥${(t.amount||0).toLocaleString()}</span>
@@ -6898,7 +6904,7 @@ function renderCalendar(){
     if(t.type==='income'){daily[ds].inc+=t.amount;}
     else{
       // カレンダーの支出表示：立替・ポイント払い・集計対象外は除外
-      if(!isKaetate(t)&&!isPointPayment(t)&&!isExcludedFromAggregate(t)) daily[ds].exp+=t.amount;
+      if(!isKaetate(t)&&!isPointPayment(t)&&!isExcludedFromAggregate(t)){ const _sp=rpaySplitOf(t); daily[ds].exp+=_sp?(t.amount-_sp.point):t.amount; }
       daily[ds].pts+=calcPt(t).pt;
     }
   });
@@ -7928,7 +7934,7 @@ function copyTxToNew(key){
   const isPointEl=document.getElementById('tx-is-point');
   if(isPointEl) isPointEl.checked=isPointPayment(t)&&t.method!=='楽天ペイ';
   const rpSrcC=document.getElementById('tx-rpay-source');
-  if(rpSrcC) rpSrcC.value=t.rpaySource||'charge';
+  if(rpSrcC){ const _sp=rpaySplitOf(t); rpSrcC.value=_sp?'split':(t.rpaySource||'charge'); const _set=(id,x)=>{const e=document.getElementById(id); if(e) e.value=(_sp&&x)?x:'';}; _set('tx-rpay-s-charge',_sp&&_sp.charge); _set('tx-rpay-s-card',_sp&&_sp.card); _set('tx-rpay-s-point',_sp&&_sp.point); updateRpaySplitUi(); }
   const excludeElC=document.getElementById('tx-exclude');
   if(excludeElC) excludeElC.checked=false;
   const fcElC=document.getElementById('tx-fixedcost');
@@ -7952,6 +7958,7 @@ function openAddModal(){
   document.getElementById('tx-date').value=`${y}-${m}-01`;
   document.getElementById('tx-shop').value='';
   document.getElementById('tx-amount').value='';
+  { const _r=document.getElementById('tx-rpay-source'); if(_r) _r.value='charge'; ['charge','card','point'].forEach(k=>{const e=document.getElementById('tx-rpay-s-'+k); if(e) e.value='';}); updateRpaySplitUi(); }
   document.getElementById('tx-is-point').checked=false;
   const excludeElA=document.getElementById('tx-exclude');
   if(excludeElA) excludeElA.checked=false;
@@ -7991,13 +7998,12 @@ function openEditModal(key){
   buildCatSelect();
   document.getElementById('tx-catmaj').value=t.categoryMajor||'食費';
   buildMinorSelect(t.categoryMinor||'');
-  updateKaetateRecoveryHint();
   // 決済手段（ポイント払いを解除してセット）
   const baseMethod=(t.method||'').replace('（ポイント払い）','');
   document.getElementById('tx-method').value=baseMethod;
   document.getElementById('tx-is-point').checked=isPointPayment(t)&&t.method!=='楽天ペイ';
   const rpSrcE=document.getElementById('tx-rpay-source');
-  if(rpSrcE) rpSrcE.value=t.rpaySource||'charge';
+  if(rpSrcE){ const _sp=rpaySplitOf(t); rpSrcE.value=_sp?'split':(t.rpaySource||'charge'); const _set=(id,x)=>{const e=document.getElementById(id); if(e) e.value=(_sp&&x)?x:'';}; _set('tx-rpay-s-charge',_sp&&_sp.charge); _set('tx-rpay-s-card',_sp&&_sp.card); _set('tx-rpay-s-point',_sp&&_sp.point); updateRpaySplitUi(); }
   const excludeElE=document.getElementById('tx-exclude');
   if(excludeElE) excludeElE.checked=!!t.excludeFromAggregate;
   const fcElE=document.getElementById('tx-fixedcost');
@@ -8038,17 +8044,8 @@ function buildCatSelect(){
 
 // カテゴリで「サブスクリプション」を選ぶと、固定費チェックを自動でオンにする
 // （ユーザーが手動で外すことは可能。他カテゴリへの変更で自動的にオフには戻さない）
-// 収入カテゴリ「立替回収」選択時の注意書き（表示のみ。データ・集計には影響しない）
-function updateKaetateRecoveryHint(){
-  const el=document.getElementById('tx-kaetate-recovery-hint');
-  const majSel=document.getElementById('tx-catmaj');
-  if(!el)return;
-  el.style.display=(txCurrentType==='income'&&majSel&&majSel.value==='立替回収')?'block':'none';
-}
-
 function onCatMajChange(){
   const majSel=document.getElementById('tx-catmaj');
-  updateKaetateRecoveryHint();
   const fcb=document.getElementById('tx-fixedcost');
   if(!majSel||!fcb)return;
   if(majSel.value==='サブスクリプション') fcb.checked=true;
@@ -8146,7 +8143,7 @@ function onMethodChange(){
       poN.textContent=isRk?'支出・予算・カテゴリ別予算・楽天ポイントの付与にはこれまで通り含めます。カードの請求額（引き落とし予定）からは、仮確定日に処理したあと、カード明細の「処理済み」にチェックした分だけ差し引きます（チェックするまでは請求額に含みます）。':poN.dataset.oliveText;
     }
     const rpW=document.getElementById('tx-rpay-wrap');
-    if(rpW) rpW.style.display=(txCurrentType!=='income'&&method==='楽天ペイ')?'block':'none'; }
+    if(rpW) rpW.style.display=(txCurrentType!=='income'&&method==='楽天ペイ')?'block':'none'; updateRpaySplitUi(); }
   updatePointCardUi();
   const bdWrap=document.getElementById('tx-billdelay-wrap');
   if(bdWrap){
@@ -8319,7 +8316,15 @@ function saveTxModal(){
   const poWrapS=document.getElementById('tx-pointoffset-wrap'), poElS=document.getElementById('tx-pointoffset');
   if(type==='expense'&&(method==='三井住友カード(Olive)'||method==='楽天カード')&&poWrapS&&poWrapS.style.display!=='none'&&poElS&&poElS.checked) newTx.pointOffset=true;
   const rpSrcEl=document.getElementById('tx-rpay-source');
-  if(type==='expense'&&method==='楽天ペイ') newTx.rpaySource=(rpSrcEl&&rpSrcEl.value)||'charge';
+  if(type==='expense'&&method==='楽天ペイ'){
+    const _v=(rpSrcEl&&rpSrcEl.value)||'charge';
+    if(_v==='split'){
+      const g=id=>Math.max(0,parseInt((document.getElementById(id)||{}).value,10)||0);
+      const sp={charge:g('tx-rpay-s-charge'),card:g('tx-rpay-s-card'),point:g('tx-rpay-s-point')};
+      if(sp.charge+sp.card+sp.point!==Math.round(amount)){ toast('併用の内訳の合計を、取引金額と同じにしてください','error'); updateRpaySplitUi(); return; }
+      newTx.rpaySource='charge'; newTx.rpaySplit=sp;
+    } else newTx.rpaySource=_v;
+  }
   const bdWrapS=document.getElementById('tx-billdelay-wrap');
   const bdElS=document.getElementById('tx-billdelay');
   const billDelay=(bdWrapS&&bdWrapS.style.display!=='none'&&bdElS)?(parseInt(bdElS.value,10)||0):0;
