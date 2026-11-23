@@ -832,6 +832,82 @@ body.dark .mkt-down{background:rgba(255,154,142,.16);color:#ff9a8e;}
 #finboo-banner-host,.card:has(#finboo-notify-status){display:none!important;}
 </style>
 <style>body.ro-on #btn-gdrive-login,body.ro-on #btn-gdrive-sync,body.ro-on #btn-gdrive-logout,body.ro-on #btn-reset,body.ro-on #btn-edit-budget,body.ro-on #btn-add-tx,body.ro-on #btn-sync-dash,body.ro-on #btn-sync-sync{opacity:.35;}</style>
+<style id="fb-pt-motion">
+/* ===== ポイントタブ（Bento統一）===== */
+#pt-hero{background:var(--hero);color:#fff;border-radius:28px;padding:18px;display:flex;flex-direction:column;gap:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+#pt-hero .ph-top{display:flex;align-items:center;justify-content:space-between;}
+#pt-hero .ph-chip{background:var(--accent);color:var(--accent-text);border-radius:999px;padding:4px 14px;font-size:13px;font-weight:600;}
+#pt-hero .ph-tag{background:rgba(255,255,255,.14);border-radius:999px;padding:3px 12px;font-size:12px;}
+#pt-hero .ph-main{border:1.5px dashed rgba(255,255,255,.22);border-radius:22px;padding:16px 14px;display:flex;align-items:center;gap:16px;}
+#pt-hero .ph-ring{position:relative;width:112px;height:112px;flex:none;}
+#pt-hero .ph-ring svg{transform:rotate(-90deg);display:block;}
+#pt-hero .ph-track,#pt-hero .ph-arc{fill:none;stroke-width:11;}
+#pt-hero .ph-track{stroke:rgba(255,255,255,.12);}
+#pt-hero .ph-arc{stroke-linecap:round;stroke-dasharray:0 289.03;}
+#pt-hero .ph-rate{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;}
+#pt-hero .ph-rate b{font-family:'Figtree','Noto Sans JP',sans-serif;font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;}
+#pt-hero .ph-rate span{font-size:11px;color:rgba(255,255,255,.7);}
+#pt-hero .ph-numwrap{flex:1;min-width:0;text-align:center;}
+#pt-hero .ph-num{font-family:'Figtree','Noto Sans JP',sans-serif;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1;font-size:44px;color:#fff;}
+#pt-hero .ph-unit{font-size:18px;margin-left:4px;opacity:.85;letter-spacing:0;}
+#pt-hero .ph-hintline{font-size:12px;color:rgba(255,255,255,.62);margin-top:8px;}
+#pt-hero .ph-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+#pt-hero .ph-tile{background:rgba(255,255,255,.10);border-radius:18px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;}
+#pt-hero .ph-tile b{font-family:'Figtree','Noto Sans JP',sans-serif;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;}
+#pt-hero .ph-tl{font-size:11px;line-height:18px;height:18px;color:rgba(255,255,255,.7);}#pt-hero .ph-dot{display:block;}
+#pt-hero .ph-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-bottom:2px;}
+@media (max-width:380px){#pt-hero .ph-main{flex-direction:column;}#pt-hero .ph-num{font-size:38px;}}
+.pt-title{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--text);}
+.pt-desc{font-size:12px;color:var(--text3);margin-top:6px;}
+.pt-ico{width:34px;height:34px;border-radius:12px;background:var(--primary-light);color:var(--primary);display:inline-flex;align-items:center;justify-content:center;flex:none;}
+.pt-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:1px;}
+@media (max-width:1023px){#pt-settings{order:2;}}
+#pane-points .card{padding:20px!important;}
+#pane-points [style*="border-radius:10px"]{border-radius:18px!important;}
+#pane-points input[type=range]{accent-color:var(--primary);width:100%;height:6px;}
+#pane-points #rank-chips button{min-height:34px;}
+.rank-concl{background:var(--hero);color:#fff;border-radius:20px;padding:14px 16px;margin-bottom:10px;}
+.rank-concl strong{color:var(--accent);font-weight:600;}
+.rank-concl .rc-sub{color:rgba(255,255,255,.65);}
+.rank-row{border:1px solid var(--border);border-radius:20px;padding:12px 14px;background:var(--card);transition:transform .4s var(--spring),box-shadow .3s;}
+.rank-row.rank-top{background:var(--accent);border-color:transparent;color:var(--accent-text);}
+.rank-row.rank-top *{color:var(--accent-text)!important;}
+.rank-row.rank-top [style*="height:5px"]{background:rgba(44,58,22,.14)!important;}
+.rank-row.rank-top [style*="height:5px"]>div{background:var(--hero)!important;}
+.pt-tbl{border:1px solid var(--border);border-radius:20px;background:var(--card);}
+.pt-tbl table{border-collapse:separate!important;border-spacing:0;}
+.pt-tbl table{min-width:600px;}.pt-tbl th,.pt-tbl td{white-space:nowrap;}.pt-tbl td:nth-child(6){white-space:normal;min-width:150px;}
+.pt-tbl thead tr{background:var(--card2)!important;}
+.pt-tbl tbody tr:last-child{border-bottom:none!important;}
+#rank-ai-result{border-radius:18px!important;}
+/* ===== マイクロインタラクション ===== */
+/* B: ストレッチ・トグル（指定のチェックボックスをスイッチ化。押している間つまみが伸びる） */
+input.sw{-webkit-appearance:none;appearance:none;width:42px!important;height:26px!important;border-radius:999px;background:var(--border);border:none;position:relative;cursor:pointer;flex:none;vertical-align:middle;margin:0;transition:background .3s ease;-webkit-tap-highlight-color:transparent;accent-color:auto;}
+input.sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.28);transition:transform .45s cubic-bezier(.34,1.45,.64,1),width .22s var(--ease-out);}
+input.sw:checked{background:var(--primary);animation:none!important;}
+input.sw:checked::after{transform:translateX(16px);}
+input.sw:active::after{width:26px;}
+input.sw:checked:active::after{transform:translateX(10px);}
+input.sw:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+/* E: 待機ドット（ウェーブ） */
+.dots{display:inline-flex;gap:3px;margin-left:4px;vertical-align:middle;}
+.dots i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.4;}
+/* E: トーストの成功チェックを描く */
+#toast.t-ok #toast-msg::before{content:'';display:inline-block;width:14px;height:14px;margin-right:6px;vertical-align:-2px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cstyle%3E@keyframes d%7Bfrom%7Bstroke-dashoffset:24%7Dto%7Bstroke-dashoffset:0%7D%7Dpath%7Bstroke-dasharray:24;animation:d .45s .12s cubic-bezier(.22,1,.36,1) both%7D%3C/style%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes dotWave{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-5px);opacity:1;}}
+  .dots i{animation:dotWave 1s ease-in-out infinite;}
+  .dots i:nth-child(2){animation-delay:.14s;}.dots i:nth-child(3){animation-delay:.28s;}
+  /* A: 押下（Squash）— ヒーロー・チップ・ランキング行 */
+  #pt-hero,.rank-row,.mkt-chip,.mkt-preset,.hh-btn{transition:transform .5s var(--spring);}
+  #pt-hero:active{transform:scale(.975);transition-duration:.12s;transition-timing-function:var(--ease-out);}
+  .rank-row:active,.mkt-chip:active,.mkt-preset:active{transform:scale(.97);transition-duration:.12s;transition-timing-function:var(--ease-out);}
+  @media (hover:hover) and (pointer:fine){.rank-row:hover{transform:translateY(-2px);box-shadow:0 8px 20px -10px rgba(18,32,28,.25);}}
+  @keyframes tilePop{from{opacity:0;transform:translateY(12px) scale(.92);}to{opacity:1;transform:none;}}
+  #pt-hero.ph-in .ph-tile{animation:tilePop .6s var(--spring) both;}
+  #pt-hero.ph-in .ph-tile:nth-child(2){animation-delay:.07s;}#pt-hero.ph-in .ph-tile:nth-child(3){animation-delay:.14s;}
+}
+</style>
 </head>
 <body class="min-h-screen flex flex-col pb-safe md:pb-0">
 <div id="top-bar"><div id="top-fill"></div></div>
@@ -1150,28 +1226,45 @@ body.dark .mkt-down{background:rgba(255,154,142,.16);color:#ff9a8e;}
 
 <!-- ======= ポイント ======= -->
 <div id="pane-points" class="tab-pane space-y-6">
+  <section id="pt-hero" role="button" tabindex="0" aria-label="今月の獲得予定ポイント（タップで内訳）">
+    <div class="ph-top"><span id="ph-month" class="ph-chip">—</span><span class="ph-tag">獲得予定ポイント</span></div>
+    <div class="ph-main">
+      <div class="ph-ring"><svg viewBox="0 0 120 120" width="112" height="112" aria-hidden="true">
+        <circle class="ph-track" cx="60" cy="60" r="46"/>
+        <circle id="ph-arc-v" class="ph-arc" cx="60" cy="60" r="46" stroke="#d9e8a4"/>
+        <circle id="ph-arc-p" class="ph-arc" cx="60" cy="60" r="46" stroke="#f0b3c3"/>
+        <circle id="ph-arc-o" class="ph-arc" cx="60" cy="60" r="46" stroke="rgba(255,255,255,.55)"/>
+      </svg><div class="ph-rate"><b id="ph-rate">0.0%</b><span>還元率</span></div></div>
+      <div class="ph-numwrap"><div class="ph-num"><span id="ph-total">0</span><span class="ph-unit">pt</span></div><div class="ph-hintline">タップして内訳を見る</div></div>
+    </div>
+    <div class="ph-tiles">
+      <div class="ph-tile"><span class="ph-dot" style="background:#d9e8a4"></span><span class="ph-tl">Vポイント</span><b id="ph-v">0</b></div>
+      <div class="ph-tile"><span class="ph-dot" style="background:#f0b3c3"></span><span class="ph-tl">PayPay</span><b id="ph-p">0</b></div>
+      <div class="ph-tile"><span class="ph-dot" style="background:rgba(255,255,255,.55)"></span><span class="ph-tl">その他</span><b id="ph-o">0</b></div>
+    </div>
+  </section>
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div class="card p-5 space-y-5">
-      <div><div style="font-size:13px;font-weight:700;color:var(--text);">⚙️ 還元プログラム設定</div><div style="font-size:10px;color:var(--text3);margin-top:2px;">U25特別特約が自動反映されます</div></div>
+    <div id="pt-settings" class="card p-5 space-y-5">
+      <div><div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>還元プログラム設定</div><div class="pt-desc">U25特別特約が自動反映されます</div></div>
       <div class="space-y-3 pt-3" style="border-top:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:700;color:var(--green);">🟢 三井住友カード (Olive)</div>
+        <div style="font-size:11px;font-weight:700;color:var(--green);"><span class="pt-dot" style="background:var(--green);"></span>三井住友カード (Olive)</div>
         <div class="space-y-1.5">
           <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">Vポイントアッププログラム加算</span><span id="ui-vprog-rate" style="font-weight:700;color:var(--primary);">+8.0%</span></div>
           <input id="slider-vprog" type="range" min="0" max="15" step="0.5" value="8" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
         </div>
         <div class="space-y-1.5">
-          <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">🍙 セブン-イレブン特約加算</span><span id="ui-seven-rate" style="font-weight:700;color:var(--primary);">+2.5%</span></div>
+          <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">セブン-イレブン特約加算</span><span id="ui-seven-rate" style="font-weight:700;color:var(--primary);">+2.5%</span></div>
           <input id="slider-seven" type="range" min="0" max="15" step="0.5" value="9.5" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
           <div style="font-size:9px;color:var(--text3);">セブン-イレブンのみ独自の加算率（上の特約店とは別枠）</div>
         </div>
         <div class="pt-2 space-y-2" style="border-top:1px solid var(--border);">
-          <div style="font-size:11px;font-weight:700;color:var(--text3);">✨ U25特別特約</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3);">U25特別特約</div>
           <div style="background:var(--primary-light);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;">
-            <div class="flex justify-between font-bold" style="color:var(--text);">📱 対象携帯料金<span style="color:var(--primary);">+1.5%</span></div>
+            <div class="flex justify-between font-bold" style="color:var(--text);">対象携帯料金<span style="color:var(--primary);">+1.5%</span></div>
             <div style="color:var(--text3);margin-top:2px;">基本0.5%＋特約→合計 <strong>2.0%</strong></div>
           </div>
           <div style="background:var(--primary-light);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;">
-            <div class="flex justify-between font-bold" style="color:var(--text);">🛍️ PayPay支払い<span style="color:var(--primary);">+0.5%</span></div>
+            <div class="flex justify-between font-bold" style="color:var(--text);">PayPay支払い<span style="color:var(--primary);">+0.5%</span></div>
             <div style="color:var(--text3);margin-top:2px;">PayPay連携＋Olive→ <strong>1.0%</strong></div>
           </div>
         </div>
@@ -1181,15 +1274,15 @@ body.dark .mkt-down{background:rgba(255,154,142,.16);color:#ff9a8e;}
         </div>
       </div>
       <div class="space-y-2 pt-3" style="border-top:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:700;color:#9c4f68;">🔴 PayPayカード / クレジット</div>
+        <div style="font-size:11px;font-weight:700;color:#9c4f68;"><span class="pt-dot" style="background:#c9788f;"></span>PayPayカード / クレジット</div>
         <div style="background:var(--red-light);padding:12px;border-radius:10px;border:1px solid var(--border);font-size:10px;color:var(--text);">
           <div class="font-bold">・通常還元率: 200円ごとに2ポイント(1.0%)</div>
           <div style="margin-top:4px;color:var(--text2);">※都度計算 — 200円未満は0 pt</div>
         </div>
       </div>
     </div>
-    <div class="card p-5 lg:col-span-2 space-y-5">
-      <div><div style="font-size:13px;font-weight:700;color:var(--text);">💡 決済手段別 お得度ランキング</div><div style="font-size:10px;color:var(--text3);margin-top:2px;line-height:1.6;">使いたい店舗を入力すると、Finbooに登録済みのルール・今月の利用状況から、どの決済手段で払うと何pt見込めるかを比べます（金額は空欄でも可。空欄のときは還元率で比較します）。</div></div>
+    <div id="pt-rank" class="card p-5 lg:col-span-2 space-y-5">
+      <div><div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>決済手段別 お得度ランキング</div><div class="pt-desc" style="line-height:1.6;">使いたい店舗を入力すると、Finbooに登録済みのルール・今月の利用状況から、どの決済手段で払うと何pt見込めるかを比べます（金額は空欄でも可。空欄のときは還元率で比較します）。</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <input id="rank-shop" type="text" placeholder="店舗名（例: すき家、ローソン）" oninput="renderPointRank()" style="flex:1;min-width:160px;font-size:12px;padding:9px 12px;">
         <input id="rank-amount" type="number" min="0" step="1" inputmode="numeric" placeholder="金額（任意）" oninput="renderPointRank()" style="width:120px;font-size:12px;padding:9px 12px;">
@@ -1200,13 +1293,13 @@ body.dark .mkt-down{background:rgba(255,154,142,.16);color:#ff9a8e;}
       </div>
       <div id="rank-result"></div>
       <div id="rank-ai-wrap" style="display:none;">
-        <button id="rank-ai-btn" onclick="runRankAi()" class="btn btn-primary" style="font-size:11px;">✨ AIに相談（今月の予測を踏まえて判断）</button>
+        <button id="rank-ai-btn" onclick="runRankAi()" class="btn btn-primary" style="font-size:11px;">AIに相談（今月の予測を踏まえて判断）</button>
         <div id="rank-ai-result" style="display:none;margin-top:10px;padding:12px 14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;font-size:11.5px;line-height:1.8;color:var(--text);white-space:pre-wrap;"></div>
       </div>
       <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
       <div>
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;">🔍 取引ごとのポイント発生と適用ルール一覧</div>
-        <div style="overflow-x:auto;">
+        <div class="pt-title" style="margin-bottom:10px;"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>取引ごとのポイント発生と適用ルール一覧</div>
+        <div class="pt-tbl" style="overflow-x:auto;">
           <table style="width:100%;font-size:11px;border-collapse:collapse;">
             <thead><tr style="background:var(--card2);border-bottom:1px solid var(--border);">
               <th style="padding:8px 10px;text-align:left;color:var(--text3);font-weight:700;">日付</th>
@@ -2895,6 +2988,23 @@ function setText(id,v){
     if(k<1) el._cr=requestAnimationFrame(step); else el.textContent=v;
   };
   el._cr=requestAnimationFrame(step);
+}
+// 数値入りの要素を 0 からカウントアップ（"+12 pt" / "1.5%" など。reduced-motion時は何もしない）
+function fbCountUp(el,delay){
+  if(!el||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+  const txt=el.textContent, m=txt.match(/^([^\d]*)([\d,]+(?:\.\d+)?)(.*)$/);
+  if(!m)return;
+  const to=parseFloat(m[2].replace(/,/g,'')), dec=(m[2].split('.')[1]||'').length;
+  if(!isFinite(to)||to===0)return;
+  const t0=performance.now()+(delay||0), dur=700;
+  el.textContent=m[1]+(0).toFixed(dec)+m[3];
+  const step=now=>{
+    if(now<t0){ requestAnimationFrame(step); return; }
+    const k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,4), v=to*e;
+    el.textContent=m[1]+(dec?v.toFixed(dec):Math.round(v).toLocaleString())+m[3];
+    if(k<1) requestAnimationFrame(step); else el.textContent=txt;
+  };
+  requestAnimationFrame(step);
 }
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 
@@ -7939,6 +8049,7 @@ function renderTable(){
 function renderPtTab(){
   const tbody=$('pt-tbody');if(!tbody)return;
   tbody.innerHTML='';
+  renderPointRank._sig=null;
   const pc=calcAllPts();
   pc.txs.filter(t=>t.type!=='income').sort((a,b)=>(a.date||'')>(b.date||'')?1:-1).forEach(t=>{
     const tr=document.createElement('tr');
@@ -7946,6 +8057,7 @@ function renderPtTab(){
     tr.innerHTML=`<td style="padding:8px 10px;color:var(--text3);">${t.date}</td><td style="padding:8px 10px;font-weight:600;color:var(--text);">${t.shop||'現金等'}</td><td style="padding:8px 10px;font-size:10px;color:var(--text3);">${t.method}</td><td style="padding:8px 10px;text-align:right;font-family:monospace;font-weight:700;color:var(--text);">¥${t.amount.toLocaleString()}</td><td style="padding:8px 10px;text-align:right;font-weight:700;color:var(--primary);font-family:monospace;">${t.cp>0?`+${t.cp} pt`:`<span style="color:var(--text3);">0 pt</span>`}</td><td style="padding:8px 10px;font-size:10px;color:var(--text3);">${t.rule}</td>`;
     tbody.appendChild(tr);
   });
+  if(!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)) [...tbody.children].slice(0,14).forEach((tr,i)=>{ tr.style.animation='rowIn .5s var(--spring) '+(200+i*30)+'ms both'; });
   const oliveTotal=pc.oT+pc.oM+pc.oP+pc.oN;
   if(typeof renderPointRank==='function') renderPointRank();
 }
@@ -8090,6 +8202,8 @@ function renderPointRank(){
   const predStr=Object.keys(predicted).map(k=>`${k} ${predicted[k].toLocaleString()}pt`).join(' / ')||'まだありません';
   const top=rows[0];
   const hasAny=amount>0?top.marginal>0:top.rate>0;
+  const sig=(amount>0?'a':'r')+'|'+rows.map(r=>r.method).join('|');
+  const animate=renderPointRank._sig!==sig; renderPointRank._sig=sig;
   const medal=['🥇','🥈','🥉'];
   const conclusion=hasAny
     ? (amount>0
@@ -8097,9 +8211,9 @@ function renderPointRank(){
         : `結論: <strong>${top.method}</strong>が最も高還元です（約${top.rate.toFixed(1)}%・${top.type}）`)
     : '登録済みのルールでは、どの決済手段でもポイントが付かない見込みです';
   resEl.innerHTML=`
-    <div style="background:var(--primary-light);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
-      <div style="font-size:12px;color:var(--text);line-height:1.6;">${conclusion}</div>
-      <div style="font-size:9.5px;color:var(--text3);margin-top:3px;">今月の予測ポイント: ${predStr}</div>
+    <div class="rank-concl${animate?' row-in':''}">
+      <div style="font-size:12px;line-height:1.6;">${conclusion}</div>
+      <div class="rc-sub" style="font-size:9.5px;margin-top:3px;">今月の予測ポイント: ${predStr}</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;">
     ${rows.map((r,i)=>{
@@ -8110,7 +8224,7 @@ function renderPointRank(){
         ? `単体 ${r.standalone.toLocaleString()}pt・還元率 ${r.rate.toFixed(1)}%${r.marginal!==r.standalone?`・今月の合算で${r.marginal>r.standalone?'+':''}${(r.marginal-r.standalone).toLocaleString()}pt`:''}`
         : `${r.type}`;
       return `
-      <div class="rank-row" style="border:1px solid ${i===0&&hasAny?'var(--primary)':'var(--border)'};border-radius:12px;padding:10px 12px;background:var(--card);">
+      <div class="rank-row${i===0&&hasAny?' rank-top':''}${animate?' row-in':''}" ${animate?`style="animation-delay:${120+i*50}ms;"`:''}>
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="width:22px;text-align:center;font-size:${i<3?'16':'11'}px;font-weight:700;color:var(--text3);">${i<3&&hasAny?medal[i]:(i+1)}</span>
           ${getMethodLogoHtml(r.method,{size:22,brandSize:11})}
@@ -8118,15 +8232,16 @@ function renderPointRank(){
             <div style="font-size:12px;font-weight:700;color:var(--text);">${r.method}<span style="font-size:9px;font-weight:600;color:var(--text3);margin-left:6px;">${r.type}</span>${r.usedHistory?'<span style="font-size:8.5px;font-weight:700;color:var(--primary);background:var(--primary-light);border-radius:99px;padding:1px 6px;margin-left:6px;">実績あり</span>':''}</div>
             <div style="font-size:9.5px;color:var(--text3);margin-top:1px;">${sub}</div>
           </div>
-          <span style="font-size:14px;font-weight:800;color:${v>0?'var(--primary)':'var(--text3)'};font-family:monospace;white-space:nowrap;">${big}</span>
+          <span class="rank-big" style="font-size:14px;font-weight:800;color:${v>0?'var(--primary)':'var(--text3)'};font-family:monospace;white-space:nowrap;">${big}</span>
         </div>
-        <div style="height:5px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden;"><div class="bar-grow" style="height:100%;width:${w}%;background:var(--primary);border-radius:99px;"></div></div>
+        <div style="height:5px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden;"><div class="${animate?'bar-grow':''}" style="height:100%;width:${w}%;background:var(--primary);border-radius:99px;${animate?`animation-delay:${220+i*50}ms;`:''}"></div></div>
         <div style="font-size:9px;color:var(--text3);margin-top:5px;line-height:1.5;">${r.rule}${r.note?`<br>⚠️ ${r.note}`:''}</div>
       </div>`;}).join('')}
     </div>
     <div style="font-size:9px;color:var(--text3);margin-top:8px;line-height:1.5;">※Olive・JCBは月合算（200円単位切り捨て）のため、「今月の既存の利用に足したときの増分」で順位を付けています。ポイントは1pt=1円として比較しています。${amount>0?'':'金額が空欄のため、10,000円で試算した還元率で比較しています。'}</div>`;
   rankLast={shop,amount,rows,predicted};
   if(aiWrap) aiWrap.style.display='block';
+  if(animate) resEl.querySelectorAll('.rank-big').forEach((el,i)=>fbCountUp(el,160+i*50));
 }
 // AIに相談（既存のAIチャット=Geminiの仕組みを利用。Supabaseログインが必要）
 async function runRankAi(){
@@ -8134,7 +8249,7 @@ async function runRankAi(){
   if(!rankLast){ return; }
   if(typeof sbUser==='undefined'||!sbUser){ toast('AI相談にはSupabaseへのログインが必要です（同期タブ）','error'); return; }
   const {shop,amount,rows,predicted}=rankLast;
-  out.style.display='block'; out.style.color='var(--text3)'; out.textContent='考え中…';
+  out.style.display='block'; out.style.color='var(--text3)'; out.innerHTML='考え中<span class="dots"><i></i><i></i><i></i></span>';
   if(btn) btn.disabled=true;
   try{
     const {data:{session}}=await sbClient.auth.getSession();
@@ -8208,7 +8323,7 @@ function switchTab(id){
   });
   if(id==='dashboard'){renderPayChart();renderCatChart();}
   if(id==='calendar'){renderCalendar();if(selDate)selectDay(selDate);}
-  if(id==='points')renderPtTab();
+  if(id==='points'){renderPtTab();if(window.ptHeroReplay)window.ptHeroReplay();}
   if(id==='assets')renderAssets();
   if(id==='campaign')renderCampaignSummary();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -8254,6 +8369,7 @@ function toast(msg,type='info'){
   const el=$('toast');if(!el)return;
   $('toast-msg').textContent=msg;
   el.style.background=type==='success'?'#3f8f6b':type==='error'?'#b5443a':'#2b2a28';
+  el.classList.toggle('t-ok',type==='success');
   el.classList.remove('t-hide');
   el.style.opacity='1';
   if(toastTmr)clearTimeout(toastTmr);
@@ -10602,6 +10718,68 @@ document.addEventListener('DOMContentLoaded',()=>{
     window.addEventListener('scroll',f,{passive:true});
     f();
   }catch(e){}
+})();
+</script>
+
+<script>
+// ===== ポイントタブ ヒーロー（値は既存の集計表示と同期）／トグルのスイッチ化 =====
+(function(){
+  var $=function(i){return document.getElementById(i);};
+  var reduce=function(){return window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;};
+  var C=2*Math.PI*46, cur={t:0,v:0,p:0}, tgt=null, raf=0, lastKey='';
+  function num(id){ var e=$(id); if(!e)return 0; if(typeof e._cv==='number')return e._cv; var m=(e.textContent||'').replace(/,/g,'').match(/-?\d+(?:\.\d+)?/); return m?parseFloat(m[0]):0; }
+  function read(){ var t=Math.max(0,num('ui-total-pts')), v=Math.max(0,num('ui-vpts')), p=Math.max(0,num('ui-pppts')); return {t:t,v:Math.min(v,t),p:Math.min(p,Math.max(0,t-v))}; }
+  function paint(c){
+    var o=Math.max(0,c.t-c.v-c.p);
+    $('ph-total').textContent=Math.round(c.t).toLocaleString();
+    $('ph-v').textContent=Math.round(c.v).toLocaleString();
+    $('ph-p').textContent=Math.round(c.p).toLocaleString();
+    $('ph-o').textContent=Math.round(o).toLocaleString();
+    var tot=c.t>0?c.t:1, gap=2, parts=[['ph-arc-v',c.v],['ph-arc-p',c.p],['ph-arc-o',o]], off=0;
+    parts.forEach(function(a){
+      var len=a[1]/tot*C, vis=len>gap+1?len-gap:0, el=$(a[0]);
+      el.style.strokeDasharray=vis+' '+(C-vis); el.style.strokeDashoffset=-off; el.style.opacity=vis>0?1:0; off+=len;
+    });
+  }
+  function run(from,to){
+    cancelAnimationFrame(raf); tgt=to;
+    if(reduce()){ cur={t:to.t,v:to.v,p:to.p}; paint(cur); return; }
+    var t0=performance.now(), dur=800, f={t:from.t,v:from.v,p:from.p};
+    var step=function(now){
+      var k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,4);
+      cur={t:f.t+(to.t-f.t)*e, v:f.v+(to.v-f.v)*e, p:f.p+(to.p-f.p)*e}; paint(cur);
+      if(k<1) raf=requestAnimationFrame(step);
+    };
+    raf=requestAnimationFrame(step);
+  }
+  function meta(){
+    var r=($('ui-avg-rate')||{}).textContent; $('ph-rate').textContent=r||'0.0%';
+    $('ph-month').textContent=(typeof S!=='undefined'&&S.viewMonth?S.viewMonth+'月':'—');
+  }
+  function sync(){
+    meta(); var n=read(), key=n.t+'|'+n.v+'|'+n.p;
+    if(key===lastKey)return; lastKey=key; run(cur,n);
+  }
+  window.ptHeroReplay=function(){
+    meta(); var h=$('pt-hero'); if(!h)return;
+    h.classList.remove('ph-in'); void h.offsetWidth; h.classList.add('ph-in');
+    lastKey=''; var n=read(); lastKey=n.t+'|'+n.v+'|'+n.p;
+    cur={t:0,v:0,p:0}; paint(cur); run(cur,n);
+  };
+  var pend=0;
+  ['ui-total-pts','ui-vpts','ui-pppts','ui-avg-rate'].forEach(function(id){
+    var e=$(id); if(e) new MutationObserver(function(){ clearTimeout(pend); pend=setTimeout(sync,80); }).observe(e,{childList:true,characterData:true,subtree:true});
+  });
+  var h=$('pt-hero');
+  if(h){
+    h.addEventListener('click',function(){ if(typeof openPtBreakdownModal==='function') openPtBreakdownModal(); });
+    h.addEventListener('keydown',function(ev){ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); if(typeof openPtBreakdownModal==='function') openPtBreakdownModal(); } });
+  }
+  sync();
+  // B: 設定系のチェックボックスをスイッチ表示に
+  ['budget-month-only','tx-is-point','tx-jcb-smartpay','tx-chargepair-check','tx-exclude','tx-fixedcost','tx-pointoffset','new-store-point-rakuten','new-store-point-d','new-store-point-v'].forEach(function(id){
+    var e=$(id); if(e) e.classList.add('sw');
+  });
 })();
 </script>
 
