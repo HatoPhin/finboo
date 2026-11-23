@@ -1056,8 +1056,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
         資産
       </button>
       <button class="tab-t" data-tab="sync">
-        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-        同期
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+        設定
       </button>
       <button class="tab-t tab-campaign" data-tab="campaign" style="display:none;">
         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
@@ -1300,45 +1300,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       <div class="ph-tile"><span class="ph-dot" style="background:rgba(255,255,255,.55)"></span><span class="ph-tl">その他</span><b id="ph-o">0</b></div>
     </div>
   </section>
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div id="pt-settings" class="card p-5 space-y-5">
-      <div><div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>還元プログラム設定</div><div class="pt-desc">U25特別特約が自動反映されます</div></div>
-      <div class="space-y-3 pt-3" style="border-top:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:700;color:var(--green);"><span class="pt-dot" style="background:var(--green);"></span>三井住友カード (Olive)</div>
-        <div class="space-y-1.5">
-          <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">Vポイントアッププログラム加算</span><span id="ui-vprog-rate" style="font-weight:700;color:var(--primary);">+8.0%</span></div>
-          <input id="slider-vprog" type="range" min="0" max="15" step="0.5" value="8" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
-        </div>
-        <div class="space-y-1.5">
-          <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">セブン-イレブン特約加算</span><span id="ui-seven-rate" style="font-weight:700;color:var(--primary);">+2.5%</span></div>
-          <input id="slider-seven" type="range" min="0" max="15" step="0.5" value="9.5" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
-          <div style="font-size:9px;color:var(--text3);">セブン-イレブンのみ独自の加算率（上の特約店とは別枠）</div>
-        </div>
-        <div class="pt-2 space-y-2" style="border-top:1px solid var(--border);">
-          <div style="font-size:11px;font-weight:700;color:var(--text3);">U25特別特約</div>
-          <div style="background:var(--primary-light);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;">
-            <div class="flex justify-between font-bold" style="color:var(--text);">対象携帯料金<span style="color:var(--primary);">+1.5%</span></div>
-            <div style="color:var(--text3);margin-top:2px;">基本0.5%＋特約→合計 <strong>2.0%</strong></div>
-          </div>
-          <div style="background:var(--primary-light);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;">
-            <div class="flex justify-between font-bold" style="color:var(--text);">PayPay支払い<span style="color:var(--primary);">+0.5%</span></div>
-            <div style="color:var(--text3);margin-top:2px;">PayPay連携＋Olive→ <strong>1.0%</strong></div>
-          </div>
-        </div>
-        <div style="background:var(--green-light);padding:12px;border-radius:10px;border:1px solid var(--border);font-size:11px;color:var(--text);">
-          <div class="flex justify-between font-semibold"><span>通常店舗</span><span>0.5%</span></div>
-          <div class="flex justify-between font-semibold mt-1"><span>特約店合計</span><span id="ui-vtotal-rate">10.0%</span></div>
-        </div>
-      </div>
-      <div class="space-y-2 pt-3" style="border-top:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:700;color:#9c4f68;"><span class="pt-dot" style="background:#c9788f;"></span>PayPayカード / クレジット</div>
-        <div style="background:var(--red-light);padding:12px;border-radius:10px;border:1px solid var(--border);font-size:10px;color:var(--text);">
-          <div class="font-bold">・通常還元率: 200円ごとに2ポイント(1.0%)</div>
-          <div style="margin-top:4px;color:var(--text2);">※都度計算 — 200円未満は0 pt</div>
-        </div>
-      </div>
-    </div>
-    <div id="pt-rank" class="card p-5 lg:col-span-2 space-y-5">
+  <div class="grid grid-cols-1 gap-6">
+    <div id="pt-rank" class="card p-5 space-y-5">
       <div><div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>決済手段別 お得度ランキング</div><div class="pt-desc" style="line-height:1.6;">使いたい店舗を入力すると、Finbooに登録済みのルール・今月の利用状況から、どの決済手段で払うと何pt見込めるかを比べます（金額は空欄でも可。空欄のときは還元率で比較します）。</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <input id="rank-shop" type="text" placeholder="店舗名（例: すき家、ローソン）" oninput="renderPointRank()" style="flex:1;min-width:160px;font-size:12px;padding:9px 12px;">
@@ -1422,7 +1385,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 <div id="pane-transactions" class="tab-pane space-y-4">
   <!-- 請求情報（カード別） -->
   <div id="wallet-cards-section">
-    <div id="wallet-cards-empty" style="display:none;font-size:11px;color:var(--text3);padding:16px;text-align:center;background:var(--card2);border-radius:14px;">引き落とし設定済みのカードがありません。「同期」タブの「引き落とし設定」から登録できます。</div>
+    <div id="wallet-cards-empty" style="display:none;font-size:11px;color:var(--text3);padding:16px;text-align:center;background:var(--card2);border-radius:14px;">引き落とし設定済みのカードがありません。「設定」タブの「引き落とし設定」から登録できます。</div>
     <div id="def-wallet" style="font-size:10px;color:var(--text3);line-height:1.6;padding:0 2px 8px;">📐 集計の定義：カードの請求額は、各カードの締め日で区切った利用期間（取引日ベース）の合計です。「集計対象外」の取引も請求額には含むため、ホームの月合計（暦月・集計対象外を除く）とは一致しないことがあります。</div>
     <div id="wallet-cards-wrap">
       <div id="wallet-cards-list" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:12px;scrollbar-width:none;"></div>
@@ -1548,6 +1511,44 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 </div>
 
 <div id="pane-sync" class="tab-pane space-y-6">
+  <!-- 還元プログラム設定（ポイントタブから移動） -->
+  <div id="pt-settings" class="card p-5 space-y-5">
+    <div><div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>還元プログラム設定</div><div class="pt-desc">ポイント計算の基本設定。U25特別特約が自動反映されます</div></div>
+    <div class="space-y-3 pt-3" style="border-top:1px solid var(--border);">
+      <div style="font-size:11px;font-weight:700;color:var(--green);"><span class="pt-dot" style="background:var(--green);"></span>三井住友カード (Olive)</div>
+      <div class="space-y-1.5">
+        <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">Vポイントアッププログラム加算</span><span id="ui-vprog-rate" style="font-weight:700;color:var(--primary);">+8.0%</span></div>
+        <input id="slider-vprog" type="range" min="0" max="15" step="0.5" value="8" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
+      </div>
+      <div class="space-y-1.5">
+        <div class="flex justify-between" style="font-size:11px;"><span style="color:var(--text2);">セブン-イレブン特約加算</span><span id="ui-seven-rate" style="font-weight:700;color:var(--primary);">+2.5%</span></div>
+        <input id="slider-seven" type="range" min="0" max="15" step="0.5" value="9.5" class="w-full accent-color:var(--primary)" style="background:none;border:none;">
+        <div style="font-size:9px;color:var(--text3);">セブン-イレブンのみ独自の加算率（上の特約店とは別枠）</div>
+      </div>
+      <div class="pt-2 space-y-2" style="border-top:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);">U25特別特約</div>
+        <div style="background:var(--primary-light);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;">
+          <div class="flex justify-between font-bold" style="color:var(--text);">対象携帯料金<span style="color:var(--primary);">+1.5%</span></div>
+          <div style="color:var(--text3);margin-top:2px;">基本0.5%＋特約→合計 <strong>2.0%</strong></div>
+        </div>
+        <div style="background:var(--primary-light);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;">
+          <div class="flex justify-between font-bold" style="color:var(--text);">PayPay支払い<span style="color:var(--primary);">+0.5%</span></div>
+          <div style="color:var(--text3);margin-top:2px;">PayPay連携＋Olive→ <strong>1.0%</strong></div>
+        </div>
+      </div>
+      <div style="background:var(--green-light);padding:12px;border-radius:10px;border:1px solid var(--border);font-size:11px;color:var(--text);">
+        <div class="flex justify-between font-semibold"><span>通常店舗</span><span>0.5%</span></div>
+        <div class="flex justify-between font-semibold mt-1"><span>特約店合計</span><span id="ui-vtotal-rate">10.0%</span></div>
+      </div>
+    </div>
+    <div class="space-y-2 pt-3" style="border-top:1px solid var(--border);">
+      <div style="font-size:11px;font-weight:700;color:#9c4f68;"><span class="pt-dot" style="background:#c9788f;"></span>PayPayカード / クレジット</div>
+      <div style="background:var(--red-light);padding:12px;border-radius:10px;border:1px solid var(--border);font-size:10px;color:var(--text);">
+        <div class="font-bold">・通常還元率: 200円ごとに2ポイント(1.0%)</div>
+        <div style="margin-top:4px;color:var(--text2);">※都度計算 — 200円未満は0 pt</div>
+      </div>
+    </div>
+  </div>
   <!-- クレジットカード引き落とし設定 -->
   <div class="card p-4">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -1914,8 +1915,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
     <span style="font-size:9px;">資産</span>
   </button>
   <button class="tab-b" data-tab="sync" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 6px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-    <span style="font-size:9px;">同期</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+    <span style="font-size:9px;">設定</span>
   </button>
   <button class="tab-b tab-campaign" data-tab="campaign" style="display:none;flex-direction:column;align-items:center;gap:3px;padding:0 6px 8px;background:none;border:none;cursor:pointer;min-width:56px;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
@@ -1936,6 +1937,11 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
         <div style="display:flex;gap:6px;"><button type="button" id="ledger-kind-in" onclick="setLedgerKind('in')">入金</button><button type="button" id="ledger-kind-out" onclick="setLedgerKind('out')">出金</button></div>
         <div style="display:flex;gap:6px;"><input id="ledger-date" type="date" style="flex:1;min-width:0;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"><input id="ledger-amount" type="number" inputmode="numeric" placeholder="金額" style="flex:1;min-width:0;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
         <div style="display:flex;gap:6px;"><input id="ledger-memo" type="text" placeholder="メモ（任意・例: 家賃）" style="flex:1;min-width:0;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"><button type="button" class="btn btn-primary" onclick="addLedgerTx()" style="font-size:11.5px;">記録</button></div>
+        <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text);cursor:pointer;padding:4px 0;"><input type="checkbox" id="ledger-also" class="sw" onchange="document.getElementById('ledger-also-opts').style.display=this.checked?'flex':'none'">通常の取引履歴にも登録する</label>
+        <div id="ledger-also-opts" style="display:none;flex-direction:column;gap:6px;">
+          <select id="ledger-cat" style="width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select>
+          <div style="font-size:9.5px;color:var(--text3);line-height:1.6;">出金は支出、入金は収入として登録します（決済手段は口座名）。登録後は口座明細と取引履歴が別々になり、片方を削除してももう片方は残ります。</div>
+        </div>
         <div style="font-size:9.5px;color:var(--text3);line-height:1.6;">記録すると残高が自動で増減します。未来の日付は入力できません（入金予定は「口座・給料」の給料の入力へ）。</div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;"><button type="button" onclick="shiftLedgerMonth(-1)" class="btn" style="font-size:12px;">◀</button><span id="ledger-month" style="font-size:12.5px;font-weight:700;color:var(--text);"></span><button type="button" onclick="shiftLedgerMonth(1)" class="btn" style="font-size:12px;">▶</button></div>
@@ -6545,6 +6551,9 @@ function openLedger(id){
   _ledger.acc=id; const n=new Date(); _ledger.month=n.getFullYear()+'/'+String(n.getMonth()+1).padStart(2,'0'); _ledger.kind='out';
   const d=document.getElementById('ledger-date'); if(d) d.value=ymdKey(n);
   ['ledger-amount','ledger-memo'].forEach(i=>{ const e=document.getElementById(i); if(e) e.value=''; });
+  const also=document.getElementById('ledger-also'); if(also){ also.checked=false; }
+  const ao=document.getElementById('ledger-also-opts'); if(ao) ao.style.display='none';
+  const lc=document.getElementById('ledger-cat'); if(lc){ lc.innerHTML=CATS.map(c=>`<option value="${c}"${c==='その他'?' selected':''}>${c}</option>`).join(''); }
   setLedgerKind('out'); renderLedger(); showModal('ledger-modal-overlay');
 }
 function setLedgerKind(k){
@@ -6584,12 +6593,27 @@ function addLedgerTx(){
   if(!dv||isNaN(av)||av<=0){ toast('日付と金額（1円以上）を入力してください','error'); return; }
   if(bankDateOnly(new Date(dv.replace(/-/g,'/')))>bankDateOnly(new Date())){ toast('未来の日付は入力できません。入金予定は「給料の入力」を使ってください','error'); return; }
   const delta=Math.round(av)*(_ledger.kind==='in'?1:-1);
+  const alsoEl=document.getElementById('ledger-also');
+  const alsoTx=!!(alsoEl&&alsoEl.checked);
+  // 決済手段: 口座名と同名の既存の決済手段があればそれを、口座名が基本名を含む既存の手段（例:「住信SBI - デビット」）があればそれを、なければ口座名を使う
+  const known=[...new Set([...Object.keys(DEFAULT_METHOD_COLORS),...(S.customMethods||[]),...S.transactions.map(t=>t.method).filter(Boolean)])];
+  const accMethod=known.find(m=>m===acc.name)||known.find(m=>{ const b=m.split(/\s*-\s*/)[0]; return m.includes(' - ')&&b.length>=3&&acc.name.includes(b); })||acc.name;
+  if(alsoTx&&!confirm((delta>0?'収入':'支出')+'として通常の取引履歴にも登録します。\n\n'+dv.replace(/-/g,'/')+'　'+(memo||(delta>0?'口座入金':'口座出金'))+'　¥'+Math.abs(delta).toLocaleString()+(delta>0?'':'\n決済手段：'+accMethod)+'\n\nよろしいですか？（口座明細とは別々のデータになります）')) return;
   S.bankTx=S.bankTx||[];
   S.bankTx.push({id:'btx_'+uid(),accountId:acc.id,date:dv.replace(/-/g,'/'),kind:_ledger.kind,delta,memo});
   acc.balance+=delta; acc.balanceUpdatedAt=new Date().toISOString();
   document.getElementById('ledger-amount').value=''; document.getElementById('ledger-memo').value='';
   const mk=dv.slice(0,7).replace('-','/'); if(mk!==_ledger.month) _ledger.month=mk;
-  bankTouch(); toast(delta>0?'入金を記録しました':'出金を記録しました','success');
+  bankTouch();
+  if(alsoTx){
+    const catSel=document.getElementById('ledger-cat');
+    const isIn=delta>0;
+    const tx={id:genId(),date:dv.replace(/-/g,'/'),shop:memo||(isIn?'口座入金':'口座出金'),categoryMajor:(catSel&&catSel.value)||'その他',categoryMinor:'',method:isIn?'収入':accMethod,amount:Math.abs(delta),type:isIn?'income':'expense',source:'manual',memo:'口座「'+acc.name+'」の入出金より',updatedAt:new Date().toISOString()};
+    S.transactions.push(tx);
+    recalc();save();renderAll();
+    if(typeof sbUser!=='undefined'&&sbUser) sbUpsertTransaction(tx).then(ok=>{ if(!ok) console.warn('Supabase同期失敗（ローカル保存は成功）:',tx.id); });
+  }
+  toast((delta>0?'入金を記録しました':'出金を記録しました')+(alsoTx?'（取引履歴にも登録）':''),'success');
 }
 function removeLedgerTx(id){
   const x=(S.bankTx||[]).find(e=>e.id===id); if(!x) return;
