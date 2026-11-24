@@ -920,8 +920,8 @@ input.sw:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 #asset-hero .ah-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.14);margin:14px 4px 0;}
 #asset-hero .ah-bar i{display:block;height:100%;transition:width .8s var(--ease-out,ease);}
 #asset-hero .ah-gain{font-size:13px;color:rgba(255,255,255,.75);margin-top:12px;}
-#asset-hero .ah-gain [style*="#2f7d57"]{color:#d9e8a4!important;}
-#asset-hero .ah-gain [style*="#b5443a"]{color:#ffb4a6!important;}
+#asset-hero .ah-gain [style*="#2f7d57"],#asset-hero .ah-gain [style*="--green"]{color:#d9e8a4!important;}
+#asset-hero .ah-gain [style*="#b5443a"],#asset-hero .ah-gain [style*="--red"]{color:#ffb4a6!important;}
 #asset-hero .ah-gain [style*="--text3"]{color:rgba(255,255,255,.6)!important;}
 #asset-hero .ah-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 #asset-hero .ah-tile{background:rgba(255,255,255,.10);border-radius:18px;padding:10px 12px;display:flex;flex-direction:column;}
@@ -937,7 +937,23 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 #pane-assets>div:not(#asset-hero){border-radius:24px!important;box-shadow:var(--card-shadow);padding:18px!important;}
 #pane-assets>div:not(#asset-hero)>div>[style*="font-weight:700"][style*="color:var(--text2)"],
 #pane-assets>div:not(#asset-hero)>[style*="font-weight:700"][style*="color:var(--text2)"]{font-size:14px!important;color:var(--text)!important;}
-#asset-bank-list>div,#asset-broker-list>div{border-radius:20px!important;padding:12px 14px!important;}
+#asset-bank-list>div,#asset-broker-list>div,#asset-rpay-box>div{border-radius:20px!important;padding:12px 14px!important;}
+/* ボタン・バッジ・セグメント統一（ライト/ダーク両対応） */
+.btn:not(.btn-primary):not(.btn-ghost):not(.btn-danger):not(.hh-btn):not(.ah-btn){background:var(--card2);color:var(--text2);border:1px solid var(--border);}
+.btn:not(.btn-primary):not(.btn-ghost):not(.btn-danger):not(.hh-btn):not(.ah-btn):hover{background:var(--border2);}
+.btn-danger{background:var(--red-light);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 25%,transparent);}
+.btn-danger:hover{filter:brightness(.97);}
+.fb-bdg{display:inline-flex;align-items:center;gap:4px;border-radius:999px;font-weight:600;line-height:1.4;white-space:nowrap;}
+.fb-bdg-sm{padding:1px 7px;font-size:10px;}
+.fb-bdg-md{padding:4px 10px;font-size:11px;}
+.fb-bdg-pt{background:var(--primary-light);color:var(--primary);}
+.fb-bdg-ok{background:var(--green-light);color:var(--green);}
+.fb-bdg-err{background:var(--red-light);color:var(--red);}
+.fb-bdg-warn{background:var(--amber-light);color:var(--amber);}
+.fb-bdg-muted{background:var(--card2);color:var(--text2);border:1px solid var(--border);}
+.chart-tgl-track{display:inline-flex;gap:2px;background:var(--card2);padding:3px;border-radius:999px;border:1px solid var(--border2);}
+.chart-tgl{padding:5px 12px;border-radius:999px;border:1px solid transparent;cursor:pointer;font-size:11px;font-weight:600;background:transparent;color:var(--text3);}
+.chart-tgl.active-tgl{background:var(--card);color:var(--primary);border-color:var(--border);box-shadow:0 1px 2px rgba(0,0,0,.06);}
 /* ウォレット: 請求カードを銀行カード調に（変数を差し替えるだけ） */
 .wc-card{--text:#fff;--text2:rgba(255,255,255,.8);--text3:rgba(255,255,255,.62);--border:rgba(255,255,255,.16);background:var(--hero)!important;color:#fff;border:none!important;border-radius:28px!important;}
 .wc-card .wc-amt{font-size:26px!important;letter-spacing:-.03em;font-family:'Figtree','Noto Sans JP',sans-serif!important;font-variant-numeric:tabular-nums;}
@@ -1099,17 +1115,20 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
         <div style="font-size:10px;color:#77756f;margin-top:3px;">タップして内訳を見る</div>
       </div>
       <div style="text-align:right;position:relative;">
-        <div id="ui-total-pts" style="font-size:32px;font-weight:800;color:#fbbf24;font-family:'Inter',monospace;letter-spacing:-1px;">0 pt</div>
+        <div id="ui-total-pts" style="font-size:32px;font-weight:800;color:#fbbf24;font-family:var(--serif);font-variant-numeric:tabular-nums;letter-spacing:-1px;">0 pt</div>
         <div style="font-size:10px;color:#9a9890;margin-top:2px;">還元率: <span id="ui-avg-rate" style="font-weight:700;color:#bbf7d0;">0.0%</span></div>
       </div>
     </div>
     <div id="budget-card-wrap" class="card p-4 flex flex-col" role="button" tabindex="0" title="タップで今月の収支を表示" onclick="openBalanceModal(event)" onkeydown="if(event.key==='Enter')openBalanceModal(event)" style="min-height:120px;transition:background .3s;cursor:pointer;">
       <!-- ヘッダー行 -->
-      <div class="flex items-center justify-between" style="margin-bottom:10px;">
-        <span style="font-size:11px;font-weight:600;color:var(--text3);">今月の予算 <span style="font-size:9px;font-weight:600;color:var(--primary);">・タップで収支</span><span style="display:block;font-size:9px;font-weight:400;color:var(--text3);margin-top:2px;">選択月の取引日ベース・立替／集計対象外は含まない</span></span>
-        <div style="display:flex;align-items:center;gap:6px;">
+      <div class="flex items-start justify-between gap-2" style="margin-bottom:10px;">
+        <div>
+          <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span>今月の予算 <span style="font-size:10px;font-weight:600;color:var(--primary);">・タップで収支</span></span></div>
+          <div style="font-size:9px;font-weight:400;color:var(--text3);margin-top:4px;">選択月の取引日ベース・立替／集計対象外は含まない</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex:none;">
           <span id="ui-budget-status-badge" style="display:none;font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;"></span>
-          <button id="btn-edit-budget" style="font-size:10px;color:var(--primary);font-weight:600;background:none;border:none;cursor:pointer;padding:0;">編集</button>
+          <button id="btn-edit-budget" type="button" class="btn btn-ghost" style="font-size:11px;padding:4px 12px;min-height:32px;">編集</button>
         </div>
       </div>
 
@@ -1136,8 +1155,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
   <!-- カテゴリ別予算比較カード（常時表示） -->
   <div class="card p-4">
     <div class="flex items-center justify-between" style="margin-bottom:12px;">
-      <span style="font-size:11px;font-weight:600;color:var(--text3);">カテゴリ別予算</span>
-      <button onclick="openBudgetModal()" style="font-size:10px;color:var(--primary);font-weight:600;background:none;border:none;cursor:pointer;padding:0;">編集</button>
+      <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.2"/></svg></span>カテゴリ別予算</div>
+      <button type="button" class="btn btn-ghost" onclick="openBudgetModal()" style="font-size:11px;padding:4px 12px;min-height:32px;">編集</button>
     </div>
 
     <!-- ピン留めカテゴリ（昼食（大学）など、ユーザーが特に見たいもの） -->
@@ -1154,8 +1173,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
   <!-- 今月の引き落とし予定（クレジットカード） -->
   <div class="card p-4" id="monthly-debit-card" style="display:none;">
     <div class="flex items-center justify-between" style="margin-bottom:12px;">
-      <span style="font-size:11px;font-weight:600;color:var(--text3);">💳 今月の引き落とし予定</span>
-      <span id="monthly-debit-total" style="font-size:12px;font-weight:700;font-family:monospace;color:var(--text);">¥0</span>
+      <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>今月の引き落とし予定</div>
+      <span id="monthly-debit-total" style="font-size:14px;font-weight:700;font-family:monospace;color:var(--text);">¥0</span>
     </div>
     <div id="monthly-debit-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     <div id="monthly-debit-empty" style="display:none;font-size:11px;color:var(--text3);padding:8px 0;text-align:center;line-height:1.7;">今月引き落とし予定の支払いはありません。</div>
@@ -1163,9 +1182,9 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 
   <!-- 口座の残高で引き落とせるか（引き落とし設定の有無にかかわらず常に表示） -->
   <div class="card p-4" id="bank-judge-card">
-    <div class="flex items-center justify-between" style="margin-bottom:10px;">
-      <span style="font-size:11px;font-weight:600;color:var(--text3);">🏦 口座の残高で引き落とせる？（来月分まで）</span>
-      <button type="button" class="btn" onclick="openBankModal()" style="font-size:10.5px;">口座・給料</button>
+    <div class="flex items-center justify-between gap-2" style="margin-bottom:10px;">
+      <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10M2 10l10-6 10 6"/></svg></span>口座の残高で引き落とせる？（来月分まで）</div>
+      <button type="button" class="btn btn-ghost" onclick="openBankModal()" style="font-size:11px;padding:4px 12px;min-height:32px;flex:none;">口座・給料</button>
     </div>
     <div id="bank-judge" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
@@ -1173,8 +1192,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
   <!-- 今月のサブスク（サブスクリプションカテゴリの当月取引を集計表示） -->
   <div class="card p-4">
     <div class="flex items-center justify-between" style="margin-bottom:12px;">
-      <span style="font-size:11px;font-weight:600;color:var(--text3);">今月のサブスク</span>
-      <span id="ui-sub-month-total" style="font-size:12px;font-weight:700;font-family:monospace;color:var(--text);">¥0</span>
+      <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg></span>今月のサブスク</div>
+      <span id="ui-sub-month-total" style="font-size:14px;font-weight:700;font-family:monospace;color:var(--text);">¥0</span>
     </div>
     <div id="sub-glance-rows" style="display:flex;flex-direction:column;gap:8px;"></div>
     <div id="sub-glance-empty" style="display:none;font-size:11px;color:var(--text3);padding:8px 0;text-align:center;line-height:1.7;">「サブスクリプション」カテゴリで決済登録すると、ここに今月分が表示されます。<br>登録・自動反映は下の「今月の固定費」から行えます。</div>
@@ -1182,11 +1201,11 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 
   <!-- 今月の固定費 -->
   <div class="card p-4">
-    <div class="flex items-center justify-between" style="margin-bottom:4px;">
-      <span style="font-size:11px;font-weight:600;color:var(--text3);">今月の固定費</span>
+    <div class="flex items-center justify-between" style="margin-bottom:8px;">
+      <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>今月の固定費</div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span id="ui-fixed-month-total" style="font-size:12px;font-weight:700;font-family:monospace;color:var(--text);">¥0</span>
-        <button onclick="openFixedCostModal()" style="font-size:10px;color:var(--primary);font-weight:700;background:none;border:none;cursor:pointer;padding:0;">＋追加</button>
+        <span id="ui-fixed-month-total" style="font-size:14px;font-weight:700;font-family:monospace;color:var(--text);">¥0</span>
+        <button type="button" class="btn btn-ghost" onclick="openFixedCostModal()" style="font-size:11px;padding:4px 12px;min-height:32px;">＋ 追加</button>
       </div>
     </div>
 
@@ -1235,9 +1254,9 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
   </div>
 
   <!-- 立替サマリーバナー（立替がある月のみ表示） -->
-  <div id="ui-kaetate-banner" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
-    <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+  <div id="ui-kaetate-banner" class="card p-4" style="display:none;">
+    <div class="pt-title" style="margin-bottom:12px;">
+      <span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span>
       立替管理
     </div>
     <div class="grid grid-cols-3 gap-3">
@@ -1251,7 +1270,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       </div>
       <div>
         <div class="stat-label">未回収残高</div>
-        <div id="ui-kaetate-pending" style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;">¥0</div>
+        <div id="ui-kaetate-pending" style="font-size:18px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;">¥0</div>
       </div>
     </div>
   </div>
@@ -1259,21 +1278,27 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
   <!-- グラフ -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="card p-5">
-      <div class="flex justify-between items-center">
-        <div><div style="font-size:13px;font-weight:700;color:var(--text);">💳 支払い手段別支出</div><div style="font-size:10px;color:var(--text3);">決済手段別の支出比率</div></div>
-        <div class="flex gap-1" style="background:var(--card2);padding:2px;border-radius:8px;font-size:10px;font-weight:600;">
-          <button id="btn-pay-donut" class="chart-tgl active-tgl" style="padding:4px 8px;border-radius:6px;border:none;cursor:pointer;">円</button>
-          <button id="btn-pay-bar"   class="chart-tgl"             style="padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);">棒</button>
+      <div class="flex justify-between items-center gap-2">
+        <div>
+          <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>支払い手段別支出</div>
+          <div class="pt-desc">決済手段別の支出比率</div>
+        </div>
+        <div class="chart-tgl-track">
+          <button id="btn-pay-donut" type="button" class="chart-tgl active-tgl">円</button>
+          <button id="btn-pay-bar"   type="button" class="chart-tgl">棒</button>
         </div>
       </div>
       <div style="height:256px;margin-top:16px;display:flex;align-items:center;justify-content:center;"><canvas id="chart-pay"></canvas></div>
     </div>
     <div class="card p-5">
-      <div class="flex justify-between items-center">
-        <div><div style="font-size:13px;font-weight:700;color:var(--text);">🏷️ カテゴリ別支出</div><div style="font-size:10px;color:var(--text3);">食費のみ小カテゴリで分類</div></div>
-        <div class="flex gap-1" style="background:var(--card2);padding:2px;border-radius:8px;font-size:10px;font-weight:600;">
-          <button id="btn-cat-stack" class="chart-tgl active-tgl" style="padding:4px 8px;border-radius:6px;border:none;cursor:pointer;">積上</button>
-          <button id="btn-cat-donut" class="chart-tgl"            style="padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);">円</button>
+      <div class="flex justify-between items-center gap-2">
+        <div>
+          <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.2"/></svg></span>カテゴリ別支出</div>
+          <div class="pt-desc">食費のみ小カテゴリで分類</div>
+        </div>
+        <div class="chart-tgl-track">
+          <button id="btn-cat-stack" type="button" class="chart-tgl active-tgl">積上</button>
+          <button id="btn-cat-donut" type="button" class="chart-tgl">円</button>
         </div>
       </div>
       <div style="height:256px;margin-top:16px;display:flex;align-items:center;justify-content:center;"><canvas id="chart-cat"></canvas></div>
@@ -1473,39 +1498,39 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       <button type="button" class="ah-btn ah-btn-solid" onclick="openBrokerModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>証券を管理</button>
     </div>
   </div>
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">資産の推移</div>
+  <div class="card" style="padding:16px;">
+    <div class="pt-title" style="margin-bottom:10px;"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span>資産の推移</div>
     <div id="asset-range" style="display:flex;gap:6px;margin-bottom:10px;"></div>
     <div style="position:relative;height:220px;"><canvas id="asset-chart"></canvas></div>
     <div id="asset-chart-msg" style="display:none;font-size:11px;color:var(--text3);line-height:1.7;padding:24px 8px;text-align:center;">推移は、残高や評価額を更新するたびに日付つきで記録され、ここに溜まっていきます。2日分以上の記録がそろうとグラフが表示されます（過去の分はさかのぼれません）。</div>
   </div>
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">銀行口座</div>
+  <div class="card" style="padding:16px;">
+    <div class="pt-title" style="margin-bottom:10px;"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10M2 10l10-6 10 6"/></svg></span>銀行口座</div>
     <div id="asset-bank-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
-  <div id="asset-rpay-card" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <span style="font-size:12px;font-weight:700;color:var(--text2);">楽天ペイ残高</span>
+  <div id="asset-rpay-card" class="card" style="padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>楽天ペイ残高</div>
       <div style="display:flex;gap:6px;">
         <button type="button" class="btn btn-primary" onclick="openRpayCashModal('charge')" style="font-size:11px;padding:5px 11px;">⚡ チャージ</button>
-        <button type="button" class="btn" onclick="openRpayCashModal('edit')" style="font-size:11px;padding:5px 11px;">管理</button>
+        <button type="button" class="btn btn-ghost" onclick="openRpayCashModal('edit')" style="font-size:11px;padding:5px 11px;">管理</button>
       </div>
     </div>
     <div id="asset-rpay-box"></div>
   </div>
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--text2);">証券口座</span><button type="button" class="btn" onclick="openBrokerModal()" style="font-size:11px;">📈 管理</button></div>
+  <div class="card" style="padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>証券口座</div><button type="button" class="btn btn-ghost" onclick="openBrokerModal()" style="font-size:11px;padding:5px 11px;">📈 管理</button></div>
     <div id="asset-broker-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
-  <div id="asset-market-card" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
+  <div id="asset-market-card" class="card" style="padding:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
       <div style="min-width:0;">
-        <div style="font-size:12px;font-weight:700;color:var(--text2);">株価・指数推移</div>
-        <div id="mkt-updated" style="font-size:9.5px;color:var(--text3);margin-top:1px;"></div>
+        <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>株価・指数推移</div>
+        <div id="mkt-updated" style="font-size:9.5px;color:var(--text3);margin-top:3px;"></div>
       </div>
       <div style="display:flex;gap:6px;flex:none;">
-        <button type="button" id="mkt-refresh-btn" class="btn" onclick="fetchMarketData(true)" style="font-size:11px;padding:5px 11px;">↻ 更新</button>
-        <button type="button" class="btn" onclick="openMarketModal()" style="font-size:11px;padding:5px 11px;">⚙ 設定</button>
+        <button type="button" id="mkt-refresh-btn" class="btn btn-ghost" onclick="fetchMarketData(true)" style="font-size:11px;padding:5px 11px;">↻ 更新</button>
+        <button type="button" class="btn btn-ghost" onclick="openMarketModal()" style="font-size:11px;padding:5px 11px;">⚙ 設定</button>
       </div>
     </div>
     <div id="mkt-chips" class="mkt-chips"></div>
@@ -1514,8 +1539,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
     <div id="mkt-chart-wrap" style="display:none;position:relative;height:200px;"><canvas id="mkt-chart"></canvas></div>
     <div id="mkt-msg" style="font-size:11px;color:var(--text3);line-height:1.7;padding:14px 4px;text-align:center;">右上の「⚙ 設定」からGAS URLを登録すると、証券口座の保有銘柄から自動で株価・指数推移が表示されます。</div>
   </div>
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">証券の内訳</div>
+  <div class="card" style="padding:16px;">
+    <div class="pt-title" style="margin-bottom:10px;"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg></span>証券の内訳</div>
     <div id="asset-broker-break"></div>
   </div>
 </div>
@@ -1563,7 +1588,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
   <!-- クレジットカード引き落とし設定 -->
   <div class="card p-4">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <span style="font-size:12px;font-weight:700;color:var(--text2);display:inline-flex;align-items:center;gap:8px;">💳 引き落とし設定 <button type="button" onclick="openPayGuide()" title="決済方法の登録ガイド" aria-label="決済方法の登録ガイド" class="pg-help">？</button></span>
+      <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><span>引き落とし設定</span><button type="button" onclick="openPayGuide()" title="決済方法の登録ガイド" aria-label="決済方法の登録ガイド" class="pg-help">？</button></div>
       <button onclick="openCardSettingModal()" class="btn btn-ghost" style="font-size:11px;padding:5px 12px;">＋ 追加</button>
     </div>
     <div style="font-size:9.5px;color:var(--text3);margin-bottom:10px;">決済手段ごとに締め日・引き落とし日を設定すると、ホームに今月の引き落とし予定が表示されます</div>
@@ -1579,7 +1604,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
     </button>
   </div>
   <div class="card p-5 sm:p-8 space-y-6">
-    <div><div style="font-size:14px;font-weight:700;color:var(--text);">🔗 Googleスプレッドシート自動連携</div><div style="font-size:11px;color:var(--text3);margin-top:4px;">CSV公開URL or 通常の共有URLを入力するだけで自動同期</div></div>
+    <div><div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></span>Googleスプレッドシート自動連携</div><div class="pt-desc">CSV公開URL or 通常の共有URLを入力するだけで自動同期</div></div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" style="font-size:11px;">
       <div style="background:var(--green-light);padding:12px;border-radius:12px;border:1px solid var(--border);">
         <div style="font-weight:700;color:var(--green);">📌 方式A：CSV公開URL（推奨）</div>
@@ -1704,13 +1729,13 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
     </div>
 
     <!-- 楽天ペイの還元率（月別） -->
-    <div class="card" style="margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">💳 楽天ペイの還元率（月別）</div>
+    <div style="border-top:1px solid var(--border);padding-top:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">💳 楽天ペイの還元率（月別）</div>
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.6;">支払い元（チャージ残高・楽天カード・ポイント払い）にかかわらず、楽天ペイ全体で月ごとに1つの還元率です。設定していない月は、直近の過去月の値を引き継ぎます（どの月も未設定なら0.5%）。取引ごとの「還元率（任意）」があればそちらが優先されます。</div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:11px;">
         <label>対象月 <input id="rpay-rate-month" type="month" onchange="renderRpayRateUi()" style="padding:4px 6px;font-size:11px;"></label>
         <label>還元率 <input id="rpay-rate-input" type="number" step="0.1" min="0" style="width:64px;padding:4px 6px;font-size:11px;" onchange="setRpayRate(this.value)"> %</label>
-        <button type="button" class="btn" id="rpay-rate-clear" onclick="clearRpayRate()" style="font-size:10.5px;">この月の設定を解除</button>
+        <button type="button" class="btn btn-ghost" id="rpay-rate-clear" onclick="clearRpayRate()" style="font-size:10.5px;">この月の設定を解除</button>
       </div>
       <div id="rpay-rate-note" style="font-size:10px;color:var(--text3);margin-top:6px;line-height:1.6;"></div>
     </div>
@@ -1827,18 +1852,12 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
   </div>
 </div>
 
-</main>
-
-<!-- ボトムナビ（スマホ） -->
 <!-- ==================== キャンペーンタブ ==================== -->
 <div id="pane-campaign" class="tab-pane space-y-4">
   <div class="card p-4">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-      <span style="font-size:20px;">🎰</span>
-      <div>
-        <div style="font-size:14px;font-weight:800;color:var(--text);">超PayPay祭 — PayPayスクラッチくじ</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px;">2026年6月19日（金）〜 7月31日（木）</div>
-      </div>
+    <div style="margin-bottom:16px;">
+      <div class="pt-title"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg></span>超PayPay祭 — PayPayスクラッチくじ</div>
+      <div class="pt-desc">2026年6月19日（金）〜 7月31日（木）</div>
     </div>
 
     <div style="background:var(--card2);border-radius:12px;padding:14px 16px;margin-bottom:14px;">
@@ -1851,15 +1870,15 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 
     <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">🏆 当選等級と還元率</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
-      <div style="display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,rgba(245,158,11,.15),transparent);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 14px;">
+      <div style="display:flex;align-items:center;gap:10px;background:var(--amber-light);border:1px solid var(--border);border-radius:12px;padding:10px 14px;">
         <span style="font-size:20px;">🥇</span>
         <div style="flex:1;">
           <div style="font-size:12px;font-weight:800;color:var(--text);">1等</div>
           <div style="font-size:10px;color:var(--text3);">決済金額の最大100%をPayPayポイントで還元</div>
         </div>
-        <span style="font-size:13px;font-weight:800;color:#c08a35;">+100%</span>
+        <span style="font-size:13px;font-weight:800;color:var(--amber);">+100%</span>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+      <div style="display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;">
         <span style="font-size:20px;">🥈</span>
         <div style="flex:1;">
           <div style="font-size:12px;font-weight:800;color:var(--text);">2等</div>
@@ -1867,7 +1886,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
         </div>
         <span style="font-size:13px;font-weight:800;color:var(--primary);">+5%</span>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+      <div style="display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;">
         <span style="font-size:20px;">🥉</span>
         <div style="flex:1;">
           <div style="font-size:12px;font-weight:800;color:var(--text);">3等</div>
@@ -1877,17 +1896,21 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       </div>
     </div>
 
-    <div style="background:rgba(21,128,61,.08);border:1px solid rgba(21,128,61,.2);border-radius:10px;padding:12px 14px;font-size:10px;color:var(--text2);line-height:1.7;">
+    <div style="background:var(--primary-light);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:10px;color:var(--text2);line-height:1.7;">
       💡 取引登録時にスクラッチくじの当選等級を選択すると、Finbooのポイント計算に自動的に反映されます。
     </div>
   </div>
 
   <!-- 今月のくじ当選まとめ -->
   <div class="card p-4">
-    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;">📊 今月のスクラッチくじ獲得ポイント</div>
+    <div class="pt-title" style="margin-bottom:12px;"><span class="pt-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>今月のスクラッチくじ獲得ポイント</div>
     <div id="campaign-summary" style="font-size:11px;color:var(--text3);">データを読み込み中...</div>
   </div>
 </div>
+
+</main>
+
+<!-- ボトムナビ（スマホ） -->
 
 <button id="ai-chat-open-btn" onclick="openAiChatModal()" style="display:none;position:fixed;right:16px;bottom:calc(78px + var(--sab, 0px));width:52px;height:52px;border-radius:50%;background:#fff;border:none;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:60;cursor:pointer;align-items:center;justify-content:center;padding:0;">
   <svg viewBox="0 0 960 960" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
@@ -2060,8 +2083,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 </div>
 
 <!-- ==================== 設定モーダル ==================== -->
-<div id="settings-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:8400;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)hideModal('settings-modal-overlay')">
-  <div style="background:var(--card);border:1px solid var(--border);width:min(440px,100%);max-height:90vh;overflow-y:auto;position:relative;z-index:1;">
+<div id="settings-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8400;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);" onclick="if(event.target===this)hideModal('settings-modal-overlay')">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(440px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
       <span style="font-size:15px;font-weight:700;color:var(--text);">設定</span>
       <button type="button" onclick="hideModal('settings-modal-overlay')" aria-label="閉じる" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
@@ -2198,7 +2221,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       </div>
       <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border);">
         <button onclick="saveCardSettingModal()" class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;">保存する</button>
-        <button id="cs-delete-btn" onclick="deleteCardSetting()" style="display:none;background:var(--red-light);color:var(--red);" class="btn">削除</button>
+        <button id="cs-delete-btn" onclick="deleteCardSetting()" style="display:none;font-size:12px;" class="btn btn-danger">削除</button>
         <button onclick="hideModal('card-setting-modal-overlay')" class="btn btn-ghost" style="font-size:12px;">キャンセル</button>
       </div>
     </div>
@@ -2299,7 +2322,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
     <div id="dup-modal-body" style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;"></div>
     <div id="dup-modal-footer" style="padding:12px 20px;border-top:1px solid var(--border);display:none;align-items:center;justify-content:space-between;position:sticky;bottom:0;background:var(--card);">
       <span id="dup-selected-count" style="font-size:11px;color:var(--text3);">0件選択中</span>
-      <button id="dup-delete-btn" onclick="deleteSelectedDups()" class="btn" style="font-size:11px;background:var(--red,#b5443a);color:#fff;">選択した取引を削除</button>
+      <button id="dup-delete-btn" onclick="deleteSelectedDups()" class="btn btn-danger" style="font-size:11px;">選択した取引を削除</button>
     </div>
   </div>
 </div>
@@ -2336,7 +2359,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
           <option value="">未設定</option></select></div>
       <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border);">
         <button id="fc-save-btn" class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px;">保存する</button>
-        <button id="fc-delete-btn" class="btn" style="display:none;background:var(--red-light);color:var(--red);font-size:12px;">削除</button>
+        <button id="fc-delete-btn" class="btn btn-danger" style="display:none;font-size:12px;">削除</button>
         <button id="fc-cancel-btn" class="btn btn-ghost" style="font-size:12px;">キャンセル</button>
       </div>
     </div>
@@ -2402,12 +2425,12 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 
       <!-- 収入/支出トグル -->
       <div style="display:flex;gap:8px;margin-bottom:16px;">
-        <button id="tx-type-expense" onclick="setTxType('expense')"
-          style="flex:1;padding:8px;font-size:12px;font-weight:700;border-radius:10px;border:2px solid var(--red);background:var(--red);color:#fff;cursor:pointer;">
+        <button id="tx-type-expense" type="button" onclick="setTxType('expense')"
+          style="flex:1;padding:9px 12px;font-size:12px;font-weight:700;border-radius:999px;border:1.5px solid var(--red);background:var(--red-light);color:var(--red);cursor:pointer;">
           💸 支出
         </button>
-        <button id="tx-type-income" onclick="setTxType('income')"
-          style="flex:1;padding:8px;font-size:12px;font-weight:700;border-radius:10px;border:2px solid var(--border);background:var(--card2);color:var(--text3);cursor:pointer;">
+        <button id="tx-type-income" type="button" onclick="setTxType('income')"
+          style="flex:1;padding:9px 12px;font-size:12px;font-weight:700;border-radius:999px;border:1.5px solid var(--border);background:var(--card2);color:var(--text3);cursor:pointer;">
           💰 収入
         </button>
       </div>
@@ -2511,9 +2534,9 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 
       <!-- Vクーポン還元率（任意・追加分）：Oliveのみ -->
       <div id="tx-vcoupon-wrap" style="display:none;margin-bottom:14px;">
-        <label style="cursor:pointer;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;">
-          <input id="tx-mobile-order" type="checkbox" onchange="updateOliveTxInfo();" style="width:15px;height:15px;">
-          モバイルオーダーで支払った（タッチ決済と同じ還元率）
+        <label style="cursor:pointer;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;">
+          <input id="tx-mobile-order" type="checkbox" class="sw" onchange="updateOliveTxInfo();">
+          <span>モバイルオーダーで支払った（タッチ決済と同じ還元率）</span>
         </label>
         <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px;">Vクーポン還元率（任意・追加分・%）</label>
         <input id="tx-vcoupon" type="number" step="0.1" placeholder="未入力なら加算なし" style="width:100%;padding:9px 12px;font-size:12px;border-radius:10px;">
@@ -2599,8 +2622,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 
       <!-- ボタン -->
       <div style="display:flex;gap:8px;">
-        <button id="tx-modal-cancel" style="flex:1;padding:11px;font-size:12px;font-weight:700;background:var(--card2);color:var(--text2);border:1px solid var(--border);border-radius:12px;cursor:pointer;">キャンセル</button>
-        <button id="tx-modal-save" style="flex:2;padding:11px;font-size:12px;font-weight:700;background:var(--primary);color:#fff;border:none;border-radius:12px;cursor:pointer;">保存する</button>
+        <button id="tx-modal-cancel" type="button" class="btn btn-ghost" style="flex:1;min-height:42px;font-size:12px;">キャンセル</button>
+        <button id="tx-modal-save" type="button" class="btn btn-primary" style="flex:2;min-height:42px;font-size:12px;">保存する</button>
       </div>
     </div>
   </div>
@@ -6142,7 +6165,7 @@ function fmtMan(n){ const a=Math.abs(n); return (n<0?'−':'')+(a>=10000?(Math.r
 function renderAssets(){
   const box=document.getElementById('asset-summary'); if(!box) return;
   const t=calcAssetTotals();
-  const gainHtml=t.nP>0?`<span style="font-weight:700;color:${t.gain>=0?'#2f7d57':'#b5443a'};">${t.gain>=0?'+':'−'}${bankYen(Math.abs(t.gain)).replace('−','')}${t.principal>0?`（${t.gain>=0?'+':'−'}${Math.abs(t.gain/t.principal*100).toFixed(1)}%）`:''}</span>`:'<span style="color:var(--text3);">元本未入力</span>';
+  const gainHtml=t.nP>0?`<span style="font-weight:700;color:${t.gain>=0?'var(--green)':'var(--red)'};">${t.gain>=0?'+':'−'}${bankYen(Math.abs(t.gain)).replace('−','')}${t.principal>0?`（${t.gain>=0?'+':'−'}${Math.abs(t.gain/t.principal*100).toFixed(1)}%）`:''}</span>`:'<span style="color:var(--text3);">元本未入力</span>';
   const pct=v=>t.total>0?Math.round(v/t.total*100):0;
   box.innerHTML=`
     <div class="ah-top"><span class="ah-chip">総資産</span><span class="ah-tag">${t.any?'銀行＋証券':'未入力'}</span></div>
@@ -6157,7 +6180,7 @@ function renderAssets(){
     </div>`;
   if(box._lastTotal!==t.total){ box._lastTotal=t.total; fbCountUp(box.querySelector('.ah-total')); }
   const rb=document.getElementById('asset-range');
-  if(rb) rb.innerHTML=[['1m','1か月'],['3m','3か月'],['1y','1年'],['all','全期間']].map(([k,l])=>`<button type="button" onclick="setAssetRange('${k}')" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border-radius:8px;border:none;cursor:pointer;background:${_assetUI.range===k?'var(--primary)':'var(--card2)'};color:${_assetUI.range===k?'#fff':'var(--text3)'};">${l}</button>`).join('');
+  if(rb) rb.innerHTML=[['1m','1か月'],['3m','3か月'],['1y','1年'],['all','全期間']].map(([k,l])=>`<button type="button" onclick="setAssetRange('${k}')" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border-radius:999px;border:none;cursor:pointer;background:${_assetUI.range===k?'var(--primary)':'var(--card2)'};color:${_assetUI.range===k?'var(--primary-text)':'var(--text3)'};">${l}</button>`).join('');
   renderAssetChart(t);
   if(typeof renderMarketCard==='function') renderMarketCard();
   const accs=S.bankAccounts||[];
@@ -6165,20 +6188,20 @@ function renderAssets(){
   if(bl) bl.innerHTML=accs.length?accs.map(a=>`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
       <span class="pt-ico" style="width:40px;height:40px;border-radius:14px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10M2 10l10-6 10 6"/></svg></span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">${bankEsc(a.name)}</div><div style="font-size:9.5px;color:var(--text3);">${a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'時点':'残高未入力'}</div></div>
       <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${a.balance==null?'未入力':bankYen(a.balance)}</div>
-      <button type="button" class="btn" onclick="openLedger('${bankEsc(a.id)}')" style="font-size:10.5px;">明細</button></div>`).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">口座がありません。「口座・給料」から追加してください。</div>';
+      <button type="button" class="btn btn-ghost" onclick="openLedger('${bankEsc(a.id)}')" style="font-size:10.5px;">明細</button></div>`).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">口座がありません。「口座・給料」から追加してください。</div>';
   const rpb=document.getElementById('asset-rpay-box');
   if(rpb){
     const rc=S.rpayCash||{};
     const upd=rc.updatedAt?bankFmtMD(new Date(rc.updatedAt))+'時点':'残高未入力';
-    rpb.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
-      ${getMethodLogoHtml('楽天ペイ',{size:32,brandSize:0})}
+    rpb.innerHTML=`<div onclick="openRpayCashModal('edit')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:12px;cursor:pointer;">
+      <span class="pt-ico" style="width:40px;height:40px;border-radius:14px;">${getMethodLogoHtml('楽天ペイ',{size:24,brandSize:0})}</span>
       <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">楽天ペイ（キャッシュ）</div><div style="font-size:9.5px;color:var(--text3);">${upd}</div></div>
       <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${rc.balance==null?'未入力':bankYen(rc.balance)}</div>
     </div>`;
   }
   const brs=S.brokerAccounts||[];
   const sl=document.getElementById('asset-broker-list');
-  const gainTxt=(v,pr)=>{ if(v==null||pr==null) return ''; const g=v-pr; return `<span style="font-weight:700;color:${g>=0?'#2f7d57':'#b5443a'};">${g>=0?'+':'−'}${bankYen(Math.abs(g))}</span>`; };
+  const gainTxt=(v,pr)=>{ if(v==null||pr==null) return ''; const g=v-pr; return `<span style="font-weight:700;color:${g>=0?'var(--green)':'var(--red)'};">${g>=0?'+':'−'}${bankYen(Math.abs(g))}</span>`; };
   if(sl) sl.innerHTML=brs.length?brs.map(b=>{
     const hs=b.holdings||[];
     return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
@@ -6192,7 +6215,7 @@ function renderAssets(){
   if(bk){
     const byC={},byA={}; let tot=0;
     brs.forEach(b=>(b.holdings||[]).forEach(x=>{ if(x.value==null) return; tot+=x.value; byC[x.cls]=(byC[x.cls]||0)+x.value; byA[x.acct]=(byA[x.acct]||0)+x.value; }));
-    const bars=(m,L)=>Object.keys(m).sort((a,b)=>m[b]-m[a]).map(k=>{ const pc=tot>0?m[k]/tot*100:0; return `<div style="margin-bottom:7px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);"><span>${bankEsc(L[k]||k)}</span><span style="font-family:monospace;">${bankYen(m[k])} <span style="color:var(--text3);">${Math.round(pc)}%</span></span></div><div style="height:6px;border-radius:99px;background:var(--border);overflow:hidden;margin-top:3px;"><div style="width:${pc}%;height:100%;background:#5b7c99;"></div></div></div>`; }).join('');
+    const bars=(m,L)=>Object.keys(m).sort((a,b)=>m[b]-m[a]).map(k=>{ const pc=tot>0?m[k]/tot*100:0; return `<div style="margin-bottom:7px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);"><span>${bankEsc(L[k]||k)}</span><span style="font-family:monospace;">${bankYen(m[k])} <span style="color:var(--text3);">${Math.round(pc)}%</span></span></div><div style="height:6px;border-radius:99px;background:var(--border);overflow:hidden;margin-top:3px;"><div style="width:${pc}%;height:100%;background:var(--primary);"></div></div></div>`; }).join('');
     bk.innerHTML=tot>0?`<div style="font-size:10.5px;font-weight:700;color:var(--text3);margin-bottom:6px;">資産クラス別</div>${bars(byC,BK_CLS)}<div style="font-size:10.5px;font-weight:700;color:var(--text3);margin:12px 0 6px;">口座の種類別</div>${bars(byA,BK_ACCT)}`:'<div style="font-size:11px;color:var(--text3);">証券口座に保有区分を追加すると、内訳が表示されます。</div>';
   }
 }
@@ -6424,7 +6447,7 @@ function renderMarketAutoList(){
     const tk = res ? res.ticker : '';
     const item = tk ? cache.items[tk] : null;
     const st = !tk ? '未判定' : (mktHasValidData(item) ? (res.proxy ? '取得済（代替指数）' : '取得済') : (item ? '取得不可（非表示）' : '未取得'));
-    const stCol = mktHasValidData(item) ? '#2f7d57' : 'var(--text3)';
+    const stCol = mktHasValidData(item) ? 'var(--green)' : 'var(--text3)';
     return `<div style="padding:8px 10px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;">
         <span style="font-size:11.5px;font-weight:700;color:var(--text);word-break:break-word;">${bankEsc(h.name)}</span>
@@ -6629,7 +6652,7 @@ function renderMarketCard(){
     const dayBadge = dayPct != null
       ? `<span class="mkt-badge ${dayPct>=0?'mkt-up':'mkt-down'}">前日比 ${dayPct>=0?'+':'−'}${Math.abs(dayPct).toFixed(2)}%</span>` : '';
     const perTxt = periodPct != null
-      ? `<span style="font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;">${rLabel} <b style="color:${periodPct>=0?'#2f7d57':'#b5443a'};">${periodPct>=0?'+':'−'}${Math.abs(periodPct).toFixed(1)}%</b></span>` : '';
+      ? `<span style="font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums;">${rLabel} <b style="color:${periodPct>=0?'var(--green)':'var(--red)'};">${periodPct>=0?'+':'−'}${Math.abs(periodPct).toFixed(1)}%</b></span>` : '';
     const proxyTag = activeMeta.proxy ? ' <span style="font-size:9.5px;padding:1px 6px;border-radius:999px;background:var(--card2);border:1px solid var(--border);color:var(--text3);">代替指数</span>' : '';
     quoteEl.style.display = 'block';
     quoteEl.innerHTML = `
@@ -6709,9 +6732,9 @@ function openLedger(id){
 }
 function setLedgerKind(k){
   _ledger.kind=k;
-  const on=(b,c)=>`flex:1;padding:8px 0;font-size:12px;font-weight:700;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:${b?c:'var(--card2)'};color:${b?'#fff':'var(--text3)'};`;
+  const on=(b,c,bg)=>`flex:1;padding:8px 0;font-size:12px;font-weight:700;border-radius:999px;border:1.5px solid ${b?c:'var(--border)'};cursor:pointer;background:${b?bg:'var(--card2)'};color:${b?c:'var(--text3)'};`;
   const i=document.getElementById('ledger-kind-in'), o=document.getElementById('ledger-kind-out');
-  if(i) i.style.cssText=on(k==='in','#2f7d57'); if(o) o.style.cssText=on(k==='out','#b5443a');
+  if(i) i.style.cssText=on(k==='in','var(--green)','var(--green-light)'); if(o) o.style.cssText=on(k==='out','var(--red)','var(--red-light)');
 }
 function shiftLedgerMonth(n){
   const [y,m]=_ledger.month.split('/').map(Number); const d=new Date(y,m-1+n,1);
@@ -6725,14 +6748,14 @@ function renderLedger(){
   const items=(S.bankTx||[]).filter(x=>x.accountId===acc.id&&(x.date||'').startsWith(_ledger.month+'/')).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
   let inn=0,out=0; items.forEach(x=>{ if(x.kind==='in') inn+=x.delta; else if(x.kind==='out') out+=-x.delta; });
   const sm=document.getElementById('ledger-sum');
-  if(sm) sm.innerHTML=`<span style="color:#2f7d57;">入金 +${bankYen(inn)}</span><span style="color:#b5443a;">出金 −${bankYen(out)}</span><span style="color:var(--text2);">差引 ${inn-out>=0?'+':'−'}${bankYen(Math.abs(inn-out)).replace('−','')}</span>`;
+  if(sm) sm.innerHTML=`<span style="color:var(--green);">入金 +${bankYen(inn)}</span><span style="color:var(--red);">出金 −${bankYen(out)}</span><span style="color:var(--text2);">差引 ${inn-out>=0?'+':'−'}${bankYen(Math.abs(inn-out)).replace('−','')}</span>`;
   const ls=document.getElementById('ledger-list');
   if(ls) ls.innerHTML=items.length?items.map(x=>{
     const adj=x.kind==='adjust', pos=x.delta>=0; const d=bankParseYmd(x.date);
     return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;font-size:11px;${adj?'opacity:.75;':''}">
       <span style="font-family:monospace;color:var(--text3);min-width:34px;">${d?bankFmtMD(d):''}</span>
       <span style="flex:1;min-width:0;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${adj?'🔧 残高調整':(pos?'⬇ 入金':'⬆ 出金')}${x.memo?'　'+bankEsc(x.memo):''}</span>
-      <span style="font-family:monospace;font-weight:700;color:${pos?'#2f7d57':'#b5443a'};">${pos?'+':'−'}${bankYen(Math.abs(x.delta)).replace('−','')}</span>
+      <span style="font-family:monospace;font-weight:700;color:${pos?'var(--green)':'var(--red)'};">${pos?'+':'−'}${bankYen(Math.abs(x.delta)).replace('−','')}</span>
       <button type="button" onclick="removeLedgerTx('${bankEsc(x.id)}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;">削除</button></div>`;
   }).join(''):'<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center;">この月の明細はありません。</div>';
 }
@@ -6817,7 +6840,7 @@ function renderRpayCashModal(){
       return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;font-size:11px;${adj?'opacity:.75;':''}">
         <span style="font-family:monospace;color:var(--text3);min-width:34px;">${d?bankFmtMD(d):''}</span>
         <span style="flex:1;min-width:0;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${adj?'🔧 残高調整':(pos?'⚡ チャージ':'💳 支払い')}${x.memo?'　'+bankEsc(x.memo):''}</span>
-        <span style="font-family:monospace;font-weight:700;color:${pos?'#2f7d57':'#b5443a'};">${pos?'+':'−'}${bankYen(Math.abs(x.delta)).replace('−','')}</span>
+        <span style="font-family:monospace;font-weight:700;color:${pos?'var(--green)':'var(--red)'};">${pos?'+':'−'}${bankYen(Math.abs(x.delta)).replace('−','')}</span>
         <button type="button" onclick="removeRpayLog('${bankEsc(x.id)}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;">削除</button>
       </div>`;
     }).join(''):'<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center;">履歴はまだありません。</div>';
@@ -7150,7 +7173,7 @@ function renderBankJudge(){
     box.innerHTML=`<div style="font-size:11px;color:var(--text3);line-height:1.7;padding:4px 0;">口座を登録して残高を入力すると、カードの引き落としができるかをここで判定します。</div>`+warnUnlinked;
     return;
   }
-  const band={ok:['✅ 引き落とせます','#2f7d57','rgba(22,163,74,.12)'],short:['⚠️ 残高が足りません','#b5443a','rgba(220,38,38,.12)'],unset:['残高を入力してください','var(--text3)','var(--card)'],none:['✅ 引き落とし予定なし','var(--text3)','var(--card)']};
+  const band={ok:['✅ 引き落とせます','var(--green)','var(--green-light)'],short:['⚠️ 残高が足りません','var(--red)','var(--red-light)'],unset:['残高を入力してください','var(--text3)','var(--card)'],none:['✅ 引き落とし予定なし','var(--text3)','var(--card)']};
   const SHOW=3;
   const today=bankDateOnly(new Date());
   box.innerHTML=accs.map(a=>{
@@ -7158,12 +7181,12 @@ function renderBankJudge(){
     const rowHtml=(ev,faded)=>{
       const isDeb=ev.type==='debit'; const passed=ev.date<today; const short=isDeb&&ev.short;
       const note=(ev.partial?'<span style="font-size:9px;color:var(--text3);">（現時点の利用額）</span>':'')+(passed?'<span style="font-size:9px;color:var(--text3);">（日付経過・残高未更新）</span>':'');
-      const after=short?`<span style="color:#b5443a;font-weight:800;">⚠️ ${bankYen(ev.short)} 不足</span>`:`引き落とし後 残 <span style="font-family:monospace;font-weight:700;color:var(--text2);">${bankYen(ev.after)}</span>`;
-      return `<div style="padding:6px 8px;border-radius:8px;margin-top:4px;${short?'background:rgba(220,38,38,.10);':''}${faded?'opacity:.5;':''}">
+      const after=short?`<span style="color:var(--red);font-weight:800;">⚠️ ${bankYen(ev.short)} 不足</span>`:`引き落とし後 残 <span style="font-family:monospace;font-weight:700;color:var(--text2);">${bankYen(ev.after)}</span>`;
+      return `<div style="padding:6px 8px;border-radius:10px;margin-top:4px;${short?'background:var(--red-light);':''}${faded?'opacity:.5;':''}">
         <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;">
           <span style="font-family:monospace;color:var(--text3);min-width:34px;">${bankFmtMD(ev.date)}</span>
           <span style="flex:1;min-width:0;color:var(--text2);">${isDeb?'💳':'💰'} ${bankEsc(ev.label)}${note}</span>
-          <span style="font-family:monospace;font-weight:700;color:${isDeb?'var(--text)':'#2f7d57'};">${isDeb?'−':'+'}${bankYen(ev.amount)}</span>
+          <span style="font-family:monospace;font-weight:700;color:${isDeb?'var(--text)':'var(--green)'};">${isDeb?'−':'+'}${bankYen(ev.amount)}</span>
         </div>
         <div style="font-size:10px;color:var(--text3);margin:2px 0 0 42px;">${after}</div></div>`;
     };
@@ -7184,12 +7207,12 @@ function renderBankJudge(){
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 8px;">
         <span style="font-size:24px;font-weight:800;color:var(--text);font-family:monospace;">${a.balance==null?'未入力':bankYen(a.balance)}</span>
-        <span style="display:flex;gap:6px;"><button type="button" class="btn" onclick="openLedger('${id}')" style="font-size:10.5px;">明細</button><button type="button" class="btn" onclick="toggleBankEdit('${id}')" style="font-size:10.5px;">${editing?'閉じる':'残高を更新'}</button></span>
+        <span style="display:flex;gap:6px;"><button type="button" class="btn btn-ghost" onclick="openLedger('${id}')" style="font-size:10.5px;">明細</button><button type="button" class="btn btn-ghost" onclick="toggleBankEdit('${id}')" style="font-size:10.5px;">${editing?'閉じる':'残高を更新'}</button></span>
       </div>
-      ${editing?`<div style="display:flex;gap:6px;margin-bottom:8px;"><input id="bank-q-${id}" type="number" inputmode="numeric" placeholder="新しい残高" style="flex:1;min-width:0;padding:6px 8px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);"><button type="button" class="btn" onclick="quickUpdateBankBalance('${id}')" style="font-size:11px;">保存</button></div>`:''}
-      <div style="padding:7px 10px;border-radius:8px;background:${b[2]};color:${b[1]};font-size:11.5px;font-weight:700;">${b[0]}</div>
+      ${editing?`<div style="display:flex;gap:6px;margin-bottom:8px;"><input id="bank-q-${id}" type="number" inputmode="numeric" placeholder="新しい残高" style="flex:1;min-width:0;padding:6px 8px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);"><button type="button" class="btn btn-primary" onclick="quickUpdateBankBalance('${id}')" style="font-size:11px;">保存</button></div>`:''}
+      <div style="padding:7px 10px;border-radius:10px;background:${b[2]};color:${b[1]};font-size:11.5px;font-weight:700;">${b[0]}</div>
       ${rows}
-      ${f.status==='short'?`<div style="font-size:10px;color:#b5443a;margin-top:6px;line-height:1.6;">引き落とし日までに入金するか、給料の入金日を「口座・給料」で入力してください。</div>`:''}
+      ${f.status==='short'?`<div style="font-size:10px;color:var(--red);margin-top:6px;line-height:1.6;">引き落とし日までに入金するか、給料の入金日を「口座・給料」で入力してください。</div>`:''}
     </div>`;
   }).join('')+warnUnlinked;
 }
@@ -7561,7 +7584,7 @@ function openCardDetailModal(csId){
       </div>
     </div>
     <div>
-      ${(()=>{ const un=txInCycle.filter(t=>t.method==='楽天カード'&&t.pointOffset&&!t.pointOffsetDone); if(!un.length) return ''; const amt=un.reduce((a,t)=>a+(t.amount||0),0); return `<div style="background:#f7eedb;color:#8a5a1a;border-radius:10px;padding:8px 12px;font-size:11px;font-weight:700;margin-bottom:10px;line-height:1.6;">💠 未処理のポイント充当 ${un.length}件（¥${amt.toLocaleString()}）<div style="font-size:9.5px;font-weight:400;">楽天ポイントを充当したら、下の明細の「処理済み」にチェックしてください。チェックした分だけ請求額から差し引きます。</div></div>`; })()}
+      ${(()=>{ const un=txInCycle.filter(t=>t.method==='楽天カード'&&t.pointOffset&&!t.pointOffsetDone); if(!un.length) return ''; const amt=un.reduce((a,t)=>a+(t.amount||0),0); return `<div style="background:var(--amber-light);color:var(--amber);border:1px solid var(--border);border-radius:12px;padding:8px 12px;font-size:11px;font-weight:700;margin-bottom:10px;line-height:1.6;">💠 未処理のポイント充当 ${un.length}件（¥${amt.toLocaleString()}）<div style="font-size:9.5px;font-weight:400;color:var(--text2);">楽天ポイントを充当したら、下の明細の「処理済み」にチェックしてください。チェックした分だけ請求額から差し引きます。</div></div>`; })()}
       <div style="font-size:11.5px;font-weight:700;color:var(--text2);margin-bottom:8px;">取引明細（今回の請求分）</div>
       <div style="display:flex;flex-direction:column;">
         ${txInCycle.length===0?`<div style="font-size:11.5px;color:var(--text3);padding:12px 0;text-align:center;">取引がありません</div>`:
@@ -7573,7 +7596,7 @@ function openCardDetailModal(csId){
             ${getShopLogoHtml(t.shop||'?',{size:26})}
             <div style="flex:1;min-width:0;">
               <div style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.shop||'利用先不明'}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}${t.method==='楽天ペイ'?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">${rpaySourceLabel(t)}</span>`:''}${isPointOffset(t)?(t.method==='楽天カード'?`　<span style="background:#e8f1ea;color:#2b6a45;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当${t.pointOffsetDone?'（処理済み・請求から差引）':'（未処理・請求に含む）'}</span>`:`　<span style="background:#e8f1ea;color:#2b6a45;border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">💠 ポイント充当（請求に含めず）</span>`):''}${t.billDelay?`　<span style="background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:0 6px;font-size:9px;font-weight:700;">請求 +${t.billDelay}か月</span>`:''}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:1px;">${dateLabel}　${t.method||''}${t.method==='楽天ペイ'?`　<span class="fb-bdg fb-bdg-sm fb-bdg-muted">${rpaySourceLabel(t)}</span>`:''}${isPointOffset(t)?(t.method==='楽天カード'?`　<span class="fb-bdg fb-bdg-sm fb-bdg-pt">💠 ポイント充当${t.pointOffsetDone?'（処理済み・請求から差引）':'（未処理・請求に含む）'}</span>`:`　<span class="fb-bdg fb-bdg-sm fb-bdg-pt">💠 ポイント充当（請求に含めず）</span>`):''}${t.billDelay?`　<span class="fb-bdg fb-bdg-sm fb-bdg-muted">請求 +${t.billDelay}か月</span>`:''}</div>
               ${(t.method==='三井住友カード(Olive)'||t.method==='JCBカードW')?`<div style="font-size:9px;color:var(--text3);margin-top:1px;">${calcPt(t).rule}</div>`:''}
             </div>
             <span style="font-size:12.5px;font-weight:700;color:var(--text);font-family:monospace;white-space:nowrap;">¥${(t.amount||0).toLocaleString()}</span>
@@ -8388,11 +8411,11 @@ function renderTable(){
             <span style="display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;">
               ${getMethodLogoHtml(t.method||'',{size:20,brandSize:13})}
               <span style="color:${getMethodColor(t.method||'')};">${t.method||'-'}</span>
-              ${isPointPayment(t)?'<span style=\"background:#e8f1ea;color:#2b6a45;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;">💠ポイント払い</span>':''}
-              ${isKaetate(t)?(t.recovered?'<span style=\"background:#e1eee6;color:#24593f;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;">✅ 回収済</span>':'<span style=\"background:#f6e6e3;color:#991b1b;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;">🔄 立替</span>'):''}
-              ${isExcludedFromAggregate(t)?'<span style=\"background:#e8e6dc;color:#5e5d59;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;">🚫 対象外</span>':''}
-              ${isPointOffset(t)?'<span style=\"background:#e8f1ea;color:#2b6a45;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;\">💠 ポイント充当</span>':''}
-              ${isChargePairTx(t)?'<span style=\"background:#f7eedb;color:#8a5a1a;padding:0 5px;border-radius:99px;font-size:9px;font-weight:700;\">⚡チャージ払い</span>':''}
+              ${isPointPayment(t)?'<span class="fb-bdg fb-bdg-sm fb-bdg-pt">💠ポイント払い</span>':''}
+              ${isKaetate(t)?(t.recovered?'<span class="fb-bdg fb-bdg-sm fb-bdg-ok">✅ 回収済</span>':'<span class="fb-bdg fb-bdg-sm fb-bdg-err">🔄 立替</span>'):''}
+              ${isExcludedFromAggregate(t)?'<span class="fb-bdg fb-bdg-sm fb-bdg-muted">🚫 対象外</span>':''}
+              ${isPointOffset(t)?'<span class="fb-bdg fb-bdg-sm fb-bdg-pt">💠 ポイント充当</span>':''}
+              ${isChargePairTx(t)?'<span class="fb-bdg fb-bdg-sm fb-bdg-warn">⚡チャージ払い</span>':''}
             </span>
           </td>
           <td style="padding:10px 16px;text-align:right;font-weight:700;font-family:monospace;color:${amtColor};">${prefix}¥${t.amount.toLocaleString()}</td>
@@ -8419,11 +8442,11 @@ function renderTable(){
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap;">
             <span style="font-size:10.5px;font-weight:700;background:${catColor}1a;color:${catColor};border:1px solid ${catColor}44;padding:4px 10px;border-radius:99px;">${t.categoryMajor||'その他'}${t.categoryMinor?` / ${t.categoryMinor}`:''}</span>
-            ${isPointPayment(t)?'<span style="font-size:10.5px;font-weight:700;background:#e8f1ea;color:#2b6a45;padding:4px 10px;border-radius:99px;">💠 ポイント払い</span>':''}
-            ${isKaetate(t)?(t.recovered?'<span style="font-size:10.5px;font-weight:700;background:#e1eee6;color:#24593f;padding:4px 10px;border-radius:99px;">✅ 回収済</span>':'<span style="font-size:10.5px;font-weight:700;background:#f6e6e3;color:#991b1b;padding:4px 10px;border-radius:99px;">🔄 立替</span>'):''}
-            ${isExcludedFromAggregate(t)?'<span style="font-size:10.5px;font-weight:700;background:#e8e6dc;color:#5e5d59;padding:4px 10px;border-radius:99px;">🚫 対象外</span>':''}
-            ${isPointOffset(t)?'<span style="font-size:10.5px;font-weight:700;background:#e8f1ea;color:#2b6a45;padding:4px 10px;border-radius:99px;">💠 ポイント充当</span>':''}
-            ${isChargePairTx(t)?'<span style="font-size:10.5px;font-weight:700;background:#f7eedb;color:#8a5a1a;padding:4px 10px;border-radius:99px;">⚡チャージ払い</span>':''}
+            ${isPointPayment(t)?'<span class="fb-bdg fb-bdg-md fb-bdg-pt">💠 ポイント払い</span>':''}
+            ${isKaetate(t)?(t.recovered?'<span class="fb-bdg fb-bdg-md fb-bdg-ok">✅ 回収済</span>':'<span class="fb-bdg fb-bdg-md fb-bdg-err">🔄 立替</span>'):''}
+            ${isExcludedFromAggregate(t)?'<span class="fb-bdg fb-bdg-md fb-bdg-muted">🚫 対象外</span>':''}
+            ${isPointOffset(t)?'<span class="fb-bdg fb-bdg-md fb-bdg-pt">💠 ポイント充当</span>':''}
+            ${isChargePairTx(t)?'<span class="fb-bdg fb-bdg-md fb-bdg-warn">⚡チャージ払い</span>':''}
           </div>
         </div>
         <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -8742,10 +8765,10 @@ function applyDark(on){
   // theme-colorメタタグ更新（全て更新）
   document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
     const media=m.getAttribute('media')||'';
-    if(media.includes('dark'))m.setAttribute('content',on?'#101511':'#101511');
-    else m.setAttribute('content',on?'#101511':'#f7fbf3');
+    if(media.includes('dark'))m.setAttribute('content','#0f1714');
+    else m.setAttribute('content',on?'#0f1714':'#f1f4f0');
   });
-  setTimeout(()=>{renderPayChart();renderCatChart();},50);
+  setTimeout(()=>{renderPayChart();renderCatChart();if(S.activeTab==='assets')renderAssets();},50);
 }
 
 // ============================================================
@@ -9294,8 +9317,8 @@ function setTxType(type){
   const methodWrap=document.getElementById('tx-method-wrap');
   const pointWrap=document.getElementById('tx-point-wrap');
   if(type==='expense'){
-    expBtn.style.cssText='flex:1;padding:8px;font-size:12px;font-weight:700;border-radius:10px;border:2px solid var(--red);background:var(--red);color:#fff;cursor:pointer;';
-    incBtn.style.cssText='flex:1;padding:8px;font-size:12px;font-weight:700;border-radius:10px;border:2px solid var(--border);background:var(--card2);color:var(--text3);cursor:pointer;';
+    expBtn.style.cssText='flex:1;padding:9px 12px;font-size:12px;font-weight:700;border-radius:999px;border:1.5px solid var(--red);background:var(--red-light);color:var(--red);cursor:pointer;';
+    incBtn.style.cssText='flex:1;padding:9px 12px;font-size:12px;font-weight:700;border-radius:999px;border:1.5px solid var(--border);background:var(--card2);color:var(--text3);cursor:pointer;';
     if(methodWrap)methodWrap.style.display='block';
     buildMethodSelect();
     const excludeWrapE=document.getElementById('tx-exclude-wrap');
@@ -9304,8 +9327,8 @@ function setTxType(type){
     if(fcWrapE)fcWrapE.style.display='block';
     onMethodChange();
   }else{
-    incBtn.style.cssText='flex:1;padding:8px;font-size:12px;font-weight:700;border-radius:10px;border:2px solid var(--green);background:var(--green);color:#fff;cursor:pointer;';
-    expBtn.style.cssText='flex:1;padding:8px;font-size:12px;font-weight:700;border-radius:10px;border:2px solid var(--border);background:var(--card2);color:var(--text3);cursor:pointer;';
+    incBtn.style.cssText='flex:1;padding:9px 12px;font-size:12px;font-weight:700;border-radius:999px;border:1.5px solid var(--green);background:var(--green-light);color:var(--green);cursor:pointer;';
+    expBtn.style.cssText='flex:1;padding:9px 12px;font-size:12px;font-weight:700;border-radius:999px;border:1.5px solid var(--border);background:var(--card2);color:var(--text3);cursor:pointer;';
     if(methodWrap)methodWrap.style.display='none';
     if(pointWrap)pointWrap.style.display='none';
     const scratchWrap=document.getElementById('tx-scratch-wrap');
@@ -9644,13 +9667,13 @@ function openTxDetailModal(key){
   amtEl.style.color=amtColor;
 
   const badges=[];
-  if(isPointPayment(t)) badges.push('<span style="font-size:11px;font-weight:700;background:#e8f1ea;color:#2b6a45;padding:4px 11px;border-radius:99px;">💠 ポイント払い</span>');
-  if(isKaetate(t)) badges.push(t.recovered?'<span style="font-size:11px;font-weight:700;background:#e1eee6;color:#24593f;padding:4px 11px;border-radius:99px;">✅ 回収済</span>':'<span style="font-size:11px;font-weight:700;background:#f6e6e3;color:#991b1b;padding:4px 11px;border-radius:99px;">🔄 立替</span>');
-  if(t.pointCard&&PC_TYPES[t.pointCard]) badges.push('<span style="font-size:11px;font-weight:700;background:#f7eedb;color:#8a5a1a;padding:4px 11px;border-radius:99px;">🪙 '+PC_TYPES[t.pointCard].label+'提示 +'+pcCalc(t)+'pt</span>');
-  if(isExcludedFromAggregate(t)) badges.push('<span style="font-size:11px;font-weight:700;background:#e8e6dc;color:#5e5d59;padding:4px 11px;border-radius:99px;">🚫 対象外</span>');
-  if(isPointOffset(t)) badges.push('<span style="font-size:11px;font-weight:700;background:#e8f1ea;color:#2b6a45;padding:4px 11px;border-radius:99px;">💠 ポイント充当</span>');
-  if(isChargePairTx(t)) badges.push('<span style="font-size:11px;font-weight:700;background:#f7eedb;color:#8a5a1a;padding:4px 11px;border-radius:99px;">⚡チャージ払い</span>');
-  if(badges.length===0) badges.push(`<span style="font-size:11px;font-weight:700;background:var(--card2);color:var(--text2);padding:4px 11px;border-radius:99px;">${isIncome?'収入':'支出'}</span>`);
+  if(isPointPayment(t)) badges.push('<span class="fb-bdg fb-bdg-md fb-bdg-pt">💠 ポイント払い</span>');
+  if(isKaetate(t)) badges.push(t.recovered?'<span class="fb-bdg fb-bdg-md fb-bdg-ok">✅ 回収済</span>':'<span class="fb-bdg fb-bdg-md fb-bdg-err">🔄 立替</span>');
+  if(t.pointCard&&PC_TYPES[t.pointCard]) badges.push('<span class="fb-bdg fb-bdg-md fb-bdg-warn">🪙 '+PC_TYPES[t.pointCard].label+'提示 +'+pcCalc(t)+'pt</span>');
+  if(isExcludedFromAggregate(t)) badges.push('<span class="fb-bdg fb-bdg-md fb-bdg-muted">🚫 対象外</span>');
+  if(isPointOffset(t)) badges.push('<span class="fb-bdg fb-bdg-md fb-bdg-pt">💠 ポイント充当</span>');
+  if(isChargePairTx(t)) badges.push('<span class="fb-bdg fb-bdg-md fb-bdg-warn">⚡チャージ払い</span>');
+  if(badges.length===0) badges.push(`<span class="fb-bdg fb-bdg-md fb-bdg-muted">${isIncome?'収入':'支出'}</span>`);
   $('tx-detail-badges').innerHTML=badges.join('');
 
   $('tx-detail-method').innerHTML=`${getMethodLogoHtml(t.method||'',{size:18,brandSize:12})}${t.method||'-'}`;
@@ -9674,7 +9697,7 @@ function openTxDetailModal(key){
   }
   if(t.source==='manual'){
     actions.push(`<button onclick="hideModal('tx-detail-overlay');editTx('${key}');" class="btn btn-ghost" style="width:100%;justify-content:center;">✏️ 編集する</button>`);
-    actions.push(`<button onclick="hideModal('tx-detail-overlay');deleteTx('${key}');" class="btn" style="width:100%;justify-content:center;background:var(--red-light);color:var(--red);">🗑️ 削除する</button>`);
+    actions.push(`<button onclick="hideModal('tx-detail-overlay');deleteTx('${key}');" class="btn btn-danger" style="width:100%;justify-content:center;">🗑️ 削除する</button>`);
   }
   $('tx-detail-actions').innerHTML=actions.join('');
 
@@ -10889,10 +10912,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('btn-sync-sync').addEventListener('click',()=>{const url=($('url-sync')||{value:''}).value.trim();doSync(url);});
 
   // グラフ切替
-  $('btn-pay-donut').addEventListener('click',()=>{payChartType='doughnut';$('btn-pay-donut').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:var(--card);color:var(--primary);font-weight:700;';$('btn-pay-bar').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);';renderPayChart();});
-  $('btn-pay-bar').addEventListener('click',()=>{payChartType='bar';$('btn-pay-bar').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:var(--card);color:var(--primary);font-weight:700;';$('btn-pay-donut').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);';renderPayChart();});
-  $('btn-cat-stack').addEventListener('click',()=>{catChartType='stacked';$('btn-cat-stack').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:var(--card);color:var(--primary);font-weight:700;';$('btn-cat-donut').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);';renderCatChart();});
-  $('btn-cat-donut').addEventListener('click',()=>{catChartType='doughnut';$('btn-cat-donut').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:var(--card);color:var(--primary);font-weight:700;';$('btn-cat-stack').style.cssText='padding:4px 8px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--text3);';renderCatChart();});
+  $('btn-pay-donut').addEventListener('click',()=>{payChartType='doughnut';$('btn-pay-donut').classList.add('active-tgl');$('btn-pay-bar').classList.remove('active-tgl');renderPayChart();});
+  $('btn-pay-bar').addEventListener('click',()=>{payChartType='bar';$('btn-pay-bar').classList.add('active-tgl');$('btn-pay-donut').classList.remove('active-tgl');renderPayChart();});
+  $('btn-cat-stack').addEventListener('click',()=>{catChartType='stacked';$('btn-cat-stack').classList.add('active-tgl');$('btn-cat-donut').classList.remove('active-tgl');renderCatChart();});
+  $('btn-cat-donut').addEventListener('click',()=>{catChartType='doughnut';$('btn-cat-donut').classList.add('active-tgl');$('btn-cat-stack').classList.remove('active-tgl');renderCatChart();});
 
   // テーブル検索
   $('tbl-search').addEventListener('input',renderTable);
@@ -11102,9 +11125,15 @@ document.addEventListener('DOMContentLoaded',()=>{
     globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
     phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
     clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    palette:'<circle cx="13.5" cy="6.5" r=".8" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".8" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".8" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".8" fill="currentColor"/><path d="M12 2a10 10 0 1 0 0 20 2 2 0 0 0 2-2v-.5a2 2 0 0 1 2-2h1.5a4.5 4.5 0 0 0 4.5-4.5C22 6.5 17.5 2 12 2z"/>',
+    clean:'<path d="M21 3l-9 9"/><path d="M12 12l-7 2 5 5 2-7z"/><path d="M5 14l-2 7 7-2"/>',
+    cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 7H6"/>',
+    undo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+    trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+    gift:'<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8a2.5 2.5 0 1 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 1 1 0 5"/>',
     dotg:'<circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/>'
   };
-  var M={'🏦':'bank','📈':'trend','📝':'file','📄':'file','📐':'ruler','🔁':'repeat','🔒':'lock','🔓':'unlock','⚠️':'alert','⚠':'alert','💳':'card','🔄':'refresh','📋':'clip','🔍':'search','📅':'cal','🗑️':'trash','📌':'pin','📁':'folder','📖':'book','📊':'chart','✏️':'pencil','⚙️':'gear','📥':'down','⬇':'down','⬆':'up','☁️':'cloud','🔗':'link','🔧':'wrench','💰':'coin','🪙':'coin','💸':'coin','🏷️':'tag','🏫':'build','🏬':'build','✅':'ok','❌':'no','🚫':'no','⚡':'bolt','💠':'gem','💡':'info','🌐':'globe','📱':'phone','🕒':'clock','⏳':'clock','🟢':'dotg','🔴':'dotg','🎉':'','✨':'','🧪':'','🦕':'','🧐':'','🤖':''};
+  var M={'🏦':'bank','📈':'trend','📝':'file','📄':'file','📐':'ruler','🔁':'repeat','🔒':'lock','🔓':'unlock','⚠️':'alert','⚠':'alert','💳':'card','🔄':'refresh','📋':'clip','🔍':'search','📅':'cal','🗑️':'trash','📌':'pin','📁':'folder','📖':'book','📊':'chart','✏️':'pencil','⚙️':'gear','⚙':'gear','🎨':'palette','🧹':'clean','🛒':'cart','↩️':'undo','↩':'undo','🏆':'trophy','🎰':'gift','📥':'down','⬇':'down','⬆':'up','☁️':'cloud','🔗':'link','🔧':'wrench','💰':'coin','🪙':'coin','💸':'coin','🏷️':'tag','🏫':'build','🏬':'build','✅':'ok','❌':'no','🚫':'no','⚡':'bolt','💠':'gem','💡':'info','🌐':'globe','📱':'phone','🕒':'clock','⏳':'clock','🟢':'dotg','🔴':'dotg','🎉':'','✨':'','🧪':'','🦕':'','🧐':'','🤖':''};
   var keys=Object.keys(M).sort(function(a,b){return b.length-a.length;});
   var RE=new RegExp('('+keys.map(function(k){return k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('|')+')\uFE0F?','g');
   var SKIP={SCRIPT:1,STYLE:1,TEXTAREA:1,OPTION:1,TITLE:1,INPUT:1,CANVAS:1,NOSCRIPT:1};
@@ -11204,7 +11233,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   sync();
   // B: 設定系のチェックボックスをスイッチ表示に
-  ['budget-month-only','tx-is-point','tx-jcb-smartpay','tx-chargepair-check','tx-exclude','tx-fixedcost','tx-pointoffset','new-store-point-rakuten','new-store-point-d','new-store-point-v'].forEach(function(id){
+  ['budget-month-only','tx-is-point','tx-jcb-smartpay','tx-mobile-order','tx-chargepair-check','tx-exclude','tx-fixedcost','tx-pointoffset','new-store-point-rakuten','new-store-point-d','new-store-point-v'].forEach(function(id){
     var e=$(id); if(e) e.classList.add('sw');
   });
 })();
