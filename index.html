@@ -1483,6 +1483,16 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
     <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">銀行口座</div>
     <div id="asset-bank-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
+  <div id="asset-rpay-card" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);">楽天ペイ残高</span>
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="btn btn-primary" onclick="openRpayCashModal('charge')" style="font-size:11px;padding:5px 11px;">⚡ チャージ</button>
+        <button type="button" class="btn" onclick="openRpayCashModal('edit')" style="font-size:11px;padding:5px 11px;">管理</button>
+      </div>
+    </div>
+    <div id="asset-rpay-box"></div>
+  </div>
   <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--text2);">証券口座</span><button type="button" class="btn" onclick="openBrokerModal()" style="font-size:11px;">📈 管理</button></div>
     <div id="asset-broker-list" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -1538,7 +1548,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       </div>
       <div style="background:var(--green-light);padding:12px;border-radius:10px;border:1px solid var(--border);font-size:11px;color:var(--text);">
         <div class="flex justify-between font-semibold"><span>通常店舗</span><span>0.5%</span></div>
-        <div class="flex justify-between font-semibold mt-1"><span>特約店合計</span><span id="ui-vtotal-rate">10.0%</span></div>
+        <div class="flex justify-between font-semibold mt-1"><span>特約店合計（クレジット）</span><span id="ui-vtotal-rate">10.0%</span></div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:6px;line-height:1.5;">※デビットモードはVポイントアップ・セブン特約・U25特約の対象外（通常0.5%／対象コンビニ・飲食店のスマホタッチ決済・モバイルオーダー1.5%）</div>
       </div>
     </div>
     <div class="space-y-2 pt-3" style="border-top:1px solid var(--border);">
@@ -1925,6 +1936,46 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 
 </nav>
 
+<div id="rpay-cash-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8300;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);" onclick="if(event.target===this)hideModal('rpay-cash-modal-overlay')">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(460px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
+      <span style="font-size:14px;font-weight:700;color:var(--text);">📱 楽天ペイ残高</span>
+      <button type="button" onclick="hideModal('rpay-cash-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
+      <div style="text-align:center;">
+        <div style="font-size:10.5px;color:var(--text3);">現在の楽天ペイ残高</div>
+        <div id="rpay-cash-bal" style="font-size:24px;font-weight:800;font-family:monospace;color:var(--text);">未入力</div>
+        <div id="rpay-cash-upd" style="font-size:9.5px;color:var(--text3);margin-top:2px;"></div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text);">⚡ 銀行口座からチャージ</div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.5;">選んだ銀行口座から引き落として楽天ペイ残高へ移します（家計簿の支出には二重計上しません）。</div>
+        <select id="rpay-chg-acc" style="width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);"></select>
+        <div style="display:flex;gap:6px;">
+          <input id="rpay-chg-date" type="date" style="flex:1;min-width:0;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
+          <input id="rpay-chg-amount" type="number" inputmode="numeric" placeholder="チャージ額" style="flex:1;min-width:0;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
+        </div>
+        <div style="display:flex;gap:6px;">
+          <input id="rpay-chg-memo" type="text" placeholder="メモ（任意）" style="flex:1;min-width:0;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
+          <button type="button" class="btn btn-primary" onclick="chargeRpayCash()" style="font-size:11.5px;">チャージ</button>
+        </div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text);">残高を手動で修正</div>
+        <div style="display:flex;gap:6px;">
+          <input id="rpay-set-bal" type="number" inputmode="numeric" placeholder="現在の残高" style="flex:1;min-width:0;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
+          <button type="button" class="btn" onclick="updateRpayCashBalance()" style="font-size:11.5px;">残高を更新</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--text2);margin-bottom:6px;">チャージ・利用履歴（直近）</div>
+        <div id="rpay-cash-log" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="ledger-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8300;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:min(460px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;z-index:1;">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1;">
@@ -2123,9 +2174,6 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
         </div>
         <div style="margin-top:10px;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">限度額（任意）</label>
             <input id="cs-limit" type="number" inputmode="numeric" placeholder="未設定" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
-        <div style="margin-top:10px;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">引き落とし銀行口座（任意）</label>
-            <select id="cs-bank-account" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select>
-            <div style="font-size:10px;color:var(--text3);margin-top:4px;">口座の追加・預金残高の入力は <a href="#" onclick="openBankModal();return false;" style="color:var(--primary);font-weight:700;">口座・給料</a> から。残高が足りるかをホームで判定します。</div></div>
         <div style="margin-top:10px;"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">紐づける決済手段（任意・複数選択可）</label>
             <div id="cs-linked-methods" style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;"></div>
             <div style="font-size:10px;color:var(--text3);margin-top:4px;">未選択の場合はこのカード自身の決済手段のみが対象になります</div></div>
@@ -2134,6 +2182,9 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
             <option value="prev">前営業日</option><option value="next">翌営業日</option>
           </select></div>
       </div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">引き落とし銀行口座（任意）</label>
+          <select id="cs-bank-account" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px;">口座の追加・預金残高の入力は <a href="#" onclick="openBankModal();return false;" style="color:var(--primary);font-weight:700;">口座・給料</a> から。クレジットの引き落とし判定や、デビット払い時の自動減算に使います。</div></div>
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-top:4px;border-top:1px solid var(--border);">ステータス表示カラー（共通設定）</div>
         <div style="display:flex;gap:10px;">
@@ -2662,6 +2713,7 @@ const DEFAULT_CARD_STATUS_COLORS={tentative:'#c08a35',confirmed:'#2f7d57',paid:'
 
 const DEFAULT_METHOD_COLORS={
   "三井住友カード(Olive)":"#3f8f6b",
+  "三井住友カード(Olive デビット)":"#2d7a5e",
   "PayPayクレジット":"#c0574c",
   "PayPayクレジット（ポイント払い）":"#c9766c",
   "PayPay残高":"#c97a3f",
@@ -2677,7 +2729,7 @@ const DEFAULT_METHOD_COLORS={
 };
 
 // 専用の還元率計算式を持つ決済手段（カードごとの還元率設定を適用しない）
-const METHODS_WITH_BUILTIN_RATE=["三井住友カード(Olive)","PayPayクレジット","PayPay残高","PayPayクレジット（ポイント払い）","楽天カード","楽天ペイ","住信SBI - デビット","JCBカードW"];
+const METHODS_WITH_BUILTIN_RATE=["三井住友カード(Olive)","三井住友カード(Olive デビット)","PayPayクレジット","PayPay残高","PayPayクレジット（ポイント払い）","楽天カード","楽天ペイ","住信SBI - デビット","JCBカードW"];
 
 // デフォルト8種＋ユーザーが追加登録したカスタム決済手段を合わせた一覧（「収入」は含まない）
 function allMethodNames(){
@@ -3014,6 +3066,7 @@ const INIT={
   marketCfg:null,        // 株価・指数推移の設定 {gasUrl,tickers,overrides}
   brokerAccounts:[],     // 証券口座 [{id,name,value,principal,valueUpdatedAt}]
   assetHistory:[],       // 資産の推移 [{d,bank,broker}]
+  rpayCash:null,         // 楽天ペイ残高 {balance:数値|null, updatedAt:ISO|null, log:[]}
   salaryEntries:[],      // 給料の入金 [{id,accountId,date:'YYYY/MM/DD',amount,memo}]。都度入力（家計簿の収入取引とは別管理で、収支・予算には影響しない）
   rpayRates:{},          // 楽天ペイの月別還元率(%) {"YYYY-MM":rate}。未設定の月は直近の過去月の値を引き継ぐ（全く無ければ0.5%）
   jcbPartnerShops:[],    // JCBカードW: J-POINTパートナー優待店リスト [{id, name(前方一致), rates:[{id, rate(%), from(YYYY-MM-DD or '')}]}]
@@ -3738,6 +3791,18 @@ function calcPt(t){
     }
     return{pt:0,rule:baseRule};
   }
+  if(t.method==='三井住友カード(Olive デビット)'){
+    // OliveデビットモードはVポイントアップ・セブン特約・U25特約の対象外（通常0.5%／対象コンビニ・飲食店でのスマホタッチ・モバイルオーダー1.5%）
+    let baseRule;
+    if(t.mobileOrder)baseRule='月合算 デビット モバイルオーダー(1.5%)';
+    else if(isSeven(t.shop)||isVTarget(t.shop))baseRule='月合算 デビット 対象店舗(1.5%)';
+    else baseRule='月合算 デビット 通常(200円毎1pt)';
+    if(t.vCoupon!=null&&t.vCoupon!==''){
+      const couponPt=Math.floor(t.amount*t.vCoupon/100);
+      return{pt:couponPt,rule:`${baseRule} ＋Vクーポン(${t.vCoupon}%)`};
+    }
+    return{pt:0,rule:baseRule};
+  }
   // JCBカードW（基本200円毎2pt=1.0%、月末合算）＋J-POINTパートナー優待店ボーナス
   if(t.method==='JCBカードW'){
     // 基本還元(1.0%)は月末合算のため明細には表示しない（種別ラベルのみ・calcAllPtsで月合算計算）
@@ -3827,7 +3892,7 @@ function pcCalc(t){
   return Math.max(0,Math.floor((t.amount||0)*pcRate(t.pointCard)/100));
 }
 function calcAllPts(){
-  let oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,pp=0,rk=0,sbi=0,ov=0,vCouponPts=0,oJ=0,jcbBonus=0;
+  let oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,oDT=0,oDN=0,pp=0,rk=0,sbi=0,ov=0,vCouponPts=0,oJ=0,jcbBonus=0;
   const cardPts={rakuten:0,d:0,v:0}; // ポイントカード提示分（決済手段とは別にたまる共通ポイント）
   const miscByType={}; // 独自還元率の決済手段のポイントを「ポイントの種類」ごとにグループ分けした合計
   const txs=S.transactions.map(t=>{
@@ -3844,6 +3909,10 @@ function calcAllPts(){
         else if(isMobile(t.shop))oM+=t.amount;
         else if(isPayPayShop(t.shop))oP+=t.amount;
         else oN+=t.amount;
+        if(t.vCoupon!=null&&t.vCoupon!=='') vCouponPts+=pt; // ptはVクーポン加算分のみ
+      }else if(t.method==='三井住友カード(Olive デビット)'){
+        if(t.mobileOrder||isSeven(t.shop)||isVTarget(t.shop))oDT+=t.amount;
+        else oDN+=t.amount;
         if(t.vCoupon!=null&&t.vCoupon!=='') vCouponPts+=pt; // ptはVクーポン加算分のみ
       }else if(t.method==='PayPayクレジット'||t.method==='PayPay残高'||t.method==='PayPayクレジット（ポイント払い）'){
         pp+=pt;
@@ -3871,6 +3940,9 @@ function calcAllPts(){
           else if(isMobile(t.shop))oM+=t.amount;
           else if(isPayPayShop(t.shop))oP+=t.amount;
           else oN+=t.amount;
+        }else if(bm==='三井住友カード(Olive デビット)'){
+          if(t.mobileOrder||isSeven(t.shop)||isVTarget(t.shop))oDT+=t.amount;
+          else oDN+=t.amount;
         }else if(bm==='PayPayクレジット'||bm==='PayPay残高'){
           pp+=calcBonusPt(t);
         }else if(bm==='楽天カード'){
@@ -3903,38 +3975,53 @@ function calcAllPts(){
   const ptM = Math.floor(oM/200) * Math.round(200*0.02);// U25携帯(2.0%)
   const ptP = Math.floor(oP/200) * Math.round(200*0.01);// U25 PayPay(1.0%)
   const ptN = Math.floor(oN/200) * 1;                   // 通常還元(0.5% = 200円で1pt)
-  const vPts = ptT + ptS + ptOrder + ptLounge + ptM + ptP + ptN;
+  const ptDT = Math.floor(oDT/200) * 3;                 // デビット 対象コンビニ・飲食店/モバイルオーダー(1.5% = 200円で3pt)
+  const ptDN = Math.floor(oDN/200) * 1;                 // デビット 通常還元(0.5% = 200円で1pt)
+  const vPts = ptT + ptS + ptOrder + ptLounge + ptM + ptP + ptN + ptDT + ptDN;
   // JCBカードW月間合算ポイント計算（200円毎2pt=1.0%、切り捨て）＋優待店ボーナス
   const ptJ = Math.floor(oJ/200) * 2;
   const jcb = ptJ + jcbBonus;
   const total = vPts + vCouponPts + pp + rk + sbi + ov + jcb + cardPts.rakuten + cardPts.d + cardPts.v;
-  return{cardRk:cardPts.rakuten,cardD:cardPts.d,cardV:cardPts.v,txs,vPts,pp,rk,sbi,ov,miscByType,vCouponPts,jcb,ptJ,jcbBonus,total,oT,oM,oP,oN,oS,oOrder,oLounge,oJ,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN};
+  return{cardRk:cardPts.rakuten,cardD:cardPts.d,cardV:cardPts.v,txs,vPts,pp,rk,sbi,ov,miscByType,vCouponPts,jcb,ptJ,jcbBonus,total,oT,oM,oP,oN,oS,oOrder,oLounge,oDT,oDN,oJ,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN,ptDT,ptDN};
 }
 
 // 任意の取引リスト(例: カードの請求サイクル分)からOlive(Vポイント)の区分別ポイントを計算する。
-// calcAllPtsと同じ区分・同じ切り捨てルール(200円ブロック)。Oliveは月末締めのため、渡す取引は1暦月分を想定。
-function calcOliveBreakdown(list){
-  const OL='三井住友カード(Olive)';
-  let oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,vCouponPts=0;
+// calcAllPtsと同じ区分・同じ切り捨てルール(200円ブロック)。mode: 'credit'(既定) | 'debit'
+function calcOliveBreakdown(list,mode){
+  const OL='三井住友カード(Olive)', OLD='三井住友カード(Olive デビット)';
+  const isDebit=(mode==='debit');
+  let oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,oDT=0,oDN=0,vCouponPts=0;
   (list||[]).forEach(t=>{
     if(t.type==='income')return;
-    if(t.method===OL){
-      if(isOliveLounge(t.shop))oLounge+=t.amount;
-      else if(t.mobileOrder)oOrder+=t.amount;
-      else if(isSeven(t.shop))oS+=t.amount;
-      else if(isVTarget(t.shop))oT+=t.amount;
-      else if(isMobile(t.shop))oM+=t.amount;
-      else if(isPayPayShop(t.shop))oP+=t.amount;
-      else oN+=t.amount;
-      if(t.vCoupon!=null&&t.vCoupon!=='') vCouponPts+=calcPt(t).pt;
-    }
-    if(t.chargeBonusMethod===OL){
-      if(isOliveLounge(t.shop))oLounge+=t.amount;
-      else if(isSeven(t.shop))oS+=t.amount;
-      else if(isVTarget(t.shop))oT+=t.amount;
-      else if(isMobile(t.shop))oM+=t.amount;
-      else if(isPayPayShop(t.shop))oP+=t.amount;
-      else oN+=t.amount;
+    if(!isDebit){
+      if(t.method===OL){
+        if(isOliveLounge(t.shop))oLounge+=t.amount;
+        else if(t.mobileOrder)oOrder+=t.amount;
+        else if(isSeven(t.shop))oS+=t.amount;
+        else if(isVTarget(t.shop))oT+=t.amount;
+        else if(isMobile(t.shop))oM+=t.amount;
+        else if(isPayPayShop(t.shop))oP+=t.amount;
+        else oN+=t.amount;
+        if(t.vCoupon!=null&&t.vCoupon!=='') vCouponPts+=calcPt(t).pt;
+      }
+      if(t.chargeBonusMethod===OL){
+        if(isOliveLounge(t.shop))oLounge+=t.amount;
+        else if(isSeven(t.shop))oS+=t.amount;
+        else if(isVTarget(t.shop))oT+=t.amount;
+        else if(isMobile(t.shop))oM+=t.amount;
+        else if(isPayPayShop(t.shop))oP+=t.amount;
+        else oN+=t.amount;
+      }
+    }else{
+      if(t.method===OLD){
+        if(t.mobileOrder||isSeven(t.shop)||isVTarget(t.shop))oDT+=t.amount;
+        else oDN+=t.amount;
+        if(t.vCoupon!=null&&t.vCoupon!=='') vCouponPts+=calcPt(t).pt;
+      }
+      if(t.chargeBonusMethod===OLD){
+        if(t.mobileOrder||isSeven(t.shop)||isVTarget(t.shop))oDT+=t.amount;
+        else oDN+=t.amount;
+      }
     }
   });
   const r=(0.5+S.pointSettings.vProgramRate)/100;
@@ -3946,8 +4033,10 @@ function calcOliveBreakdown(list){
   const ptM=Math.floor(oM/200)*Math.round(200*0.02);
   const ptP=Math.floor(oP/200)*Math.round(200*0.01);
   const ptN=Math.floor(oN/200)*1;
-  const vPts=ptT+ptS+ptOrder+ptLounge+ptM+ptP+ptN;
-  return{vPts,vCouponPts,total:vPts+vCouponPts,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN};
+  const ptDT=Math.floor(oDT/200)*3;
+  const ptDN=Math.floor(oDN/200)*1;
+  const vPts=ptT+ptS+ptOrder+ptLounge+ptM+ptP+ptN+ptDT+ptDN;
+  return{vPts,vCouponPts,total:vPts+vCouponPts,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN,ptDT,ptDN};
 }
 // Olive区分別ポイントを、実際のOlive明細名で並べた配列にする（0ptは除外）
 function oliveSubItems(b){
@@ -3958,6 +4047,8 @@ function oliveSubItems(b){
     {label:'コンビニ・飲食店 モバイルオーダーOlive', pt:b.ptOrder},
     {label:'リワードアップU25ご利用特典Olive', pt:b.ptM+b.ptP},
     {label:'通常のお支払いOlive', pt:b.ptN},
+    {label:'対象のコンビニ・飲食店(1.5%) Oliveデビット', pt:b.ptDT||0},
+    {label:'通常のお支払い(0.5%) Oliveデビット', pt:b.ptDN||0},
     {label:'Vクーポン加算分Olive', pt:b.vCouponPts}
   ].filter(x=>x.pt>0);
 }
@@ -4033,6 +4124,7 @@ function saveSettings(opts){
       brokerSpots:S.brokerSpots||[],
       marketCfg:S.marketCfg||null,
       assetHistory:S.assetHistory||[],
+      rpayCash:S.rpayCash||null,
       jcbCampaign:S.jcbCampaign||null
     };
     localStorage.setItem(SETTINGS_KEY,JSON.stringify(cfg));
@@ -4148,6 +4240,7 @@ function load(){
       if(cfg.brokerSpots) S.brokerSpots = cfg.brokerSpots;
       if(cfg.marketCfg&&typeof cfg.marketCfg==='object') S.marketCfg = cfg.marketCfg;
       if(cfg.assetHistory) S.assetHistory = cfg.assetHistory;
+      if(cfg.rpayCash) S.rpayCash = cfg.rpayCash;
       normalizeBrokers();
       if(cfg.jcbCampaign!==undefined) S.jcbCampaign = cfg.jcbCampaign;
     }
@@ -5428,8 +5521,55 @@ function renderCatComparison(){
 // 今月のサブスク一覧（ホーム最下部・「サブスクリプション」カテゴリの当月取引を表示）
 // ============================================================
 // デビットカードかどうか（即時引き落とし扱い）
-const DEBIT_METHODS=['住信SBI - デビット'];
+const DEBIT_METHODS=['住信SBI - デビット','三井住友カード(Olive デビット)'];
 function isDebitMethod(method){return DEBIT_METHODS.includes(method);}
+function getDebitLinkedAccount(method){
+  if(!isDebitMethod(method)) return null;
+  const cs=(S.cardSettings||[]).find(c=>c.method===method&&c.bankAccountId);
+  if(!cs) return null;
+  return (S.bankAccounts||[]).find(a=>a.id===cs.bankAccountId)||null;
+}
+function getDebitMethodForTx(t){
+  if(!t||t.type==='income') return null;
+  if(isDebitMethod(t.method)) return t.method;
+  if(t.chargeBonusMethod&&isDebitMethod(t.chargeBonusMethod)) return t.chargeBonusMethod;
+  return null;
+}
+function syncDebitBankTxForTx(tx, opts){
+  const isDelete=!!(opts&&opts.isDelete), onlyIfLinked=!!(opts&&opts.onlyIfLinked);
+  if(!tx||!tx.id) return {changed:false};
+  S.bankTx=S.bankTx||[];
+  const linked=S.bankTx.filter(b=>b.txId===tx.id);
+  if(onlyIfLinked&&linked.length===0) return {changed:false};
+  let changed=false;
+  const now=new Date().toISOString();
+  if(linked.length>0){
+    linked.forEach(b=>{
+      const acc=(S.bankAccounts||[]).find(a=>a.id===b.accountId);
+      if(acc&&acc.balance!=null){ acc.balance-=b.delta; acc.balanceUpdatedAt=now; }
+    });
+    S.bankTx=S.bankTx.filter(b=>b.txId!==tx.id);
+    changed=true;
+  }
+  let accName=null, amount=0;
+  if(!isDelete){
+    const dm=getDebitMethodForTx(tx);
+    const acc=dm?getDebitLinkedAccount(dm):null;
+    if(acc&&acc.balance!=null&&tx.amount>0){
+      const delta=-Math.round(tx.amount);
+      S.bankTx.push({id:'btx_'+uid(),accountId:acc.id,date:tx.date,kind:'out',delta,memo:(tx.shop||dm)+'（デビット自動）',txId:tx.id});
+      acc.balance+=delta; acc.balanceUpdatedAt=now;
+      accName=acc.name; amount=Math.round(tx.amount);
+      changed=true;
+    }
+  }
+  if(changed){
+    recordAssetSnapshot();
+    touchSettingsGroup('bank');
+    if(typeof renderAssets==='function') renderAssets();
+  }
+  return {changed,accName,amount};
+}
 
 
 
@@ -5564,8 +5704,8 @@ function saveCardSettingModal(){
     confirmDay:(isDebit||confirmVal==='')?null:parseInt(confirmVal),
     tentativeDay:(isDebit||tentativeVal==='')?null:parseInt(tentativeVal),
     limit:(isDebit||limitVal==='')?null:parseInt(limitVal),
-    bankAccount:isDebit?null:(bankAcc?bankAcc.name:null),
-    bankAccountId:isDebit?null:(bankAcc?bankAcc.id:null),
+    bankAccount:bankAcc?bankAcc.name:null,
+    bankAccountId:bankAcc?bankAcc.id:null,
     linkedMethods:isDebit?[]:linkedMethods,
     holidayRule:isDebit?null:$('cs-holiday-rule').value};
   if(editingCardSettingId){
@@ -5603,7 +5743,7 @@ function renderCardSettingList(){
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;cursor:pointer;';
     row.onclick=()=>openCardSettingModal(cs.id);
-    const debitLabel=isDebitMethod(cs.method)?'即時引き落とし（対象外）':`毎月${cs.debitDay}日引き落とし（${cs.holidayRule==='prev'?'休前日':'休翌日'}）・${cs.closingDay===31?'末日':cs.closingDay+'日'}締め（${closingPeriodText(cs)}）`;
+    const debitLabel=isDebitMethod(cs.method)?('即時引き落とし'+(cs.bankAccount?`（口座: ${cs.bankAccount}）`:'（口座未設定）')):`毎月${cs.debitDay}日引き落とし（${cs.holidayRule==='prev'?'休前日':'休翌日'}）・${cs.closingDay===31?'末日':cs.closingDay+'日'}締め（${closingPeriodText(cs)}）`;
     row.innerHTML=`
       <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;" onclick="event.stopPropagation();">
         <button onclick="moveCardSetting('${cs.id}',-1)" ${idx===0?'disabled':''} style="width:22px;height:18px;border:1px solid var(--border);background:var(--card);border-radius:4px;font-size:10px;line-height:1;cursor:pointer;color:var(--text2);${idx===0?'opacity:.3;cursor:default;':''}">▲</button>
@@ -5805,7 +5945,7 @@ function bankYen(n){ return (n<0?'−':'')+'¥'+Math.abs(Math.round(n)).toLocale
 function bankDateOnly(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
 function bankParseYmd(str){ const m=(str||'').match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; }
 function bankFmtMD(d){ return (d.getMonth()+1)+'/'+d.getDate(); }
-function bankTouch(){ recordAssetSnapshot(); touchSettingsGroup('bank'); save(); renderMonthlyDebitCard(); if(document.getElementById('bank-modal-overlay')&&document.getElementById('bank-modal-overlay').style.display!=='none') renderBankModal(); if(document.getElementById('ledger-modal-overlay')&&document.getElementById('ledger-modal-overlay').style.display!=='none') renderLedger(); if(document.getElementById('broker-modal-overlay')&&document.getElementById('broker-modal-overlay').style.display!=='none') renderBrokerModal(); renderAssets(); refreshCsBankSelect(); }
+function bankTouch(){ recordAssetSnapshot(); touchSettingsGroup('bank'); save(); renderMonthlyDebitCard(); if(document.getElementById('bank-modal-overlay')&&document.getElementById('bank-modal-overlay').style.display!=='none') renderBankModal(); if(document.getElementById('ledger-modal-overlay')&&document.getElementById('ledger-modal-overlay').style.display!=='none') renderLedger(); if(document.getElementById('rpay-cash-modal-overlay')&&document.getElementById('rpay-cash-modal-overlay').style.display!=='none') renderRpayCashModal(); if(document.getElementById('broker-modal-overlay')&&document.getElementById('broker-modal-overlay').style.display!=='none') renderBrokerModal(); renderAssets(); refreshCsBankSelect(); }
 
 // 既存カードの「引き落とし口座」(テキスト)から口座を自動作成し、カードに紐づける（idは名前から決めるので端末間でも同じになる）
 function ensureBankAccountsFromCards(){
@@ -5978,6 +6118,7 @@ function normalizeBrokers(){
 function calcAssetTotals(){
   let bank=0,broker=0,principal=0,pv=0,nP=0,any=false;
   (S.bankAccounts||[]).forEach(a=>{ if(a.balance!=null){ bank+=a.balance; any=true; } });
+  if(S.rpayCash&&S.rpayCash.balance!=null){ bank+=S.rpayCash.balance; any=true; }
   (S.brokerAccounts||[]).forEach(b=>{
     if(b.holdings&&b.holdings.length){
       b.holdings.forEach(x=>{ if(x.value!=null){ broker+=x.value; any=true; if(x.principal!=null){ principal+=x.principal; pv+=x.value; nP++; } } });
@@ -6025,6 +6166,16 @@ function renderAssets(){
       <span class="pt-ico" style="width:40px;height:40px;border-radius:14px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10M2 10l10-6 10 6"/></svg></span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">${bankEsc(a.name)}</div><div style="font-size:9.5px;color:var(--text3);">${a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'時点':'残高未入力'}</div></div>
       <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${a.balance==null?'未入力':bankYen(a.balance)}</div>
       <button type="button" class="btn" onclick="openLedger('${bankEsc(a.id)}')" style="font-size:10.5px;">明細</button></div>`).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">口座がありません。「口座・給料」から追加してください。</div>';
+  const rpb=document.getElementById('asset-rpay-box');
+  if(rpb){
+    const rc=S.rpayCash||{};
+    const upd=rc.updatedAt?bankFmtMD(new Date(rc.updatedAt))+'時点':'残高未入力';
+    rpb.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
+      ${getMethodLogoHtml('楽天ペイ',{size:32,brandSize:0})}
+      <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">楽天ペイ（キャッシュ）</div><div style="font-size:9.5px;color:var(--text3);">${upd}</div></div>
+      <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${rc.balance==null?'未入力':bankYen(rc.balance)}</div>
+    </div>`;
+  }
   const brs=S.brokerAccounts||[];
   const sl=document.getElementById('asset-broker-list');
   const gainTxt=(v,pr)=>{ if(v==null||pr==null) return ''; const g=v-pr; return `<span style="font-weight:700;color:${g>=0?'#2f7d57':'#b5443a'};">${g>=0?'+':'−'}${bankYen(Math.abs(g))}</span>`; };
@@ -6621,7 +6772,154 @@ function removeLedgerTx(id){
   const acc=(S.bankAccounts||[]).find(a=>a.id===x.accountId);
   if(acc&&acc.balance!=null){ acc.balance-=x.delta; acc.balanceUpdatedAt=new Date().toISOString(); }
   S.bankTx=S.bankTx.filter(e=>e.id!==id);
+  if(x.rpayLogId&&S.rpayCash&&Array.isArray(S.rpayCash.log)){
+    const rLog=S.rpayCash.log.find(r=>r.id===x.rpayLogId);
+    if(rLog){
+      if(S.rpayCash.balance!=null){ S.rpayCash.balance-=rLog.delta; S.rpayCash.updatedAt=new Date().toISOString(); }
+      S.rpayCash.log=S.rpayCash.log.filter(r=>r.id!==x.rpayLogId);
+    }
+  }
   bankTouch();
+}
+
+// ── 楽天ペイ残高（管理・銀行口座からのチャージ・支払い連動）──
+function ensureRpayCash(){
+  if(!S.rpayCash||typeof S.rpayCash!=='object') S.rpayCash={balance:null,updatedAt:null,log:[]};
+  if(!Array.isArray(S.rpayCash.log)) S.rpayCash.log=[];
+  return S.rpayCash;
+}
+function openRpayCashModal(focusMode){
+  const d=document.getElementById('rpay-chg-date');
+  if(d&&!d.value) d.value=ymdKey(new Date());
+  ['rpay-chg-amount','rpay-chg-memo','rpay-set-bal'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  renderRpayCashModal();
+  showModal('rpay-cash-modal-overlay');
+  if(focusMode==='charge'){ const el=document.getElementById('rpay-chg-amount'); if(el) setTimeout(()=>el.focus(),150); }
+}
+function renderRpayCashModal(){
+  const rc=ensureRpayCash();
+  const balEl=document.getElementById('rpay-cash-bal'), updEl=document.getElementById('rpay-cash-upd');
+  if(balEl) balEl.textContent=rc.balance==null?'未入力':bankYen(rc.balance);
+  if(updEl) updEl.textContent=rc.updatedAt?bankFmtMD(new Date(rc.updatedAt))+'時点':'';
+  const sel=document.getElementById('rpay-chg-acc');
+  if(sel){
+    const prev=sel.value;
+    const accs=S.bankAccounts||[];
+    sel.innerHTML=accs.length?accs.map(a=>`<option value="${bankEsc(a.id)}">${bankEsc(a.name)}（${a.balance==null?'残高未入力':bankYen(a.balance)}）</option>`).join(''):'<option value="">銀行口座が未登録です</option>';
+    if(prev&&accs.some(a=>a.id===prev)) sel.value=prev;
+  }
+  const logEl=document.getElementById('rpay-cash-log');
+  if(logEl){
+    const items=(rc.log||[]).slice(-20).reverse();
+    logEl.innerHTML=items.length?items.map(x=>{
+      const pos=x.delta>=0, adj=x.kind==='adjust';
+      const d=bankParseYmd(x.date);
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card2);border:1px solid var(--border);border-radius:10px;font-size:11px;${adj?'opacity:.75;':''}">
+        <span style="font-family:monospace;color:var(--text3);min-width:34px;">${d?bankFmtMD(d):''}</span>
+        <span style="flex:1;min-width:0;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${adj?'🔧 残高調整':(pos?'⚡ チャージ':'💳 支払い')}${x.memo?'　'+bankEsc(x.memo):''}</span>
+        <span style="font-family:monospace;font-weight:700;color:${pos?'#2f7d57':'#b5443a'};">${pos?'+':'−'}${bankYen(Math.abs(x.delta)).replace('−','')}</span>
+        <button type="button" onclick="removeRpayLog('${bankEsc(x.id)}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;">削除</button>
+      </div>`;
+    }).join(''):'<div style="font-size:11px;color:var(--text3);padding:8px 0;text-align:center;">履歴はまだありません。</div>';
+  }
+}
+function chargeRpayCash(){
+  const accId=(document.getElementById('rpay-chg-acc')||{}).value;
+  const dv=(document.getElementById('rpay-chg-date')||{}).value;
+  const av=parseFloat((document.getElementById('rpay-chg-amount')||{}).value);
+  const memo=((document.getElementById('rpay-chg-memo')||{}).value||'').trim();
+  const acc=(S.bankAccounts||[]).find(a=>a.id===accId);
+  if(!acc){ toast('先に銀行口座を追加してください（「口座・給料」から追加）','error'); return; }
+  if(!dv||isNaN(av)||av<=0){ toast('日付とチャージ額（1円以上）を入力してください','error'); return; }
+  const amt=Math.round(av), now=new Date().toISOString(), dateStr=dv.replace(/-/g,'/');
+  const rpayLogId='rpl_'+uid();
+  let bankTxId=null, bankDeducted=false;
+  if(acc.balance!=null){
+    bankTxId='btx_'+uid();
+    S.bankTx=S.bankTx||[];
+    S.bankTx.push({id:bankTxId,accountId:acc.id,date:dateStr,kind:'out',delta:-amt,memo:'楽天ペイへチャージ'+(memo?' '+memo:''),rpayLogId});
+    acc.balance-=amt; acc.balanceUpdatedAt=now;
+    bankDeducted=true;
+  }
+  const rc=ensureRpayCash();
+  rc.balance=(rc.balance==null?0:rc.balance)+amt;
+  rc.updatedAt=now;
+  rc.log.push({id:rpayLogId,date:dateStr,kind:'charge',delta:amt,memo:acc.name+'からチャージ'+(memo?' '+memo:''),bankAccountId:acc.id,bankTxId});
+  document.getElementById('rpay-chg-amount').value='';
+  document.getElementById('rpay-chg-memo').value='';
+  bankTouch();
+  toast(bankDeducted?`楽天ペイへ ¥${amt.toLocaleString()} チャージしました（${acc.name}から引き落とし）`:`楽天ペイ残高に ¥${amt.toLocaleString()} 追加しました（${acc.name}は残高未入力のため未変更）`,'success');
+}
+function updateRpayCashBalance(){
+  const el=document.getElementById('rpay-set-bal'); if(!el) return;
+  const v=parseFloat(el.value);
+  if(isNaN(v)){ toast('残高を数字で入力してください','error'); return; }
+  const rc=ensureRpayCash();
+  const nv=Math.round(v), now=new Date().toISOString();
+  if(rc.balance!=null&&nv!==rc.balance){
+    rc.log.push({id:'rpl_'+uid(),date:ymdKey(new Date()).replace(/-/g,'/'),kind:'adjust',delta:nv-rc.balance,memo:'残高の手動更新'});
+  }
+  rc.balance=nv; rc.updatedAt=now;
+  el.value='';
+  bankTouch();
+  toast('楽天ペイ残高を更新しました','success');
+}
+function removeRpayLog(id){
+  const rc=ensureRpayCash();
+  const x=rc.log.find(e=>e.id===id); if(!x) return;
+  if(!confirm('この履歴を削除しますか？楽天ペイ残高'+(x.bankTxId?'と銀行口座残高':'')+'も元に戻ります。')) return;
+  if(rc.balance!=null){ rc.balance-=x.delta; rc.updatedAt=new Date().toISOString(); }
+  rc.log=rc.log.filter(e=>e.id!==id);
+  if(x.bankTxId&&Array.isArray(S.bankTx)){
+    const btx=S.bankTx.find(b=>b.id===x.bankTxId);
+    if(btx){
+      const acc=(S.bankAccounts||[]).find(a=>a.id===btx.accountId);
+      if(acc&&acc.balance!=null){ acc.balance-=btx.delta; acc.balanceUpdatedAt=new Date().toISOString(); }
+      S.bankTx=S.bankTx.filter(b=>b.id!==x.bankTxId);
+    }
+  }
+  bankTouch();
+}
+function getRpayChargeUsedForTx(t){
+  if(!t||t.type==='income'||t.method!=='楽天ペイ') return 0;
+  const sp=rpaySplitOf(t);
+  if(sp) return Math.max(0,Math.round(sp.charge||0));
+  if(rpaySourceOf(t)==='charge') return Math.max(0,Math.round(t.amount||0));
+  return 0;
+}
+function syncRpayCashForTx(tx, opts){
+  const isDelete=!!(opts&&opts.isDelete), onlyIfLinked=!!(opts&&opts.onlyIfLinked);
+  if(!tx||!tx.id) return {changed:false};
+  const rc=S.rpayCash;
+  if(!rc||!Array.isArray(rc.log)) rc && (rc.log=[]);
+  const linked=(rc&&Array.isArray(rc.log))?rc.log.filter(b=>b.txId===tx.id):[];
+  if(onlyIfLinked&&linked.length===0) return {changed:false};
+  let changed=false;
+  const now=new Date().toISOString();
+  if(linked.length>0){
+    linked.forEach(b=>{ if(rc.balance!=null){ rc.balance-=b.delta; rc.updatedAt=now; } });
+    rc.log=rc.log.filter(b=>b.txId!==tx.id);
+    changed=true;
+  }
+  let amount=0;
+  if(!isDelete){
+    const used=getRpayChargeUsedForTx(tx);
+    if(used>0&&S.rpayCash&&S.rpayCash.balance!=null){
+      const delta=-used;
+      ensureRpayCash();
+      S.rpayCash.log.push({id:'rpl_'+uid(),date:tx.date,kind:'pay',delta,memo:(tx.shop||'楽天ペイ')+'（自動）',txId:tx.id});
+      S.rpayCash.balance+=delta;
+      S.rpayCash.updatedAt=now;
+      amount=used;
+      changed=true;
+    }
+  }
+  if(changed){
+    recordAssetSnapshot();
+    touchSettingsGroup('bank');
+    if(typeof renderAssets==='function') renderAssets();
+  }
+  return {changed,amount};
 }
 
 // ── 証券口座（保有区分ごとに、口座の種類×資産クラスで評価額を手入力）──
@@ -7927,6 +8225,10 @@ function bulkDeleteTx(){
     :`選択した${ids.length}件の取引を削除しますか？この操作は取り消せません。`;
   if(!confirm(confirmMsg))return;
   const deletedTxs=S.transactions.filter(t=>ids.includes(t.id));
+  deletedTxs.forEach(t=>{
+    syncDebitBankTxForTx(t,{isDelete:true,onlyIfLinked:true});
+    syncRpayCashForTx(t,{isDelete:true,onlyIfLinked:true});
+  });
   S.transactions=S.transactions.filter(t=>!ids.includes(t.id));
   ids.forEach(id=>addDeletedId(id)); // 他端末での復活を防ぐtombstoneを記録
   const fcIdsToRemove=[...new Set(deletedTxs.filter(t=>t.fixedCostItemId).map(t=>t.fixedCostItemId))];
@@ -8067,7 +8369,7 @@ function renderTable(){
     // 取引行
     txs.forEach(t=>{
       const{pt}=calcPt(t);
-      const isOlive=t.method==='三井住友カード(Olive)';
+      const isOlive=t.method==='三井住友カード(Olive)'||t.method==='三井住友カード(Olive デビット)';
       const isIncome=t.type==='income';
       const amtColor=isIncome?'var(--green)':'var(--text)';
       const prefix=isIncome?'+':'';
@@ -8194,7 +8496,7 @@ function rankToggleMethod(method){
   renderPointRank();
 }
 function rankPointTypeOf(method){
-  if(method==='三井住友カード(Olive)')return'Vポイント';
+  if(method==='三井住友カード(Olive)'||method==='三井住友カード(Olive デビット)')return'Vポイント';
   if(method==='JCBカードW')return'J-POINT';
   if(method==='PayPayクレジット'||method==='PayPay残高')return'PayPayポイント';
   if(method==='楽天カード'||method==='楽天ペイ')return'楽天ポイント';
@@ -8229,13 +8531,17 @@ function rankCalc(method,shop,amount,monthTxs){
   let usedHistory=false;
   if(hint){
     if(hint.pointRateOverride!=null&&hint.pointRateOverride!==''){ t.pointRateOverride=hint.pointRateOverride; usedHistory=true; }
-    if(hint.vCoupon!=null&&hint.vCoupon!==''&&method==='三井住友カード(Olive)'){ t.vCoupon=hint.vCoupon; usedHistory=true; }
+    if(hint.vCoupon!=null&&hint.vCoupon!==''&&(method==='三井住友カード(Olive)'||method==='三井住友カード(Olive デビット)')){ t.vCoupon=hint.vCoupon; usedHistory=true; }
   }
   let standalone=0, marginal=0, rule=calcPt(t).rule, note='';
   if(method==='三井住友カード(Olive)'){
-    standalone=calcOliveBreakdown([t]).total;
-    marginal=calcOliveBreakdown(monthTxs.concat([t])).total-calcOliveBreakdown(monthTxs).total;
+    standalone=calcOliveBreakdown([t],'credit').total;
+    marginal=calcOliveBreakdown(monthTxs.concat([t]),'credit').total-calcOliveBreakdown(monthTxs,'credit').total;
     if(/特約|セブン|LOUNGE|モバイルオーダー/.test(rule)) note='スマホのタッチ決済限定（カード払い・差し込みは通常の0.5%）';
+  }else if(method==='三井住友カード(Olive デビット)'){
+    standalone=calcOliveBreakdown([t],'debit').total;
+    marginal=calcOliveBreakdown(monthTxs.concat([t]),'debit').total-calcOliveBreakdown(monthTxs,'debit').total;
+    if(/対象店舗|モバイルオーダー/.test(rule)) note='スマホのタッチ決済・モバイルオーダー限定（カード現物・iD等は通常の0.5%）';
   }else if(method==='JCBカードW'){
     standalone=calcJcbCycle([t]).total;
     marginal=calcJcbCycle(monthTxs.concat([t])).total-calcJcbCycle(monthTxs).total;
@@ -8669,7 +8975,7 @@ async function gdriveDownload(opts){
       const groups={
         budget:['budgetLimit','budgetMode','catBudgets','monthlyBudgets','pinnedCats'],
         school:['schoolDays'],
-        bank:['bankAccounts','salaryEntries','bankTx','brokerAccounts','assetHistory','brokerAutoRules','brokerAutoLog','brokerSpots','marketCfg']
+        bank:['bankAccounts','salaryEntries','bankTx','brokerAccounts','assetHistory','brokerAutoRules','brokerAutoLog','brokerSpots','marketCfg','rpayCash']
       };
       const meta=Object.assign({}, cMeta);
       Object.keys(groups).forEach(g=>{
@@ -8787,7 +9093,7 @@ async function gdriveSync(){
 // 取引追加・編集モーダル
 // ============================================================
 const METHODS_LIST=[
-  '三井住友カード(Olive)','PayPayクレジット','PayPay残高',
+  '三井住友カード(Olive)','三井住友カード(Olive デビット)','PayPayクレジット','PayPay残高',
   '楽天カード','楽天ペイ','EPOSカード','V Point Pay','住信SBI - デビット','現金'
 ];
 const POINT_METHODS=['PayPayクレジット','PayPay残高'];
@@ -9030,8 +9336,8 @@ function onMethodChange(){
     const inCampaign=isInCampaignPeriod(dateVal||'');
     scratchWrap.style.display=(isPayPay&&inCampaign)?'block':'none';
   }
-  // 還元率（任意）欄の出し分け：Oliveのみ専用のVクーポン欄、それ以外は汎用の還元率欄
-  const isOlive=method==='三井住友カード(Olive)';
+  // 還元率（任意）欄の出し分け：Olive（クレジット・デビット）のみ専用のVクーポン欄、それ以外は汎用の還元率欄
+  const isOlive=method==='三井住友カード(Olive)'||method==='三井住友カード(Olive デビット)';
   const isJcb=method==='JCBカードW';
   const rateWrap=document.getElementById('tx-rate-override-wrap');
   const rateLabel=document.getElementById('tx-rate-override-label');
@@ -9097,10 +9403,22 @@ function updateOliveTxInfo(){
   const method=methodEl?methodEl.value:'';
   const noteEl=document.getElementById('tx-olive-target-note');
   if(!noteEl) return;
-  if(method!=='三井住友カード(Olive)'){ noteEl.style.display='none'; return; }
   const moEl=document.getElementById('tx-mobile-order');
   const shopEl=document.getElementById('tx-shop');
   const shop=shopEl?shopEl.value:'';
+  if(method==='三井住友カード(Olive デビット)'){
+    if(moEl&&moEl.checked){
+      noteEl.style.display='block';
+      noteEl.textContent='⚡ デビット モバイルオーダー（総還元率1.5%）';
+    }else if(isSeven(shop)||isVTarget(shop)){
+      noteEl.style.display='block';
+      noteEl.textContent='⚡ デビット 対象店舗特典適用中（スマホのタッチ決済限定・総還元率1.5%）';
+    }else{
+      noteEl.style.display='none';
+    }
+    return;
+  }
+  if(method!=='三井住友カード(Olive)'){ noteEl.style.display='none'; return; }
   if(isOliveLounge(shop)){
     noteEl.style.display='block';
     noteEl.textContent='⚡ Olive LOUNGE特典適用中（総還元率10.0%・スマホのタッチ決済限定）';
@@ -9273,7 +9591,8 @@ function saveTxModal(){
     S.fixedCostItems=(S.fixedCostItems||[]).filter(f=>f.id!==prevFcId);
   }
 
-  if(txModalMode==='edit'&&txEditKey){
+  const isEditMode=(txModalMode==='edit'&&txEditKey);
+  if(isEditMode){
     const idx=S.transactions.findIndex(t=>t.id===txEditKey);
     if(idx>=0){
       newTx.id=S.transactions[idx].id;
@@ -9291,10 +9610,16 @@ function saveTxModal(){
     S.transactions.push(newTx);
   }
 
+  const debitRes=syncDebitBankTxForTx(newTx,{isDelete:false,onlyIfLinked:!!isEditMode});
+  const rpayRes=syncRpayCashForTx(newTx,{isDelete:false,onlyIfLinked:!!isEditMode});
+
   recalc();save();renderAll();renderFixedCosts();brokerAutoScan();
   if(sbUser) sbUpsertTransaction(newTx).then(ok=>{ if(!ok) console.warn('Supabase同期失敗（ローカル保存は成功）:',newTx.id); });
   hideModal('tx-modal-overlay');
-  toast(txModalMode==='edit'?'取引を更新しました！':'取引を追加しました！','success');
+  let extraMsg='';
+  if(debitRes&&debitRes.accName) extraMsg+=`（${debitRes.accName} -¥${debitRes.amount.toLocaleString()}）`;
+  if(rpayRes&&rpayRes.amount>0) extraMsg+=`（楽天ペイ残高 -¥${rpayRes.amount.toLocaleString()}）`;
+  toast((isEditMode?'取引を更新しました！':'取引を追加しました！')+extraMsg,'success');
 }
 
 function editTx(key){openEditModal(key);}
@@ -9307,7 +9632,7 @@ function openTxDetailModal(key){
   const amtColor=isIncome?'var(--green)':'var(--text)';
   const prefix=isIncome?'+':'';
   const{pt}=calcPt(t);
-  const isOlive=t.method==='三井住友カード(Olive)';
+  const isOlive=t.method==='三井住友カード(Olive)'||t.method==='三井住友カード(Olive デビット)';
 
   $('tx-detail-icon').innerHTML=getShopLogoHtml(t.shop||'?',{size:64});
   setText('tx-detail-shop',t.shop||'利用先不明');
@@ -9365,6 +9690,10 @@ function deleteTx(key){
     :`「${t.shop}」¥${t.amount.toLocaleString()} を削除しますか？`;
   if(!confirm(confirmMsg))return;
   const idsToRemove=pairPartner?[t.id,pairPartner.id]:[t.id];
+  [t,pairPartner].filter(Boolean).forEach(tx=>{
+    syncDebitBankTxForTx(tx,{isDelete:true,onlyIfLinked:true});
+    syncRpayCashForTx(tx,{isDelete:true,onlyIfLinked:true});
+  });
   S.transactions=S.transactions.filter(tx=>!idsToRemove.includes(tx.id));
   idsToRemove.forEach(id=>addDeletedId(id)); // 他端末での復活を防ぐtombstoneを記録
   let fcRemoved=false;
@@ -10461,6 +10790,12 @@ function deleteSelectedDups(){
     if(mk===viewKey) S.transactions=S.transactions.filter(t=>!byMonth[mk].has(t.id));
   });
   const ids=[...new Set(picked.map(e=>e.id))].filter(id=>!stillExists.has(id));
+  picked.forEach(e=>{
+    if(!stillExists.has(e.id)){
+      syncDebitBankTxForTx(e.tx,{isDelete:true,onlyIfLinked:true});
+      syncRpayCashForTx(e.tx,{isDelete:true,onlyIfLinked:true});
+    }
+  });
   ids.forEach(id=>addDeletedId(id)); // 他端末で復活しないようにtombstoneを記録
   recalc();save();renderAll();renderFixedCosts();
   if(sbUser) ids.forEach(id=>sbDeleteTransaction(id).catch(e=>console.warn('Supabase削除同期失敗:',id,e)));
@@ -10665,7 +11000,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   var RK='finboo_readonly';
   function ro(){ return window.finbooRO&&window.finbooRO(); }
   var names=['openAddModal','openEditModal','saveTxModal','deleteTx','bulkDeleteTx','toggleRecovered','deleteSelectedDups','resolveDup','parseCsvAndApply','parseTotalCsv','doSync',
-   'saveCardSettingModal','deleteCardSetting','addBankAccount','removeBankAccount','addSalaryEntry','removeSalaryEntry','addLedgerTx','removeLedgerTx',
+   'saveCardSettingModal','deleteCardSetting','addBankAccount','removeBankAccount','addSalaryEntry','removeSalaryEntry','addLedgerTx','removeLedgerTx','chargeRpayCash','updateRpayCashBalance','removeRpayLog',
    'saveBrokerRule','saveBrokerSpot','addBrokerRuleAlloc','removeBrokerRule','brokerAutoScan','addBroker','addHolding','updateHolding','classifyHolding','removeHolding','removeBroker',
    'toggleRakutenOffsetDone','addFixedCostFromCandidate','saveFixedCostModal','deleteFixedCost','saveBudgetModal','toggleSchoolDay',
    'gdriveSync','gdriveUpload','gdriveLogin','sbUpsertTransaction','sbDeleteTransaction','sbSaveSettingsSnapshot','sbImportCurrentData','sbLogin','sbLogout',
