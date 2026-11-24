@@ -733,6 +733,27 @@ body.ro-on #btn-gdrive-login,body.ro-on #btn-gdrive-sync,body.ro-on #btn-gdrive-
   header + div.noscroll > div{padding-top:84px!important;}
 }
 
+/* ===== PC・タブレット幅: ナビゲーションレールをアプリのBentoトーン（深緑＋ライム）に統一 ===== */
+@media (min-width:768px){
+  header + div.noscroll,header.m3-scrolled + div.noscroll{
+    background:var(--hero)!important;border-right:none!important;border-radius:0 28px 28px 0;
+  }
+  #hdr-logo div div:first-child{color:#fff!important;}
+  #hdr-logo div div:last-child{color:rgba(255,255,255,.62)!important;}
+  header + div.noscroll .tab-t{color:rgba(255,255,255,.74);font-weight:600;border-radius:18px;transition:background .18s ease,color .18s ease;}
+  header + div.noscroll .tab-t:hover{background:rgba(255,255,255,.10);color:#fff;}
+  header + div.noscroll .tab-t.active{background:#d9e8a4;color:#2c3a16;font-weight:600;}
+  header + div.noscroll .tab-t.active svg{color:#2c3a16;}
+  header + div.noscroll .tab-t:focus-visible{outline:2px solid #d9e8a4;outline-offset:2px;}
+  #hdr-month>div{border-radius:999px;}
+}
+@media (min-width:1100px){
+  header + div.noscroll .tab-t{border-radius:999px;}
+}
+@media (prefers-reduced-motion:reduce){
+  header + div.noscroll .tab-t{transition:none;}
+}
+
 /* ===== 統一ルール: アイコン・文字の段階・ボタン・余白 ===== */
 .ico{display:inline-block;vertical-align:-.16em;flex:none;}
 /* 文字サイズの段階: 11(補足) / 12(小) / 13(本文) / 14 / 15。太さは 400・500・600 に集約（カレンダーは密なので除外） */
@@ -5007,6 +5028,59 @@ async function downloadPDF(){
     doc.text(`参考: 獲得予定ポイント ${pc.total.toLocaleString()} pt（収支には含まれません）`,MX,cursorY+3);
     doc.setTextColor(C.ink);
     cursorY+=10;
+
+    // 総資産サマリー＋証券の口座別合計（ダウンロード時点の現在値。月の選択には依存しない）
+    try{
+      const at=calcAssetTotals();
+      const pctA=v=>at.total>0?((v/at.total)*100).toFixed(1)+'%':'−';
+      const nowD=new Date();
+      const asOf=`${nowD.getFullYear()}/${String(nowD.getMonth()+1).padStart(2,'0')}/${String(nowD.getDate()).padStart(2,'0')}`;
+      cursorY=sectionTitle(`総資産サマリー（${asOf}時点の現在値）`,cursorY);
+      if(!at.any){
+        doc.setFont('MPLUS1p','normal'); doc.setFontSize(9.5); doc.setTextColor(C.sub);
+        doc.text('資産が未入力です（資産タブで銀行・証券の残高を入力すると表示されます）',MX,cursorY+4);
+        doc.setTextColor(C.ink);
+        cursorY+=12;
+      }else{
+        const gainRow=at.nP>0?[['証券の含み損益（元本入力のある分）',(at.gain>=0?'+':'−')+yen(at.gain),'']]:[];
+        doc.autoTable({
+          startY:cursorY, margin:{left:MX,right:MX},
+          head:[['項目','金額','構成比']],
+          body:[
+            ['総資産（銀行＋証券）',yen(at.total),'100%'],
+            ['　銀行（楽天ペイ・キャッシュ含む）',yen(at.bank),pctA(at.bank)],
+            ['　証券',yen(at.broker),pctA(at.broker)],
+          ].concat(gainRow),
+          styles:{font:'MPLUS1p',fontSize:9.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:3},
+          headStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold'},
+          columnStyles:{1:{halign:'right',cellWidth:42,fontStyle:'bold'},2:{halign:'right',cellWidth:24}},
+          alternateRowStyles:{fillColor:C.panel},
+          didParseCell:(d)=>{ if(d.section==='body'&&d.row.index===0){ d.cell.styles.fillColor=C.soft; d.cell.styles.fontStyle='bold'; } },
+        });
+        cursorY=doc.lastAutoTable.finalY+4;
+        // 証券の概要（口座別の合計のみ）
+        const brkRows=(S.brokerAccounts||[]).map(b=>{
+          const hs=b.holdings||[];
+          const v=hs.length?hs.reduce((s,x)=>s+(x.value!=null?x.value:0),0):b.value;
+          const hasV=hs.length?hs.some(x=>x.value!=null):b.value!=null;
+          return [b.name||'（名称未設定）',hasV?yen(v):'未入力',hasV&&at.broker>0?((v/at.broker)*100).toFixed(1)+'%':'−'];
+        });
+        if(brkRows.length){
+          doc.autoTable({
+            startY:cursorY, margin:{left:MX,right:MX},
+            head:[['証券の概要（口座別）','評価額','証券内の割合']],
+            body:brkRows,
+            styles:{font:'MPLUS1p',fontSize:9.5,textColor:C.ink,lineColor:C.line,lineWidth:0.2,cellPadding:3},
+            headStyles:{fillColor:C.soft,textColor:C.ink,fontStyle:'bold'},
+            columnStyles:{1:{halign:'right',cellWidth:42,fontStyle:'bold'},2:{halign:'right',cellWidth:30}},
+            alternateRowStyles:{fillColor:C.panel},
+          });
+          cursorY=doc.lastAutoTable.finalY+7;
+        }else{
+          cursorY+=3;
+        }
+      }
+    }catch(e){ console.warn('PDF asset section skipped',e); }
 
     // 立替の状況
     doc.autoTable({
