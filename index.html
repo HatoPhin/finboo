@@ -959,6 +959,12 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 #pane-assets>div:not(#asset-hero)>div>[style*="font-weight:700"][style*="color:var(--text2)"],
 #pane-assets>div:not(#asset-hero)>[style*="font-weight:700"][style*="color:var(--text2)"]{font-size:14px!important;color:var(--text)!important;}
 #asset-bank-list>div,#asset-broker-list>div,#asset-rpay-box>div{border-radius:20px!important;padding:12px 14px!important;}
+.bank-grp-card{background:var(--card2);border:1px solid var(--border);border-radius:20px!important;padding:14px!important;display:flex;flex-direction:column;gap:10px;}
+.bank-grp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.bank-grp-total{font-family:'Figtree','Noto Sans JP',sans-serif!important;font-size:21px!important;font-weight:700!important;letter-spacing:-.03em!important;font-variant-numeric:tabular-nums;color:var(--text);line-height:1.15;}
+.bank-grp-subs{background:var(--card);border:1px solid var(--border2);border-radius:14px!important;padding:2px 12px;display:flex;flex-direction:column;}
+.bank-grp-sub{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--border2);}
+.bank-grp-sub:last-child{border-bottom:none;}
 /* ボタン・バッジ・セグメント統一（ライト/ダーク両対応） */
 .btn:not(.btn-primary):not(.btn-ghost):not(.btn-danger):not(.hh-btn):not(.ah-btn){background:var(--card2);color:var(--text2);border:1px solid var(--border);}
 .btn:not(.btn-primary):not(.btn-ghost):not(.btn-danger):not(.hh-btn):not(.ah-btn):hover{background:var(--border2);}
@@ -6321,10 +6327,58 @@ function renderAssets(){
   if(typeof renderMarketCard==='function') renderMarketCard();
   const accs=S.bankAccounts||[];
   const bl=document.getElementById('asset-bank-list');
-  if(bl) bl.innerHTML=accs.length?accs.map(a=>`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
+  if(bl){
+    const bankRowHtml=a=>`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card2);border:1px solid var(--border);border-radius:12px;">
       <span class="pt-ico" style="width:40px;height:40px;border-radius:14px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10M2 10l10-6 10 6"/></svg></span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">${bankEsc(a.name)}</div><div style="font-size:9.5px;color:var(--text3);">${a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'時点':'残高未入力'}</div></div>
       <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${a.balance==null?'未入力':bankYen(a.balance)}</div>
-      <button type="button" class="btn btn-ghost" onclick="openLedger('${bankEsc(a.id)}')" style="font-size:10.5px;">明細</button></div>`).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">口座がありません。「口座・給料」から追加してください。</div>';
+      <button type="button" class="btn btn-ghost" onclick="openLedger('${bankEsc(a.id)}')" style="font-size:10.5px;">明細</button></div>`;
+    const isSmtbGrp=a=>/ドコモSMTB|SBIハイブリッド/i.test((a&&a.name)||'');
+    const smtbAccs=accs.filter(isSmtbGrp);
+    if(!accs.length){
+      bl.innerHTML='<div style="font-size:11px;color:var(--text3);padding:6px 0;">口座がありません。「口座・給料」から追加してください。</div>';
+    }else if(smtbAccs.length>=2){
+      smtbAccs.sort((a,b)=>(a.name.includes('ドコモSMTB')?0:1)-(b.name.includes('ドコモSMTB')?0:1));
+      const validBals=smtbAccs.map(a=>a.balance).filter(v=>v!=null&&!isNaN(v));
+      const grpTotal=validBals.reduce((s,v)=>s+v,0);
+      const grpTotalTxt=validBals.length?bankYen(grpTotal):'<span style="font-size:14px;color:var(--text3);">未入力</span>';
+      const subHtml=smtbAccs.map(a=>`<div class="bank-grp-sub">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:var(--primary);margin-right:7px;flex:none;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bankEsc(a.name)}</span></div>
+          <div style="font-size:9.5px;color:var(--text3);padding-left:13px;">${a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'時点':'残高未入力'}</div>
+        </div>
+        <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);flex:none;">${a.balance==null?'未入力':bankYen(a.balance)}</div>
+        <button type="button" class="btn btn-ghost" onclick="openLedger('${bankEsc(a.id)}')" style="font-size:10.5px;flex:none;">明細</button>
+      </div>`).join('');
+      const grpCardHtml=`<div class="bank-grp-card">
+        <div class="bank-grp-head">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <span class="pt-ico" style="width:40px;height:40px;border-radius:14px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10M2 10l10-6 10 6"/></svg></span>
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:12.5px;font-weight:700;color:var(--text);">ドコモSMTB グループ</span>
+                <span class="fb-bdg fb-bdg-sm fb-bdg-pt">${smtbAccs.length}口座</span>
+              </div>
+              <div style="font-size:9.5px;color:var(--text3);margin-top:2px;">グループ合計残高</div>
+            </div>
+          </div>
+          <div class="bank-grp-total" style="text-align:right;flex:none;">${grpTotalTxt}</div>
+        </div>
+        <div class="bank-grp-subs">${subHtml}</div>
+      </div>`;
+      let inserted=false;
+      const parts=[];
+      accs.forEach(a=>{
+        if(isSmtbGrp(a)){
+          if(!inserted){ parts.push(grpCardHtml); inserted=true; }
+        }else{
+          parts.push(bankRowHtml(a));
+        }
+      });
+      bl.innerHTML=parts.join('');
+    }else{
+      bl.innerHTML=accs.map(bankRowHtml).join('');
+    }
+  }
   const rpb=document.getElementById('asset-rpay-box');
   if(rpb){
     const rc=S.rpayCash||{};
