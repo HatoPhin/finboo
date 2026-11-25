@@ -971,6 +971,8 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
 .bank-grp-subs{background:var(--card);border:1px solid var(--border2);border-radius:14px!important;padding:2px 12px;margin-top:8px;display:flex;flex-direction:column;}
 .bank-grp-sub{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--border2);}
 .bank-grp-sub:last-child{border-bottom:none;}
+.bank-purpose-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px 12px;font-size:11.5px;font-weight:700;border-radius:10px!important;border:1.5px dashed var(--primary-border);background:var(--primary-light);color:var(--primary);cursor:pointer;}
+.bank-purpose-box{display:none;flex-direction:column;gap:8px;padding:10px;background:var(--primary-light);border:1px solid var(--primary-border);border-radius:12px!important;}
 /* ボタン・バッジ・セグメント統一（ライト/ダーク両対応） */
 .btn:not(.btn-primary):not(.btn-ghost):not(.btn-danger):not(.hh-btn):not(.ah-btn){background:var(--card2);color:var(--text2);border:1px solid var(--border);}
 .btn:not(.btn-primary):not(.btn-ghost):not(.btn-danger):not(.hh-btn):not(.ah-btn):hover{background:var(--border2);}
@@ -2206,19 +2208,24 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
         <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">口座と預金残高</div>
         <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:8px;">残高は手入力です。いつでも更新できます。<b>残高を更新した日より後</b>の給料・引き落としだけを計算に入れます（更新した日の分は、残高に反映済みとして扱います）。</div>
         <div id="bank-acc-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-        <div style="margin-top:10px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <select id="bank-new-group" onchange="onBankNewGroupChange()" style="flex:1;min-width:160px;padding:7px 10px;font-size:11.5px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
-              <option value="">通常の銀行口座</option>
-              <option value="smtb_purpose">🏦 ドコモSMTB 目的別口座</option>
-            </select>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+          <input id="bank-new-name" type="text" placeholder="口座名（例: 三井住友銀行）" style="flex:2;min-width:140px;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <input id="bank-new-balance" type="number" inputmode="numeric" placeholder="残高" style="flex:1;min-width:90px;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+          <button type="button" class="btn btn-primary" onclick="addBankAccount()" style="font-size:11.5px;">口座を追加</button>
+        </div>
+        <div style="margin-top:8px;">
+          <button type="button" id="bank-purpose-toggle" class="bank-purpose-btn" onclick="togglePurposeAddBox()">＋ 目的別口座を追加する（ドコモSMTBネット銀行）</button>
+          <div id="bank-purpose-box" class="bank-purpose-box">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:11px;font-weight:700;color:var(--primary);">🏦 ドコモSMTBネット銀行 — 目的別口座</span>
+              <button type="button" onclick="togglePurposeAddBox(false)" style="background:none;border:none;font-size:15px;color:var(--text3);cursor:pointer;padding:0 4px;">×</button>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <input id="bank-purpose-name" type="text" placeholder="目的名（例: 旅行、イギリス旅行、貯蓄）" style="flex:2;min-width:140px;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
+              <input id="bank-purpose-balance" type="number" inputmode="numeric" placeholder="残高" style="flex:1;min-width:90px;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
+              <button type="button" class="btn btn-primary" onclick="addPurposeAccount()" style="font-size:11.5px;">追加</button>
+            </div>
           </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <input id="bank-new-name" type="text" placeholder="口座名（例: 三井住友銀行）" style="flex:2;min-width:140px;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
-            <input id="bank-new-balance" type="number" inputmode="numeric" placeholder="残高" style="flex:1;min-width:90px;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--text);">
-            <button type="button" class="btn btn-primary" onclick="addBankAccount()" style="font-size:11.5px;">口座を追加</button>
-          </div>
-          <div id="bank-new-group-hint" style="display:none;font-size:10px;color:var(--primary);line-height:1.5;">「旅行」「貯蓄」など目的名だけ入力すればOKです（自動でドコモSMTBグループにまとまります）。</div>
         </div>
       </div>
       <div>
@@ -6188,31 +6195,36 @@ function renderBankModal(){
   }
 }
 
-function onBankNewGroupChange(){
-  const grp=(document.getElementById('bank-new-group')||{}).value||'';
-  const inp=document.getElementById('bank-new-name');
-  const hint=document.getElementById('bank-new-group-hint');
-  if(grp==='smtb_purpose'){
-    if(inp) inp.placeholder='目的名だけ入力（例: 旅行、イギリス旅行、貯蓄）';
-    if(hint) hint.style.display='block';
-  }else{
-    if(inp) inp.placeholder='口座名（例: 三井住友銀行）';
-    if(hint) hint.style.display='none';
-  }
+function togglePurposeAddBox(force){
+  const box=document.getElementById('bank-purpose-box');
+  const btn=document.getElementById('bank-purpose-toggle');
+  if(!box||!btn) return;
+  const show = typeof force==='boolean' ? force : box.style.display!=='flex';
+  box.style.display = show ? 'flex' : 'none';
+  btn.style.display = show ? 'none' : 'flex';
+  if(show){ const inp=document.getElementById('bank-purpose-name'); if(inp) inp.focus(); }
 }
-function addBankAccount(){
-  const rawName=(document.getElementById('bank-new-name').value||'').trim();
-  const grp=(document.getElementById('bank-new-group')||{}).value||'';
-  const bv=document.getElementById('bank-new-balance').value;
-  if(!rawName){ toast(grp==='smtb_purpose'?'目的名を入力してください':'口座名を入力してください','error'); return; }
-  // 目的別口座を選んだ場合は短い名前のまま保存し、group:'smtb' メタデータで確実にグループ化
-  const name = grp==='smtb_purpose' ? rawName.replace(/^ドコモSMTB(ネット銀行)?[\s　・\-_：:]*/,'').trim() || rawName : rawName;
-  if((S.bankAccounts||[]).some(a=>a.name===name && (a.group||'')===(grp==='smtb_purpose'?'smtb':''))){ toast('同じ名前の口座がすでにあります','error'); return; }
+function addPurposeAccount(){
+  const raw=(document.getElementById('bank-purpose-name').value||'').trim();
+  const bv=document.getElementById('bank-purpose-balance').value;
+  if(!raw){ toast('目的名を入力してください','error'); return; }
+  const name=raw.replace(/^ドコモSMTB(ネット銀行)?[\s　・\-_：:]*/,'').trim()||raw;
+  if((S.bankAccounts||[]).some(a=>a.name===name&&a.group==='smtb')){ toast('同じ名前の目的別口座がすでにあります','error'); return; }
   const bal=(bv===''||isNaN(parseFloat(bv)))?null:Math.round(parseFloat(bv));
   S.bankAccounts=S.bankAccounts||[];
-  const item={id:'ba_'+uid(),name,balance:bal,balanceUpdatedAt:bal==null?null:new Date().toISOString()};
-  if(grp==='smtb_purpose') item.group='smtb';
-  S.bankAccounts.push(item);
+  S.bankAccounts.push({id:'ba_'+uid(),name,balance:bal,balanceUpdatedAt:bal==null?null:new Date().toISOString(),group:'smtb'});
+  document.getElementById('bank-purpose-name').value=''; document.getElementById('bank-purpose-balance').value='';
+  togglePurposeAddBox(false);
+  bankTouch(); toast('目的別口座を追加しました','success');
+}
+function addBankAccount(){
+  const name=(document.getElementById('bank-new-name').value||'').trim();
+  const bv=document.getElementById('bank-new-balance').value;
+  if(!name){ toast('口座名を入力してください','error'); return; }
+  if((S.bankAccounts||[]).some(a=>a.name===name&&!a.group)){ toast('同じ名前の口座がすでにあります','error'); return; }
+  const bal=(bv===''||isNaN(parseFloat(bv)))?null:Math.round(parseFloat(bv));
+  S.bankAccounts=S.bankAccounts||[];
+  S.bankAccounts.push({id:'ba_'+uid(),name,balance:bal,balanceUpdatedAt:bal==null?null:new Date().toISOString()});
   document.getElementById('bank-new-name').value=''; document.getElementById('bank-new-balance').value='';
   bankTouch(); toast('口座を追加しました','success');
 }
@@ -6364,32 +6376,14 @@ function renderAssets(){
       <span class="pt-ico" style="width:40px;height:40px;border-radius:14px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10M2 10l10-6 10 6"/></svg></span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">${bankEsc(a.name)}</div><div style="font-size:9.5px;color:var(--text3);">${a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'時点':'残高未入力'}</div></div>
       <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${a.balance==null?'未入力':bankYen(a.balance)}</div>
       <button type="button" class="btn btn-ghost" onclick="openLedger('${bankEsc(a.id)}')" style="font-size:10.5px;">明細</button></div>`;
-    // ハイブリッド預金（表記ゆれ「ハイブリッド」「ハイブリット」両対応）
-    const isHybridAcc=a=>a&&(a.id==='ba_sbihybrid'||/SBIハイブリ[ッ]?[トド]預金/i.test(a.name||''));
-    // ドコモSMTB関連（group:'smtb'指定、初期ID、または名称一致）
-    const isSmtbGrp=a=>a&&(a.group==='smtb'||a.id==='ba_smtb'||isHybridAcc(a)||/ドコモSMTB|住信SBI|目的別/i.test(a.name||''));
-    const smtbAccs=accs.filter(isSmtbGrp);
+    const grp=getSmtbGroupMeta(accs);
     if(!accs.length){
       bl.innerHTML='<div style="font-size:11px;color:var(--text3);padding:6px 0;">口座がありません。「口座・給料」から追加してください。</div>';
-    }else if(smtbAccs.length>=2){
-      const hybAccs=smtbAccs.filter(isHybridAcc);
-      const normalAccs=smtbAccs.filter(a=>!isHybridAcc(a));
-      // 代表口座（普通預金）を先頭、その後に目的別口座を並べる
-      normalAccs.sort((a,b)=>{
-        const aMain=(a.id==='ba_smtb'||(!a.group&&/ドコモSMTBネット銀行|普通/.test(a.name||'')))?0:1;
-        const bMain=(b.id==='ba_smtb'||(!b.group&&/ドコモSMTBネット銀行|普通/.test(b.name||'')))?0:1;
-        return aMain-bMain;
-      });
-      // 上部合計: 普通預金口座 + 目的別口座の合計（SBIハイブリッド預金は別枠で下に表示）
-      const normalValid=normalAccs.map(a=>a.balance).filter(v=>v!=null&&!isNaN(v));
-      const normalSum=normalValid.reduce((s,v)=>s+v,0);
-      const normalSumTxt=normalValid.length?bankYen(normalSum):'<span style="font-size:14px;color:var(--text3);">未入力</span>';
-
-      // 常時表示の「SBIハイブリッド預金」行
-      const hybHtml=hybAccs.map(h=>`<div class="bank-grp-hyb">
+    }else if(grp){
+      const hybHtml=grp.hybAccs.map(h=>`<div class="bank-grp-hyb">
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;">
-            <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-text);opacity:.75;flex:none;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--primary);flex:none;"></span>
             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bankEsc(h.name)}</span>
           </div>
           <div style="font-size:9.5px;color:var(--text3);padding-left:12px;">${h.balanceUpdatedAt?bankFmtMD(new Date(h.balanceUpdatedAt))+'時点':'残高未入力'}</div>
@@ -6398,9 +6392,7 @@ function renderAssets(){
         <button type="button" class="btn btn-ghost" onclick="openLedger('${bankEsc(h.id)}')" style="font-size:10.5px;flex:none;">明細</button>
       </div>`).join('');
 
-      // プルダウン内の口座別残高（代表口座・目的別口座＋SBIハイブリッド預金）
-      const orderedSubs=[...normalAccs,...hybAccs];
-      const subHtml=orderedSubs.map(a=>{
+      const subHtml=grp.orderedSubs.map(a=>{
         const dispName = a.group==='smtb' ? `目的別・${a.name}` : (a.id==='ba_smtb' && a.name==='ドコモSMTBネット銀行' ? '代表口座（普通預金）' : a.name);
         return `<div class="bank-grp-sub">
           <div style="flex:1;min-width:0;">
@@ -6419,17 +6411,17 @@ function renderAssets(){
             <div style="min-width:0;">
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                 <span style="font-size:12.5px;font-weight:700;color:var(--text);">ドコモSMTBネット銀行</span>
-                <span class="fb-bdg fb-bdg-sm fb-bdg-pt">${smtbAccs.length}口座</span>
+                <span class="fb-bdg fb-bdg-sm fb-bdg-pt">${grp.smtbAccs.length}口座</span>
               </div>
               <div style="font-size:9.5px;color:var(--text3);margin-top:2px;">普通預金・目的別口座の合計</div>
             </div>
           </div>
-          <div class="bank-grp-total" style="text-align:right;flex:none;">${normalSumTxt}</div>
+          <div class="bank-grp-total" style="text-align:right;flex:none;">${grp.normalSumTxt}</div>
         </div>
         ${hybHtml}
         <details class="bank-grp-details">
           <summary>
-            <span>口座別の残高を見る（${orderedSubs.length}口座）</span>
+            <span>口座別の残高を見る（${grp.orderedSubs.length}口座）</span>
             <span class="bank-grp-chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
           </summary>
           <div class="bank-grp-subs">${subHtml}</div>
@@ -6439,7 +6431,7 @@ function renderAssets(){
       let inserted=false;
       const parts=[];
       accs.forEach(a=>{
-        if(isSmtbGrp(a)){
+        if(isSmtbGroupAcc(a)){
           if(!inserted){ parts.push(grpCardHtml); inserted=true; }
         }else{
           parts.push(bankRowHtml(a));
@@ -7425,6 +7417,28 @@ function removeBroker(id){
 const _bankExpanded={}, _bankEditing={};
 function toggleBankMore(id){ _bankExpanded[id]=!_bankExpanded[id]; renderBankJudge(); }
 function toggleBankEdit(id){ _bankEditing[id]=!_bankEditing[id]; renderBankJudge(); if(_bankEditing[id]){ const el=document.getElementById('bank-q-'+id); if(el) el.focus(); } }
+function isSmtbHybridAcc(a){
+  return !!(a&&(a.id==='ba_sbihybrid'||/SBIハイブリ[ッ]?[トド]預金/i.test(a.name||'')));
+}
+function isSmtbGroupAcc(a){
+  return !!(a&&(a.group==='smtb'||a.id==='ba_smtb'||isSmtbHybridAcc(a)||/ドコモSMTB|住信SBI|目的別/i.test(a.name||'')));
+}
+function getSmtbGroupMeta(accs){
+  const smtbAccs=(accs||[]).filter(isSmtbGroupAcc);
+  if(smtbAccs.length<2) return null;
+  const hybAccs=smtbAccs.filter(isSmtbHybridAcc);
+  const normalAccs=smtbAccs.filter(a=>!isSmtbHybridAcc(a));
+  normalAccs.sort((a,b)=>{
+    const aMain=(a.id==='ba_smtb'||(!a.group&&/ドコモSMTBネット銀行|普通/.test(a.name||'')))?0:1;
+    const bMain=(b.id==='ba_smtb'||(!b.group&&/ドコモSMTBネット銀行|普通/.test(b.name||'')))?0:1;
+    return aMain-bMain;
+  });
+  const normalValid=normalAccs.map(a=>a.balance).filter(v=>v!=null&&!isNaN(v));
+  const normalSum=normalValid.reduce((s,v)=>s+v,0);
+  const normalSumTxt=normalValid.length?bankYen(normalSum):'<span style="font-size:14px;color:var(--text3);">未入力</span>';
+  const orderedSubs=[...normalAccs,...hybAccs];
+  return {smtbAccs,hybAccs,normalAccs,normalValid,normalSum,normalSumTxt,orderedSubs};
+}
 function renderBankJudge(){
   const box=document.getElementById('bank-judge'); if(!box) return;
   const accs=S.bankAccounts||[];
@@ -7438,7 +7452,7 @@ function renderBankJudge(){
   const band={ok:['✅ 引き落とせます','var(--green)','var(--green-light)'],short:['⚠️ 残高が足りません','var(--red)','var(--red-light)'],unset:['残高を入力してください','var(--text3)','var(--card)'],none:['✅ 引き落とし予定なし','var(--text3)','var(--card)']};
   const SHOW=3;
   const today=bankDateOnly(new Date());
-  box.innerHTML=accs.map(a=>{
+  const renderSingleAccCard=a=>{
     const f=calcBankForecast(a); const b=band[f.status]; const id=bankEsc(a.id);
     const rowHtml=(ev,faded)=>{
       const isDeb=ev.type==='debit'; const passed=ev.date<today; const short=isDeb&&ev.short;
@@ -7476,7 +7490,110 @@ function renderBankJudge(){
       ${rows}
       ${f.status==='short'?`<div style="font-size:10px;color:var(--red);margin-top:6px;line-height:1.6;">引き落とし日までに入金するか、給料の入金日を「口座・給料」で入力してください。</div>`:''}
     </div>`;
-  }).join('')+warnUnlinked;
+  };
+
+  const grp=getSmtbGroupMeta(accs);
+  if(!grp){
+    box.innerHTML=accs.map(renderSingleAccCard).join('')+warnUnlinked;
+    return;
+  }
+
+  // ドコモSMTBグループ統合カード（ホーム画面用）
+  // 引き落とし判定は主に使われる代表口座(ba_smtb)または引き落とし設定が紐づく口座で実施
+  const judgeAcc = grp.normalAccs.find(a=>(S.cardSettings||[]).some(cs=>!isDebitMethod(cs.method)&&cs.bankAccountId===a.id))
+                || grp.normalAccs[0] || grp.smtbAccs[0];
+  const f=calcBankForecast(judgeAcc);
+  const b=band[f.status];
+  const jid=bankEsc(judgeAcc.id);
+  const rowHtml=(ev,faded)=>{
+    const isDeb=ev.type==='debit'; const passed=ev.date<today; const short=isDeb&&ev.short;
+    const note=(ev.partial?'<span style="font-size:9px;color:var(--text3);">（現時点の利用額）</span>':'')+(passed?'<span style="font-size:9px;color:var(--text3);">（日付経過・残高未更新）</span>':'');
+    const after=short?`<span style="color:var(--red);font-weight:800;">⚠️ ${bankYen(ev.short)} 不足</span>`:`引き落とし後 残 <span style="font-family:monospace;font-weight:700;color:var(--text2);">${bankYen(ev.after)}</span>`;
+    return `<div style="padding:6px 8px;border-radius:10px;margin-top:4px;${short?'background:var(--red-light);':''}${faded?'opacity:.5;':''}">
+      <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;">
+        <span style="font-family:monospace;color:var(--text3);min-width:34px;">${bankFmtMD(ev.date)}</span>
+        <span style="flex:1;min-width:0;color:var(--text2);">${isDeb?'💳':'💰'} ${bankEsc(ev.label)}${note}</span>
+        <span style="font-family:monospace;font-weight:700;color:${isDeb?'var(--text)':'var(--green)'};">${isDeb?'−':'+'}${bankYen(ev.amount)}</span>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin:2px 0 0 42px;">${after}</div></div>`;
+  };
+  const all=f.rows||[]; const head=all.slice(0,SHOW), rest=all.slice(SHOW);
+  const open=!!_bankExpanded[judgeAcc.id];
+  let rows=head.map(ev=>rowHtml(ev,false)).join('');
+  if(rest.length){
+    rows+= open ? rest.map(ev=>rowHtml(ev,false)).join('')
+                : rest.slice(0,1).map(ev=>`<div style="-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent);">${rowHtml(ev,true)}</div>`).join('');
+    rows+=`<button type="button" onclick="toggleBankMore('${jid}')" style="display:block;width:100%;margin-top:4px;padding:6px;font-size:10.5px;color:var(--text3);background:none;border:none;opacity:${open?1:.7};cursor:pointer;">${open?'閉じる ▴':`他${rest.length}件を見る ▾`}</button>`;
+  }
+
+  const hybHtml=grp.hybAccs.map(h=>`<div class="bank-grp-hyb" style="margin-bottom:8px;">
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:11.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--primary);flex:none;"></span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bankEsc(h.name)}</span>
+      </div>
+      <div style="font-size:9.5px;color:var(--text3);padding-left:12px;">${h.balanceUpdatedAt?bankFmtMD(new Date(h.balanceUpdatedAt))+'時点':'残高未入力'}</div>
+    </div>
+    <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);flex:none;">${h.balance==null?'未入力':bankYen(h.balance)}</div>
+    <button type="button" class="btn btn-ghost" onclick="openLedger('${bankEsc(h.id)}')" style="font-size:10.5px;flex:none;">明細</button>
+  </div>`).join('');
+
+  const subHtml=grp.orderedSubs.map(a=>{
+    const sid=bankEsc(a.id);
+    const editing=!!_bankEditing[a.id];
+    const dispName=a.group==='smtb'?`目的別・${a.name}`:(a.id==='ba_smtb'&&a.name==='ドコモSMTBネット銀行'?'代表口座（普通預金）':a.name);
+    return `<div class="bank-grp-sub" style="flex-direction:column;align-items:stretch;gap:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text);display:flex;align-items:center;"><span style="width:6px;height:6px;border-radius:50%;background:var(--primary);margin-right:7px;flex:none;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bankEsc(dispName)}</span></div>
+          <div style="font-size:9.5px;color:var(--text3);padding-left:13px;">${a.balanceUpdatedAt?bankFmtMD(new Date(a.balanceUpdatedAt))+'時点':'残高未入力'}</div>
+        </div>
+        <div style="font-size:13.5px;font-weight:800;font-family:monospace;color:var(--text);flex:none;">${a.balance==null?'未入力':bankYen(a.balance)}</div>
+        <span style="display:flex;gap:4px;flex:none;">
+          <button type="button" class="btn btn-ghost" onclick="openLedger('${sid}')" style="font-size:10px;padding:0 10px;min-height:30px;">明細</button>
+          <button type="button" class="btn btn-ghost" onclick="toggleBankEdit('${sid}')" style="font-size:10px;padding:0 10px;min-height:30px;">${editing?'閉じる':'更新'}</button>
+        </span>
+      </div>
+      ${editing?`<div style="display:flex;gap:6px;padding-left:13px;"><input id="bank-q-${sid}" type="number" inputmode="numeric" placeholder="新しい残高" style="flex:1;min-width:0;padding:5px 8px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"><button type="button" class="btn btn-primary" onclick="quickUpdateBankBalance('${sid}')" style="font-size:11px;min-height:30px;">保存</button></div>`:''}
+    </div>`;
+  }).join('');
+
+  const anySubEditing=grp.orderedSubs.some(a=>!!_bankEditing[a.id]);
+  const grpCard=`<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:12px;font-weight:700;color:var(--text2);">🏦 ドコモSMTBネット銀行</span>
+        <span class="fb-bdg fb-bdg-sm fb-bdg-pt">${grp.smtbAccs.length}口座</span>
+      </div>
+      <span style="font-size:9.5px;color:var(--text3);">普通預金・目的別合計</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 8px;">
+      <span style="font-size:24px;font-weight:800;color:var(--text);font-family:monospace;">${grp.normalSumTxt}</span>
+      <button type="button" class="btn btn-ghost" onclick="openBankModal()" style="font-size:10.5px;">残高を更新</button>
+    </div>
+    ${hybHtml}
+    <details class="bank-grp-details" ${anySubEditing?'open':''} style="margin-bottom:8px;">
+      <summary>
+        <span>口座別の残高を見る（${grp.orderedSubs.length}口座）</span>
+        <span class="bank-grp-chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </summary>
+      <div class="bank-grp-subs">${subHtml}</div>
+    </details>
+    <div style="padding:7px 10px;border-radius:10px;background:${b[2]};color:${b[1]};font-size:11.5px;font-weight:700;">${b[0]}</div>
+    ${rows}
+    ${f.status==='short'?`<div style="font-size:10px;color:var(--red);margin-top:6px;line-height:1.6;">引き落とし日までに入金するか、給料の入金日を「口座・給料」で入力してください。</div>`:''}
+  </div>`;
+
+  let inserted=false;
+  const parts=[];
+  accs.forEach(a=>{
+    if(isSmtbGroupAcc(a)){
+      if(!inserted){ parts.push(grpCard); inserted=true; }
+    }else{
+      parts.push(renderSingleAccCard(a));
+    }
+  });
+  box.innerHTML=parts.join('')+warnUnlinked;
 }
 
 // ホームタブ: 今月の引き落とし予定カード（引き落とし日ごとにグループ化）
