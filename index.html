@@ -1726,7 +1726,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
         <input id="new-method-name" type="text" placeholder="新しい決済手段名（例: モバイルSuica）" style="flex:1;padding:7px 10px;font-size:11px;">
         <button onclick="addCustomMethod()" class="btn btn-primary" style="font-size:11px;">追加</button>
       </div>
-      <div style="font-size:10px;color:var(--text3);">色・ロゴをタップして変更。グラフ・明細・カレンダーに即時反映されます。還元率は三井住友(Olive)・PayPay・楽天カード・住信SBIデビット以外の決済手段に設定できます（未設定の取引にのみ適用され、取引ごとの個別入力があればそちらが優先されます）。</div>
+      <div style="font-size:10px;color:var(--text3);">色・ロゴをタップして変更。グラフ・明細・カレンダーに即時反映されます。還元率は三井住友(Olive)・PayPay・楽天カード・SMTB Debit以外の決済手段に設定できます（未設定の取引にのみ適用され、取引ごとの個別入力があればそちらが優先されます）。</div>
     </div>
 
     <!-- 重複チェック -->
@@ -1746,7 +1746,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
     <!-- チャージ払いペア設定 -->
     <div style="border-top:1px solid var(--border);padding-top:20px;">
       <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px;">⚡ チャージ払いペア設定 <button type="button" onclick="openPayGuide()" title="決済方法の登録ガイド" aria-label="決済方法の登録ガイド" class="pg-help">？</button></div>
-      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">「チャージ元」から「チャージ先」へチャージして支払う運用（例：住信SBIデビット→V Point Pay）を登録しておくと、取引登録時に1回の入力で両方の決済手段にポイントを反映しつつ、支出・カード請求額の二重計上を防げます。</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">「チャージ元」から「チャージ先」へチャージして支払う運用（例：SMTB Debit→V Point Pay）を登録しておくと、取引登録時に1回の入力で両方の決済手段にポイントを反映しつつ、支出・カード請求額の二重計上を防げます。</div>
       <div id="chargepair-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         <select id="new-chargepair-source" style="flex:1;min-width:120px;padding:7px 10px;font-size:11px;"></select>
@@ -2313,7 +2313,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       <div class="pg-sec"><div class="pg-h">③ ポイント払い</div>
         <p>決済手段名に「（ポイント払い）」が付くものは、ポイントで支払った扱いです。カード請求額には含まれません。ポイント払いにチェックを入れて登録します。</p></div>
       <div class="pg-sec"><div class="pg-h">④ チャージ払いペア</div>
-        <p>「チャージ元」から「チャージ先」へチャージして支払う運用（例：住信SBIデビット → V Point Pay）を、設定画面の「⚡ チャージ払いペア設定」に登録します。登録すると、取引登録のとき1回の入力で両方の決済手段にポイントが反映され、支出とカード請求額の二重計上も防げます。ペアは新規登録時のみ選べます。</p></div>
+        <p>「チャージ元」から「チャージ先」へチャージして支払う運用（例：SMTB Debit → V Point Pay）を、設定画面の「⚡ チャージ払いペア設定」に登録します。登録すると、取引登録のとき1回の入力で両方の決済手段にポイントが反映され、支出とカード請求額の二重計上も防げます。ペアは新規登録時のみ選べます。</p></div>
       <div class="pg-sec"><div class="pg-h">⑤ 引き落とし月の調整</div>
         <p>ETCなど、利用日より遅れて請求されるものは、取引の追加・編集画面の「引き落とし月の調整」で<b>1〜3か月後ろにずらせます</b>（クレジットカード払いの支出のみ表示）。利用日と月別の支出は変わらず、カードの請求額と請求明細だけが移ります。</p></div>
       <div class="pg-sec"><div class="pg-h">⑥ 還元率・ポイントの入力欄</div>
@@ -2399,7 +2399,7 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">金額 *</label>
         <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--text3);font-size:13px;">¥</span><input id="fc-amount" type="number" min="0" step="100" style="flex:1;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div></div>
       <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">決済方法</label>
-        <input id="fc-method" type="text" placeholder="例: 住信SBI - デビット" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
+        <input id="fc-method" type="text" placeholder="例: SMTB Debit" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></div>
       <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">カテゴリ</label>
         <select id="fc-catmaj" style="width:100%;padding:9px 12px;font-size:13px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);"></select></div>
       <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;">毎月の引き落とし日（任意）</label>
@@ -2793,14 +2793,14 @@ const DEFAULT_METHOD_COLORS={
   "EPOSカード":"#5b7fa6",
   "V Point Pay":"#8c6bb0",
   "JCBカードW":"#4a6a96",
-  "住信SBI - デビット":"#5b97b8",
+  "SMTB Debit":"#5b97b8",
   "メルペイ":"#b5443a",
   "現金":"#6b7280",
   "収入":"#3f8f6b"
 };
 
 // 専用の還元率計算式を持つ決済手段（カードごとの還元率設定を適用しない）
-const METHODS_WITH_BUILTIN_RATE=["三井住友カード(Olive)","三井住友カード(Olive デビット)","PayPayクレジット","PayPay残高","PayPayクレジット（ポイント払い）","楽天カード","楽天ペイ","住信SBI - デビット","JCBカードW"];
+const METHODS_WITH_BUILTIN_RATE=["三井住友カード(Olive)","三井住友カード(Olive デビット)","PayPayクレジット","PayPay残高","PayPayクレジット（ポイント払い）","楽天カード","楽天ペイ","SMTB Debit","JCBカードW"];
 
 // デフォルト8種＋ユーザーが追加登録したカスタム決済手段を合わせた一覧（「収入」は含まない）
 function allMethodNames(){
@@ -2864,12 +2864,46 @@ const _rkMigrated=[];
 function migrateLegacyRakutenTx(list){
   let changed=false; const now=new Date().toISOString();
   (list||[]).forEach(t=>{
+    // 決済手段名の改名: 旧「住信SBI - デビット」→「SMTB Debit」（金額・日付などは変えず、名称のみ。更新時刻を進めて同期でも新しい方が優先される）
+    if(t&&(t.method==='住信SBI - デビット'||t.chargeBonusMethod==='住信SBI - デビット')){
+      if(t.method==='住信SBI - デビット') t.method='SMTB Debit';
+      if(t.chargeBonusMethod==='住信SBI - デビット') t.chargeBonusMethod='SMTB Debit';
+      t.updatedAt=now; _rkMigrated.push(t); changed=true;
+    }
     if(t&&t.method==='楽天カード（ポイント払い）'){
       t.method='楽天カード'; t.pointOffset=true; t.pointOffsetDone=false; t.updatedAt=now;
       _rkMigrated.push(t); changed=true;
     }
   });
   return changed;
+}
+// 住信SBIネット銀行→ドコモSMTBネット銀行への改名対応（設定側）。何度実行しても結果は同じ（冪等）。
+function migrateSmtbSettings(){
+  const OLDM='住信SBI - デビット', NEWM='SMTB Debit', NEWB='ドコモSMTBネット銀行', HYB='SBIハイブリッド預金';
+  let ch=false;
+  const rk=o=>{ if(o&&typeof o==='object'&&!Array.isArray(o)&&Object.prototype.hasOwnProperty.call(o,OLDM)){ if(!Object.prototype.hasOwnProperty.call(o,NEWM)) o[NEWM]=o[OLDM]; delete o[OLDM]; ch=true; } };
+  ['methodColors','methodLogos','methodBrands','methodPointRates','methodPointType','rankMethodOverrides'].forEach(k=>rk(S[k]));
+  if(Array.isArray(S.customMethods)&&S.customMethods.includes(OLDM)){
+    S.customMethods=S.customMethods.map(x=>x===OLDM?NEWM:x).filter((x,i,a)=>a.indexOf(x)===i); ch=true;
+  }
+  (S.cardSettings||[]).forEach(cs=>{
+    if(!cs) return;
+    if(cs.method===OLDM){ cs.method=NEWM; ch=true; }
+    if(Array.isArray(cs.linkedMethods)&&cs.linkedMethods.includes(OLDM)){ cs.linkedMethods=cs.linkedMethods.map(x=>x===OLDM?NEWM:x); ch=true; }
+    if(typeof cs.bankAccount==='string'&&cs.bankAccount.includes('住信SBI')){ cs.bankAccount=NEWB; ch=true; }
+  });
+  (S.chargePairs||[]).forEach(p=>{ if(!p) return; if(p.source===OLDM){ p.source=NEWM; ch=true; } if(p.target===OLDM){ p.target=NEWM; ch=true; } });
+  (S.fixedCostItems||[]).forEach(f=>{ if(f&&f.method===OLDM){ f.method=NEWM; ch=true; } });
+  // 銀行口座: 名前に「住信SBI」を含む既存口座は改名（idは変えない＝紐づけは維持）。無ければ追加。残高は未入力のまま。
+  S.bankAccounts=S.bankAccounts||[];
+  S.bankAccounts.forEach(a=>{ if(a&&typeof a.name==='string'&&a.name.includes('住信SBI')){ a.name=NEWB; ch=true; } });
+  let flag=null; try{ flag=localStorage.getItem('finboo_smtb_acc_v1'); }catch(e){}
+  if(!flag){
+    if(!S.bankAccounts.some(a=>a&&a.name===NEWB)){ S.bankAccounts.push({id:'ba_smtb',name:NEWB,balance:null,balanceUpdatedAt:null}); ch=true; }
+    if(!S.bankAccounts.some(a=>a&&a.name===HYB)){ S.bankAccounts.push({id:'ba_sbihybrid',name:HYB,balance:null,balanceUpdatedAt:null}); ch=true; }
+    try{ localStorage.setItem('finboo_smtb_acc_v1','1'); }catch(e){}
+  }
+  if(ch) saveSettings();
 }
 function flushRkMigrated(){
   if(!_rkMigrated.length||typeof sbUser==='undefined'||!sbUser||typeof sbUpsertTransaction!=='function') return;
@@ -3123,7 +3157,7 @@ const INIT={
   shopLogos:{},          // ブランドキー(チェーン名 or 利用先名) → Base64画像
   customShopBrands:[],   // ユーザーが追加登録したチェーン店名プレフィックス
   customMethods:[],      // ユーザーが追加登録した決済手段名の配列（デフォルト8種以外）
-  methodPointRates:{},   // 決済手段名 → デフォルト還元率(%)。専用計算式のある4手段（Olive/PayPay/楽天/住信SBIデビット）には適用されない
+  methodPointRates:{},   // 決済手段名 → デフォルト還元率(%)。専用計算式のある4手段（Olive/PayPay/楽天/SMTB Debit）には適用されない
   methodPointType:{},    // 決済手段名 → ポイントの種類名（例:「Tポイント」）。独自還元率の決済手段のポイント内訳をグループ分けするための表示用ラベル
   pointLogos:{},          // ポイント名(Vポイント等のラベル) → Base64画像。ポイント内訳モーダルのブランド画像表示用
   chargePairs:[],        // チャージ払いペア設定 [{id, source, target}]。sourceからtargetへチャージして払う運用を1回の入力で登録するための設定
@@ -3613,7 +3647,7 @@ function normalizeMethod(raw){
   if(s.includes('楽天カード')||s.includes('楽天ペイ')||s.includes('MasterCard'))return '楽天カード';
   if(s.includes('EPOS')||s.includes('エポス')||s.includes('VISA*7586'))return 'EPOSカード';
   if(s.includes('V Point Pay')||s.includes('VポイントPay')||s.includes('MEMBER*4240'))return 'V Point Pay';
-  if(s.includes('住信SBI')||s.includes('SBI')||s.includes('SUMISHIN'))return '住信SBI - デビット';
+  if(s.includes('住信SBI')||s.includes('SBI')||s.includes('SUMISHIN')||s.includes('SMTB')||s.includes('ドコモSMTB'))return 'SMTB Debit';
   if(s==='現金'||s.startsWith('現金'))return '現金';
   return null;
 }
@@ -3924,8 +3958,8 @@ function calcPt(t){
     if(t.amount<100)return{pt:0,rule:'100円未満対象外'};
     return{pt:Math.floor(t.amount/100)*1,rule:'都度(100円毎1pt)'};
   }
-  // 住信SBI - デビット（基本還元率0.8%）
-  if(t.method==='住信SBI - デビット'){
+  // SMTB Debit（基本還元率0.8%）
+  if(t.method==='SMTB Debit'){
     if(hasOverride){
       const rate=parseFloat(t.pointRateOverride);
       return{pt:Math.floor(t.amount*rate/100),rule:`都度(独自還元率${rate}%)`};
@@ -3989,7 +4023,7 @@ function calcAllPts(){
         pp+=pt;
       }else if(t.method==='楽天カード'||t.method==='楽天ペイ'||t.method==='楽天カード（ポイント払い）'){
         rk+=pt;
-      }else if(t.method==='住信SBI - デビット'){
+      }else if(t.method==='SMTB Debit'){
         sbi+=pt;
       }else if(t.method==='JCBカードW'){
         oJ+=t.amount;
@@ -4018,7 +4052,7 @@ function calcAllPts(){
           pp+=calcBonusPt(t);
         }else if(bm==='楽天カード'){
           rk+=calcBonusPt(t);
-        }else if(bm==='住信SBI - デビット'){
+        }else if(bm==='SMTB Debit'){
           sbi+=calcBonusPt(t);
         }else if(bm==='JCBカードW'){
           oJ+=t.amount;
@@ -4317,6 +4351,7 @@ function load(){
     }
   }catch(e){console.warn('load error:',e);}
   S.jcbPartnerShops = migrateJcbPartnerShops(S.jcbPartnerShops);
+  try{ migrateSmtbSettings(); }catch(e){ console.warn('smtb migrate',e); }
   ensureBankAccountsFromCards();
   // 旧「楽天カード（ポイント払い）」の取引を全月分まとめて変換（以降は各月の読み込み時にも自動変換される）
   try{
@@ -5385,7 +5420,7 @@ function openPtBreakdownModal(){
   const vSubItems=oliveSubItems(pc);
   addEntry('PayPayポイント', pc.pp, 'PayPayクレジット', 'PayPayカード・都度計算', false);
   addEntry('楽天ポイント', pc.rk, '楽天カード', '楽天カード・都度計算', false);
-  addEntry('dポイント', pc.sbi, '住信SBI - デビット', '住信SBI - デビット・都度計算(基本0.8%)', false);
+  addEntry('dポイント', pc.sbi, 'SMTB Debit', 'SMTB Debit・都度計算(基本0.8%)', false);
   if(pc.cardV>0) addEntry('Vポイント', pc.cardV, 'ポイントカード提示', 'ポイントカード提示分', true);
   if(pc.cardRk>0) addEntry('楽天ポイント', pc.cardRk, 'ポイントカード提示', 'ポイントカード提示分', true);
   if(pc.cardD>0) addEntry('dポイント', pc.cardD, 'ポイントカード提示', 'ポイントカード提示分', true);
@@ -5645,7 +5680,7 @@ function renderCatComparison(){
 // 今月のサブスク一覧（ホーム最下部・「サブスクリプション」カテゴリの当月取引を表示）
 // ============================================================
 // デビットカードかどうか（即時引き落とし扱い）
-const DEBIT_METHODS=['住信SBI - デビット','三井住友カード(Olive デビット)'];
+const DEBIT_METHODS=['SMTB Debit','三井住友カード(Olive デビット)'];
 function isDebitMethod(method){return DEBIT_METHODS.includes(method);}
 function getDebitLinkedAccount(method){
   if(!isDebitMethod(method)) return null;
@@ -6309,6 +6344,7 @@ function renderAssets(){
       <div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--text);">📈 ${bankEsc(b.name)}</div><div style="font-size:9.5px;color:var(--text3);">${b.valueUpdatedAt?bankFmtMD(new Date(b.valueUpdatedAt))+'時点':''}</div></div>
         <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${b.value==null?'未入力':bankYen(b.value)}</div></div>
       ${hs.map(x=>`<div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2);padding:4px 0 0;margin-top:4px;border-top:1px dashed var(--border);"><span style="flex:1;min-width:0;line-height:1.35;">${x.name?`<div style="font-weight:600;color:var(--text);word-break:break-word;">${bankEsc(x.name)}</div><div style="font-size:9.5px;color:var(--text3);">${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}</div>`:`${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}`}</span><span style="font-family:monospace;">${x.value==null?'-':bankYen(x.value)}</span><span style="font-family:monospace;min-width:62px;text-align:right;">${gainTxt(x.value,x.principal)}</span></div>`).join('')}
+      ${(()=>{ if(!/SBI証券/.test(b.name||'')) return ''; const hy=(S.bankAccounts||[]).find(a=>a.id==='ba_sbihybrid'||a.name==='SBIハイブリッド預金'); if(!hy) return ''; return `<div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2);padding:6px 0 0;margin-top:6px;border-top:1px dashed var(--border);"><span style="flex:1;min-width:0;line-height:1.35;"><div style="font-weight:700;color:var(--text);">購入余力</div><div style="font-size:9.5px;color:var(--text3);">SBIハイブリッド預金（残高は銀行側で計上済み・評価額には含めません）</div></span><span style="font-family:monospace;font-weight:700;">${hy.balance==null?'未入力':bankYen(hy.balance)}</span></div>`; })()}
     </div>`;
   }).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">証券口座がありません。右上の「管理」から追加してください。</div>';
   // 証券の内訳（資産クラス別・口座の種類別）
@@ -6870,7 +6906,7 @@ function addLedgerTx(){
   const delta=Math.round(av)*(_ledger.kind==='in'?1:-1);
   const alsoEl=document.getElementById('ledger-also');
   const alsoTx=!!(alsoEl&&alsoEl.checked);
-  // 決済手段: 口座名と同名の既存の決済手段があればそれを、口座名が基本名を含む既存の手段（例:「住信SBI - デビット」）があればそれを、なければ口座名を使う
+  // 決済手段: 口座名と同名の既存の決済手段があればそれを、口座名が基本名を含む既存の手段（例:「SMTB Debit」）があればそれを、なければ口座名を使う
   const known=[...new Set([...Object.keys(DEFAULT_METHOD_COLORS),...(S.customMethods||[]),...S.transactions.map(t=>t.method).filter(Boolean)])];
   const accMethod=known.find(m=>m===acc.name)||known.find(m=>{ const b=m.split(/\s*-\s*/)[0]; return m.includes(' - ')&&b.length>=3&&acc.name.includes(b); })||acc.name;
   if(alsoTx&&!confirm((delta>0?'収入':'支出')+'として通常の取引履歴にも登録します。\n\n'+dv.replace(/-/g,'/')+'　'+(memo||(delta>0?'口座入金':'口座出金'))+'　¥'+Math.abs(delta).toLocaleString()+(delta>0?'':'\n決済手段：'+accMethod)+'\n\nよろしいですか？（口座明細とは別々のデータになります）')) return;
@@ -7065,7 +7101,7 @@ function renderBrokerModal(){
       </div>`; }).join('')}
       <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
         <div style="font-size:10.5px;font-weight:700;color:var(--text3);margin-bottom:5px;">保有区分を追加</div>
-        <input id="hk-n-${id}" type="text" placeholder="銘柄名（任意　例: eMAXIS Slim 全世界株式）" style="width:100%;margin-bottom:6px;${inp}">
+        <input id="hk-n-${id}" type="text" placeholder="銘柄名（任意　例: eMAXIS Slim 全世界株式／米ドル預り金 $○○）" style="width:100%;margin-bottom:6px;${inp}">
         <div style="display:flex;gap:6px;margin-bottom:6px;"><select id="hk-a-${id}" style="flex:1;${inp}">${opts(BK_ACCT,'')}</select><select id="hk-c-${id}" style="flex:1;${inp}">${opts(BK_CLS,'')}</select></div>
         <div style="display:flex;gap:6px;"><input id="hk-v-${id}" type="number" inputmode="numeric" placeholder="評価額" style="flex:1;${inp}"><input id="hk-p-${id}" type="number" inputmode="numeric" placeholder="元本（任意）" style="flex:1;${inp}"><button type="button" class="btn btn-primary" onclick="addHolding('${id}')" style="font-size:11px;">追加</button></div>
       </div>
@@ -7089,7 +7125,7 @@ function renderBrokerRules(){
     ${brs.length?`<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
       <select id="br-broker" style="${inp}">${brs.map(b=>`<option value="${bankEsc(b.id)}">${bankEsc(b.name)}</option>`).join('')}</select>
       <input id="br-kw" type="text" placeholder="利用先キーワード（例: SBI投信積立）" style="${inp}">
-      <input id="br-n" type="text" placeholder="銘柄名（任意　例: オルカン）" style="${inp}">
+      <input id="br-n" type="text" placeholder="銘柄名（任意　例: オルカン／米ドル預り金 $○○）" style="${inp}">
       <div style="display:flex;gap:6px;"><select id="br-a" style="flex:1;${inp}">${opts(BK_ACCT)}</select><select id="br-c" style="flex:1;${inp}">${opts(BK_CLS)}</select></div>
       <input id="br-amt" type="number" inputmode="numeric" placeholder="毎月の積立額（円）" style="${inp}">
       <button type="button" class="btn" onclick="addBrokerRuleAlloc()" style="font-size:11px;">＋ 配分に追加</button>
@@ -8624,7 +8660,7 @@ function rankPointTypeOf(method){
   if(method==='JCBカードW')return'J-POINT';
   if(method==='PayPayクレジット'||method==='PayPay残高')return'PayPayポイント';
   if(method==='楽天カード'||method==='楽天ペイ')return'楽天ポイント';
-  if(method==='住信SBI - デビット')return'dポイント';
+  if(method==='SMTB Debit')return'dポイント';
   return (S.methodPointType&&S.methodPointType[method])||method;
 }
 // 過去に同じ店・同じ決済手段で払った取引から、個別還元率やVクーポンの最新の実績を拾う
@@ -9218,7 +9254,7 @@ async function gdriveSync(){
 // ============================================================
 const METHODS_LIST=[
   '三井住友カード(Olive)','三井住友カード(Olive デビット)','PayPayクレジット','PayPay残高',
-  '楽天カード','楽天ペイ','EPOSカード','V Point Pay','住信SBI - デビット','現金'
+  '楽天カード','楽天ペイ','EPOSカード','V Point Pay','SMTB Debit','現金'
 ];
 const POINT_METHODS=['PayPayクレジット','PayPay残高'];
 
