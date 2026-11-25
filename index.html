@@ -1125,6 +1125,33 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       <button type="button" class="hh-btn hh-btn-solid" onclick="openAddModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>支出を追加</button>
     </div>
   </section>
+  <!-- Prototype: ホームのBentoウィジェット（既存の集計値を読み取って描画／データ構造は変更しない） -->
+  <section id="hb-wrap" class="hb-grid" aria-label="ポイント・出費カレンダー・資産推移">
+    <div id="hb-pt" class="hb-card" role="button" tabindex="0">
+      <div class="hb-title">獲得ポイント</div>
+      <div class="hb-ring">
+        <svg viewBox="0 0 120 120" width="100%" aria-hidden="true">
+          <circle cx="60" cy="60" r="46" class="hb-track"/>
+          <circle id="hb-arc-v" class="hb-arc" cx="60" cy="60" r="46" style="stroke:var(--primary)"/>
+          <circle id="hb-arc-p" class="hb-arc" cx="60" cy="60" r="46" style="stroke:#7fc9a0"/>
+          <circle id="hb-arc-o" class="hb-arc" cx="60" cy="60" r="46" style="stroke:#c3d4cb"/>
+        </svg>
+        <div class="hb-ring-c"><div id="hb-pt-total">0</div><span>pt</span></div>
+      </div>
+      <div class="hb-foot">還元率 <b id="hb-rate">0.0%</b></div>
+    </div>
+    <div id="hb-cal" class="hb-card">
+      <div class="hb-title-row"><div class="hb-title">出費カレンダー</div>
+        <button type="button" class="hb-more" onclick="switchTab('calendar')" aria-label="カレンダーを開く">›</button></div>
+      <div id="hb-cal-grid" class="hb-cal-grid"></div>
+      <div id="hb-cal-tip" class="hb-tip" style="display:none;"></div>
+    </div>
+    <div id="hb-asset" class="hb-card hb-wide">
+      <div class="hb-title-row"><div class="hb-title">資産推移</div>
+        <button type="button" class="hb-more hb-more-t" onclick="switchTab('assets')">詳細 ›</button></div>
+      <div id="hb-asset-body"></div>
+    </div>
+  </section>
   <!-- 上段: ポイントバナー + 予算 -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="md:col-span-2" onclick="openPtBreakdownModal()" style="cursor:pointer;background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 90%,#000) 0%,color-mix(in srgb,var(--primary) 50%,#0d1117) 50%,#0d1117 100%);border-radius:12px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;color:#fff;position:relative;overflow:hidden;">
@@ -11502,6 +11529,124 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 // FINBOO_NOTIFICATIONS_END
 
+</script>
+<style id="fb-prototype-home">
+/* ===== Prototype: ホームのBentoウィジェット（質感は既存のカードに合わせる） ===== */
+/* 既存のポイントバナーはウィジェットに置き換え（要素はJS同期のため残す） */
+#pane-dashboard > .grid > [onclick^="openPtBreakdownModal"]{display:none!important;}
+#pane-dashboard > .grid{grid-template-columns:minmax(0,1fr)!important;}
+/* Bentoウィジェット */
+.hb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.hb-card{background:var(--card);border:1px solid var(--border);border-radius:24px;box-shadow:var(--card-shadow);padding:16px;position:relative;min-width:0;}
+.hb-wide{grid-column:1 / -1;}
+#hb-pt{cursor:pointer;display:flex;flex-direction:column;}
+.hb-title{font-size:13px;font-weight:600;color:var(--text);letter-spacing:-.01em;}
+.hb-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.hb-more{border:none;background:var(--card2);color:var(--text2);width:28px;height:28px;border-radius:999px;font-size:16px;line-height:1;cursor:pointer;font-weight:600;}
+.hb-more-t{width:auto;padding:0 12px;font-size:11px;}
+.hb-ring{position:relative;width:min(100%,150px);margin:8px auto 4px;}
+.hb-track{fill:none;stroke:color-mix(in srgb,var(--primary) 10%,var(--card2));stroke-width:12;}
+.hb-arc{fill:none;stroke-width:12;stroke-linecap:round;transform:rotate(-90deg);transform-origin:60px 60px;transition:stroke-dasharray .8s cubic-bezier(.2,.8,.2,1),stroke-dashoffset .8s cubic-bezier(.2,.8,.2,1);}
+.hb-ring-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text);}
+.hb-ring-c div{font-size:24px;font-weight:700;font-family:var(--serif,inherit);font-variant-numeric:tabular-nums;line-height:1.1;}
+.hb-ring-c span{font-size:11px;color:var(--text3);font-weight:600;}
+.hb-foot{text-align:center;font-size:11px;color:var(--text3);margin-top:auto;}
+.hb-foot b{color:var(--primary);font-weight:700;}
+.hb-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;}
+.hb-dow{font-size:9px;color:var(--text3);font-weight:600;padding-bottom:2px;}
+.hb-d{aspect-ratio:1;max-height:26px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--text2);border-radius:999px;border:none;background:transparent;cursor:pointer;padding:0;font-variant-numeric:tabular-nums;}
+.hb-d.has{background:var(--primary-light);color:var(--text);}
+.hb-d.today{background:var(--hero);color:#fff;}
+.hb-d.sel{outline:2px solid var(--primary);outline-offset:-2px;}
+.hb-d:disabled{cursor:default;}
+.hb-tip{margin-top:8px;padding:8px 10px;border-radius:14px;background:var(--card2);font-size:10.5px;color:var(--text2);line-height:1.6;}
+.hb-tip b{color:var(--text);}
+.hb-msg{font-size:11px;color:var(--text3);line-height:1.7;padding:22px 8px;text-align:center;}
+#hb-asset svg{display:block;width:100%;height:auto;overflow:visible;}
+@media (min-width:768px){ .hb-card{padding:20px;} .hb-d{max-height:32px;font-size:11px;} }
+@media (prefers-reduced-motion:reduce){ .hb-arc{transition:none;} }
+</style>
+<script>
+// ===== Prototype: ホームBentoウィジェット（既存の集計値・Sを読むだけ。データ構造は変更しない） =====
+(function(){
+  var $=function(i){return document.getElementById(i);};
+  var C=2*Math.PI*46, hbSel=null;
+  function num(id){ var e=$(id); if(!e)return 0; if(typeof e._cv==='number')return e._cv; var m=(e.textContent||'').replace(/,/g,'').match(/-?\d+(?:\.\d+)?/); return m?parseFloat(m[0]):0; }
+  function ptRing(){
+    var t=Math.max(0,num('ui-total-pts')), v=Math.min(Math.max(0,num('ui-vpts')),t), p=Math.min(Math.max(0,num('ui-pppts')),Math.max(0,t-v)), o=Math.max(0,t-v-p);
+    var tot=t>0?t:1, off=0, gap=2;
+    $('hb-pt-total').textContent=Math.round(t).toLocaleString();
+    var r=($('ui-avg-rate')||{}).textContent; $('hb-rate').textContent=r||'0.0%';
+    [['hb-arc-v',v],['hb-arc-p',p],['hb-arc-o',o]].forEach(function(a){
+      var len=a[1]/tot*C, vis=len>gap+1?len-gap:0, el=$(a[0]); if(!el)return;
+      el.style.strokeDasharray=vis+' '+(C-vis); el.style.strokeDashoffset=-off; el.style.opacity=vis>0?1:0; off+=len;
+    });
+  }
+  function dailyStats(){
+    var y=S.viewYear,m=S.viewMonth,days=daysInMonth(y,m),ym=y+'/'+String(m).padStart(2,'0'),d={};
+    for(var i=1;i<=days;i++) d[ym+'/'+String(i).padStart(2,'0')]={exp:0,inc:0,pts:0};
+    (S.transactions||[]).forEach(function(t){
+      var ds=t.date; if(!ds||d[ds]===undefined)return;
+      if(t.type==='income'){ d[ds].inc+=t.amount; }
+      else{
+        if(!isKaetate(t)&&!isPointPayment(t)&&!isExcludedFromAggregate(t)){ var sp=rpaySplitOf(t); d[ds].exp+=sp?(t.amount-sp.point):t.amount; }
+        d[ds].pts+=calcPt(t).pt;
+      }
+    });
+    return {d:d,ym:ym,days:days,fdow:firstDOW(y,m)};
+  }
+  function calRender(){
+    var g=$('hb-cal-grid'); if(!g)return;
+    var st=dailyStats(), now=new Date(), todayKey=now.getFullYear()+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+String(now.getDate()).padStart(2,'0');
+    var h='';
+    ['日','月','火','水','木','金','土'].forEach(function(w){ h+='<div class="hb-dow">'+w+'</div>'; });
+    for(var i=0;i<st.fdow;i++) h+='<div></div>';
+    for(var n=1;n<=st.days;n++){
+      var ds=st.ym+'/'+String(n).padStart(2,'0'), s=st.d[ds], cls='hb-d';
+      if(s.exp>0||s.inc>0) cls+=' has'; if(ds===todayKey) cls+=' today'; if(ds===hbSel) cls+=' sel';
+      h+='<button type="button" class="'+cls+'" data-ds="'+ds+'" aria-label="'+n+'日">'+n+'</button>';
+    }
+    g.innerHTML=h;
+    g.querySelectorAll('.hb-d').forEach(function(b){ b.onclick=function(){ hbSel=(hbSel===b.dataset.ds)?null:b.dataset.ds; calRender(); }; });
+    var tip=$('hb-cal-tip');
+    if(hbSel&&st.d[hbSel]){
+      var s2=st.d[hbSel], md=hbSel.slice(5).replace('/','/');
+      tip.style.display='block';
+      tip.innerHTML='<b>'+md+'</b>　'+(s2.exp>0||s2.inc>0?('支出 <b>¥'+s2.exp.toLocaleString()+'</b>'+(s2.inc>0?'　収入 <b>¥'+s2.inc.toLocaleString()+'</b>':'')+(s2.pts>0?'　+'+s2.pts+'pt':'')):'記録なし');
+    }else{ tip.style.display='none'; }
+  }
+  function assetRender(){
+    var box=$('hb-asset-body'); if(!box)return;
+    var t; try{ t=calcAssetTotals(); }catch(e){ t={any:false,bank:0,broker:0}; }
+    var today=ymdKey(new Date()), c=new Date(); c.setMonth(c.getMonth()-3); var ck=ymdKey(c);
+    var all=(S.assetHistory||[]).filter(function(p){return p.d!==today;});
+    if(t.any) all.push({d:today,bank:t.bank,broker:t.broker});
+    var pts=all.filter(function(p){return p.d>=ck;}); var bf=all.filter(function(p){return p.d<ck;}).slice(-1); pts=bf.concat(pts);
+    if(pts.length<2){ box.innerHTML='<div class="hb-msg">残高や評価額を更新するたびに記録され、2日分以上たまると推移が表示されます。</div>'; return; }
+    var vals=pts.map(function(p){return p.bank+p.broker;}), mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), rg=(mx-mn)||Math.max(1,mx*.1);
+    var W=Math.max(280,Math.round(box.clientWidth||320)),H=W>520?170:130,L=8,R=8,T=26,B=24, iw=W-L-R, ih=H-T-B;
+    var xy=vals.map(function(v,i){ return [L+iw*i/(vals.length-1), T+ih*(1-(v-mn)/rg)]; });
+    var line=xy.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ');
+    var area=line+' L'+xy[xy.length-1][0].toFixed(1)+' '+(H-B)+' L'+xy[0][0].toFixed(1)+' '+(H-B)+' Z';
+    var dots=vals.length<=40?xy.map(function(p){return '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="var(--card)" stroke="var(--primary)" stroke-width="2"/>';}).join(''):'';
+    var last=xy[xy.length-1], lbl=bankYen(vals[vals.length-1]), bw=lbl.length*7+16, bx=Math.min(Math.max(last[0]-bw/2,0),W-bw);
+    var ticks=''; var nt=Math.min(5,pts.length);
+    for(var k=0;k<nt;k++){ var idx=Math.round(k*(pts.length-1)/(nt-1||1)), m=pts[idx].d.split('-'); ticks+='<text x="'+xy[idx][0].toFixed(1)+'" y="'+(H-6)+'" text-anchor="'+(k===0?'start':k===nt-1?'end':'middle')+'" font-size="9" fill="var(--text3)">'+(+m[1])+'/'+(+m[2])+'</text>'; }
+    box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="総資産の推移"><defs><linearGradient id="hb-ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--primary)" stop-opacity=".22"/><stop offset="1" stop-color="var(--primary)" stop-opacity="0"/></linearGradient></defs>'+
+      '<path d="'+area+'" fill="url(#hb-ag)"/><path d="'+line+'" fill="none" stroke="var(--primary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'+dots+
+      '<rect x="'+bx.toFixed(1)+'" y="'+Math.max(0,last[1]-24).toFixed(1)+'" width="'+bw+'" height="18" rx="9" fill="var(--hero)"/><text x="'+(bx+bw/2).toFixed(1)+'" y="'+Math.max(12,last[1]-11).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">'+lbl+'</text>'+ticks+'</svg>';
+  }
+  var ptc=$('hb-pt'); if(ptc){ ptc.addEventListener('click',function(){ openPtBreakdownModal(); }); ptc.addEventListener('keydown',function(e){ if(e.key==='Enter')openPtBreakdownModal(); }); }
+  function hbRender(){ try{ ptRing(); calRender(); assetRender(); }catch(e){ console.warn('hb render',e); } }
+  var _ra=window.renderAll;
+  if(typeof _ra==='function'){ window.renderAll=function(){ var r=_ra.apply(this,arguments); hbRender(); return r; }; renderAll=window.renderAll; }
+  var rzT=0; window.addEventListener('resize',function(){ clearTimeout(rzT); rzT=setTimeout(function(){ try{assetRender();}catch(e){} },150); });
+  var pend=0, sched=function(){ if(pend)return; pend=requestAnimationFrame(function(){pend=0;hbRender();}); };
+  ['ui-total-pts','ui-vpts','ui-pppts','ui-avg-rate'].forEach(function(id){ var e=$(id); if(e&&window.MutationObserver) new MutationObserver(sched).observe(e,{childList:true,characterData:true,subtree:true}); });
+  var pane=$('pane-dashboard'); if(pane&&window.MutationObserver) new MutationObserver(function(){ if(pane.classList.contains('active'))sched(); }).observe(pane,{attributes:true,attributeFilter:['class']});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',sched); else sched();
+  window.addEventListener('load',function(){ setTimeout(hbRender,400); });
+})();
 </script>
 </body>
 </html>
