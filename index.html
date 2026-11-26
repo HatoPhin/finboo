@@ -7463,6 +7463,18 @@ function saveBrokerRule(){
 // ===== スポット売買の記録：購入・売却に対応。外国株式の評価通貨(USD/JPY)と決済通貨(円貨=SBIハイブリッド預金 / 外貨=米ドル預り金)を分離し、取引時レートと決済金額を固定 =====
 const BK_PAY={jpy_hybrid:'円貨決済（SBIハイブリッド預金）',usd_cash:'外貨決済（米ドル預り金）',cash:'現金（その他口座から）',vpt:'Vポイント',other:'その他のポイント'};
 function getSbiHybridAccount(){ return (S.bankAccounts||[]).find(a=>isSmtbHybridAcc(a))||null; }
+function calcRealizedGainTotals(){
+  let jpy=0, count=0;
+  (S.brokerSpots||[]).forEach(r=>{
+    if(r.side==='sell'&&r.realizedGain!=null){
+      count++;
+      if(r.realizedGainJpy!=null) jpy+=r.realizedGainJpy;
+      else if(r.currency==='USD') jpy+=Math.round(r.realizedGain*(r.fxRate||getUsdJpyRate()));
+      else jpy+=r.realizedGain;
+    }
+  });
+  return {jpy,count};
+}
 function renderBrokerSpot(){
   const el=document.getElementById('broker-spot'); if(!el) return;
   const brs=S.brokerAccounts||[];
@@ -7471,20 +7483,36 @@ function renderBrokerSpot(){
   const today=new Date(), ymd=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
   const txs=[]; for(let k=0;k<2;k++){ const d=new Date(today.getFullYear(),today.getMonth()-k,1); (loadTx(d.getFullYear(),d.getMonth()+1)||[]).forEach(t=>{ if(t.type==='expense'&&t.id&&!(S.brokerAutoLog||{})['spot_'+t.id]) txs.push(t); }); }
   txs.sort((a,b)=>a.date<b.date?1:-1);
+  const rgTot=calcRealizedGainTotals();
+  const rgBadge=rgTot.count>0?`<div style="font-size:10.5px;color:var(--text2);background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 9px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;"><span>累計実現損益（${rgTot.count}件の売却）</span><span style="font-family:monospace;font-weight:700;color:${rgTot.jpy>=0?'var(--green)':'var(--red)'};">${rgTot.jpy>=0?'+':'−'}${bankYen(Math.abs(rgTot.jpy))}</span></div>`:'';
   const recent=(S.brokerSpots||[]).slice(-5).reverse().map(r=>{
-    const sideTxt=r.side==='sell'?'売却':'購入';
+    const sideTxt=r.side==='sell'?(r.sellMode==='full'?'全額売却':'一部売却'):'購入';
     const amtTxt=r.currency==='USD'?bankUsd(r.amount):bankYen(r.amount);
     const fxTxt=(r.settleCurrency==='JPY'&&r.currency==='USD'&&r.settleAmount!=null)?` → ${bankYen(r.settleAmount)}${r.fxRate?` (@${Number(r.fxRate).toFixed(2)}円)`:''}`:'';
-    return `<div>${bankEsc(r.date)}　[${sideTxt}] ${bankEsc(r.label)}　${amtTxt}${fxTxt}（${bankEsc(BK_PAY[r.pay]||'')}）</div>`;
+    let rgTxt='';
+    if(r.side==='sell'&&r.realizedGain!=null){
+      const g=r.realizedGain;
+      const gFmt=r.currency==='USD'?bankUsd(Math.abs(g)):bankYen(Math.abs(g));
+      rgTxt=` <span style="font-weight:700;color:${g>=0?'var(--green)':'var(--red)'};">[実現損益 ${g>=0?'+':'−'}${gFmt}]</span>`;
+    }
+    return `<div>${bankEsc(r.date)}　[${sideTxt}] ${bankEsc(r.label)}　${amtTxt}${fxTxt}（${bankEsc(BK_PAY[r.pay]||'')}）${rgTxt}</div>`;
   }).join('');
   el.innerHTML=`<div style="border-top:1px solid var(--border);padding-top:10px;"><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🛒 スポット売買を記録（購入・売却）</div>
-    <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:6px;">評価通貨（USD/JPY）と決済通貨（円貨＝SBIハイブリッド預金／外貨＝米ドル預り金）を分けて記録できます。取引時の為替レートと決済金額は固定され、現在の為替変動は資産評価額のみに反映されます。記録の取り消しはできません。</div>
+    <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:6px;">評価通貨（USD/JPY）と決済通貨（円貨＝SBIハイブリッド預金／外貨＝米ドル預り金）を分けて記録できます。売却時は一部売却・全額売却に対応し、評価額・元本・実現損益を自動更新します。記録の取り消しはできません。</div>
+    ${rgBadge}
     ${hs.length?`<div style="display:flex;flex-direction:column;gap:6px;">
       <div style="display:flex;gap:6px;">
         <select id="sp-side" onchange="onBrokerSpotHoldingChange()" style="flex:0 0 92px;${inp}"><option value="buy">購入</option><option value="sell">売却</option></select>
         <select id="sp-h" onchange="onBrokerSpotHoldingChange()" style="flex:1;${inp}">${hs.map(o=>`<option value="${bankEsc(o.b.id)}|${bankEsc(o.x.id)}">${bankEsc(o.b.name)}／${bankEsc(bkHoldLabel(o.x))}${isUsdHolding(o.x)?' [USD評価]':''}</option>`).join('')}</select>
       </div>
-      <div style="display:flex;gap:6px;"><input id="sp-amt" type="number" inputmode="numeric" placeholder="金額（円）" oninput="onBrokerSpotCalcFx()" style="flex:1;${inp}"><input id="sp-date" type="date" value="${ymd}" style="flex:1;${inp}"></div>
+      <div id="sp-sell-wrap" style="display:none;flex-direction:column;gap:5px;">
+        <select id="sp-sell-mode" onchange="onBrokerSpotSellModeChange()" style="${inp}">
+          <option value="partial">一部売却（任意の金額を売却）</option>
+          <option value="full">全額売却（保有残高を0にする）</option>
+        </select>
+        <div id="sp-sell-preview" style="font-size:10px;color:var(--text2);background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 9px;line-height:1.5;"></div>
+      </div>
+      <div style="display:flex;gap:6px;"><input id="sp-amt" type="number" inputmode="numeric" placeholder="金額（円）" oninput="onBrokerSpotCalcFx();updateBrokerSpotSellPreview()" style="flex:1;${inp}"><input id="sp-date" type="date" value="${ymd}" style="flex:1;${inp}"></div>
       <select id="sp-pay" onchange="onBrokerSpotPayChange()" style="${inp}"></select>
       <div id="sp-fx-wrap" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">
         <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:5px;">💱 円貨決済の約定レート・決済額（取引時固定）</div>
@@ -7501,6 +7529,54 @@ function renderBrokerSpot(){
     ${recent?`<div style="font-size:10.5px;color:var(--text3);margin-top:8px;line-height:1.7;">最近の記録<br>${recent}</div>`:''}</div>`;
   if(hs.length) onBrokerSpotHoldingChange();
 }
+function onBrokerSpotSellModeChange(){
+  const mode=(document.getElementById('sp-sell-mode')||{}).value||'partial';
+  const sel=document.getElementById('sp-h'); if(!sel) return;
+  const [bid,hid]=(sel.value||'|').split('|');
+  const b=(S.brokerAccounts||[]).find(x=>x.id===bid), h=b&&(b.holdings||[]).find(x=>x.id===hid);
+  const amtEl=document.getElementById('sp-amt');
+  if(mode==='full'&&h&&h.value!=null&&amtEl){
+    amtEl.value=String(h.value);
+    onBrokerSpotCalcFx();
+  }
+  updateBrokerSpotSellPreview();
+}
+function updateBrokerSpotSellPreview(){
+  const prevEl=document.getElementById('sp-sell-preview'); if(!prevEl) return;
+  const side=(document.getElementById('sp-side')||{}).value||'buy';
+  if(side!=='sell') return;
+  const sel=document.getElementById('sp-h'); if(!sel) return;
+  const [bid,hid]=(sel.value||'|').split('|');
+  const b=(S.brokerAccounts||[]).find(x=>x.id===bid), h=b&&(b.holdings||[]).find(x=>x.id===hid);
+  if(!h){ prevEl.textContent=''; return; }
+  const isUsd=isUsdHolding(h);
+  const fmt=v=>isUsd?bankUsd(v):bankYen(v);
+  const mode=(document.getElementById('sp-sell-mode')||{}).value||'partial';
+  const curVal=h.value!=null?h.value:0;
+  const curPri=h.principal;
+  const raw=parseFloat((document.getElementById('sp-amt')||{}).value);
+  const amt=(isFinite(raw)&&raw>0)?(isUsd?roundUsd(raw):Math.round(raw)):null;
+  let line1=`現在の評価額: <b>${fmt(curVal)}</b>`+(curPri!=null?` ／ 元本: <b>${fmt(curPri)}</b>`:' ／ 元本: 未入力');
+  if(amt==null){
+    prevEl.innerHTML=line1+'<br><span style="color:var(--text3);">売却金額を入力すると、売却後の残高と実現損益を表示します。</span>';
+    return;
+  }
+  const isFull=(mode==='full');
+  const nextVal=isFull?0:(isUsd?Math.max(0,roundUsd(curVal-amt)):Math.max(0,curVal-amt));
+  let soldPri=null, nextPri=null, rg=null;
+  if(curPri!=null){
+    if(isFull){
+      soldPri=curPri; nextPri=0;
+    }else{
+      const ratio=curVal>0?Math.min(1,amt/curVal):0;
+      soldPri=isUsd?roundUsd(curPri*ratio):Math.round(curPri*ratio);
+      nextPri=isUsd?Math.max(0,roundUsd(curPri-soldPri)):Math.max(0,curPri-soldPri);
+    }
+    rg=isUsd?roundUsd(amt-soldPri):Math.round(amt-soldPri);
+  }
+  const rgHtml=rg!=null?`<b style="color:${rg>=0?'var(--green)':'var(--red)'};">${rg>=0?'+':'−'}${fmt(Math.abs(rg))}</b>`:'<span style="color:var(--text3);">元本未入力のため算出なし</span>';
+  prevEl.innerHTML=`${line1}<br>売却後評価額: <b>${fmt(nextVal)}</b>${nextPri!=null?` ／ 残元本: <b>${fmt(nextPri)}</b>`:''}<br>実現損益（見込み）: ${rgHtml}`;
+}
 function onBrokerSpotHoldingChange(){
   const sel=document.getElementById('sp-h'); if(!sel) return;
   const side=(document.getElementById('sp-side')||{}).value||'buy';
@@ -7508,6 +7584,8 @@ function onBrokerSpotHoldingChange(){
   const [bid,hid]=(sel.value||'|').split('|');
   const b=(S.brokerAccounts||[]).find(x=>x.id===bid), h=b&&(b.holdings||[]).find(x=>x.id===hid);
   const isUsd=isUsdHolding(h);
+  const sellWrap=document.getElementById('sp-sell-wrap');
+  if(sellWrap) sellWrap.style.display=isSell?'flex':'none';
   const amtEl=document.getElementById('sp-amt');
   if(amtEl){
     amtEl.step=isUsd?'0.01':'1';
@@ -7538,6 +7616,7 @@ function onBrokerSpotHoldingChange(){
   const rateEl=document.getElementById('sp-rate');
   if(rateEl&&!rateEl.value) rateEl.value=getUsdJpyRate().toFixed(2);
   onBrokerSpotPayChange();
+  if(isSell) updateBrokerSpotSellPreview();
 }
 function onBrokerSpotPayChange(){
   const sel=document.getElementById('sp-h'), payEl=document.getElementById('sp-pay');
@@ -7603,12 +7682,23 @@ function saveBrokerSpot(){
 
   const now=new Date().toISOString();
   const prevVal=h.value||0;
+  const sellMode=isSell?((document.getElementById('sp-sell-mode')||{}).value||'partial'):undefined;
+  let realizedGain=null, realizedGainJpy=null;
   if(isSell){
-    const nextVal=isUsd?Math.max(0,roundUsd(prevVal-amt)):Math.max(0,prevVal-amt);
+    const isFull=(sellMode==='full');
+    const nextVal=isFull?0:(isUsd?Math.max(0,roundUsd(prevVal-amt)):Math.max(0,prevVal-amt));
     if(h.principal!=null){
-      h.principal=prevVal>0
-        ?(isUsd?Math.max(0,roundUsd(h.principal*(nextVal/prevVal))):Math.max(0,Math.round(h.principal*(nextVal/prevVal))))
-        :0;
+      let soldPri;
+      if(isFull){
+        soldPri=h.principal;
+        h.principal=0;
+      }else{
+        const ratio=prevVal>0?Math.min(1,amt/prevVal):0;
+        soldPri=isUsd?roundUsd(h.principal*ratio):Math.round(h.principal*ratio);
+        h.principal=isUsd?Math.max(0,roundUsd(h.principal-soldPri)):Math.max(0,h.principal-soldPri);
+      }
+      realizedGain=isUsd?roundUsd(amt-soldPri):Math.round(amt-soldPri);
+      realizedGainJpy=isUsd?Math.round(realizedGain*(fxRate||getUsdJpyRate())):realizedGain;
     }
     h.value=nextVal;
   }else{
@@ -7657,6 +7747,7 @@ function saveBrokerSpot(){
     id:'sp_'+uid(),
     date:dateStr,
     side,
+    sellMode,
     brokerId:bid,
     holdingId:hid,
     label:bkHoldLabel(h),
@@ -7666,11 +7757,14 @@ function saveBrokerSpot(){
     settleCurrency:settleCur,
     settleAmount:settleAmt,
     fxRate:fxRate||undefined,
+    realizedGain:realizedGain!=null?realizedGain:undefined,
+    realizedGainJpy:realizedGainJpy!=null?realizedGainJpy:undefined,
     txId:txId||undefined
   });
   if(txId){ S.brokerAutoLog=S.brokerAutoLog||{}; S.brokerAutoLog['spot_'+txId]=true; }
   bankTouch(); renderBrokerSpot();
-  toast((isSell?'スポット売却':'スポット購入')+'を記録しました'+settleMsg,'success');
+  const rgToast=(isSell&&realizedGain!=null)?`（実現損益 ${realizedGain>=0?'+':'−'}${isUsd?bankUsd(Math.abs(realizedGain)):bankYen(Math.abs(realizedGain))}）`:'';
+  toast((isSell?(sellMode==='full'?'全額売却':'一部売却'):'スポット購入')+'を記録しました'+rgToast+settleMsg,'success');
 }
 function removeBrokerRule(id){
   if(!confirm('この積立ルールを削除しますか？（加算済みの金額は戻りません）')) return;
