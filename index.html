@@ -2133,13 +2133,24 @@ body.ro-on #asset-hero .ah-btn{opacity:.45;}
       <button onclick="hideModal('broker-modal-overlay')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px;">×</button>
     </div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
-      <div style="font-size:10px;color:var(--text3);line-height:1.6;">証券会社ごとに「口座の種類（NISA・特定など）×資産クラス（国内株式・外国株式など）」の保有区分を作り、評価額を手入力します（株価の自動取得はしません）。元本を入れると含み損益を表示します。</div>
-      <div id="broker-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-      <div id="broker-rules" style="display:flex;flex-direction:column;gap:8px;"></div>
-      <div id="broker-spot"></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <input id="broker-new-name" type="text" placeholder="証券会社名（例: SBI証券）" style="flex:1;min-width:140px;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
-        <button type="button" class="btn btn-primary" onclick="addBroker()" style="font-size:11.5px;">証券口座を追加</button>
+      <div id="broker-tabs" style="display:flex;gap:6px;"></div>
+      <div id="broker-pane-hold" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:10px;color:var(--text3);line-height:1.6;">保有区分（口座の種類×資産クラス）ごとの評価額と米ドル預り金を管理します。各項目の「編集」から更新できます。</div>
+        <div id="broker-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+      <div id="broker-pane-trade" style="display:none;flex-direction:column;gap:8px;">
+        <div id="broker-spot"></div>
+      </div>
+      <div id="broker-pane-cfg" style="display:none;flex-direction:column;gap:14px;">
+        <div id="broker-rate"></div>
+        <div id="broker-rules" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="border-top:1px solid var(--border);padding-top:10px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">証券口座を追加</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <input id="broker-new-name" type="text" placeholder="証券会社名（例: SBI証券）" style="flex:1;min-width:140px;width:100%;padding:8px 10px;font-size:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);">
+            <button type="button" class="btn btn-primary" onclick="addBroker()" style="font-size:11.5px;">追加</button>
+          </div>
+        </div>
       </div></div>
   </div>
 </div>
@@ -6539,7 +6550,7 @@ function renderAssets(){
         <div style="font-size:14px;font-weight:800;font-family:monospace;color:var(--text);">${b.value==null?'未入力':bankYen(b.value)}</div></div>
       ${hs.map(x=>{
         const usd=isUsdHolding(x);
-        const curBdg=usd?`<span class="fb-bdg fb-bdg-sm" style="margin-left:4px;font-size:9px;padding:1px 5px;background:rgba(47,138,95,.12);color:var(--primary);">USD</span>`:'';
+        const curBdg=usd?`<span class="fb-bdg fb-bdg-sm fb-bdg-pt" style="margin-left:4px;">USD</span>`:'';
         const valHtml=x.value==null?'-':(usd?`<div style="text-align:right;"><div>${bankUsd(x.value)}</div><div style="font-size:9px;color:var(--text3);">約${bankYen(holdingJpyValue(x))}</div></div>`:bankYen(x.value));
         return `<div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2);padding:4px 0 0;margin-top:4px;border-top:1px dashed var(--border);"><span style="flex:1;min-width:0;line-height:1.35;">${x.name?`<div style="font-weight:600;color:var(--text);word-break:break-word;">${bankEsc(x.name)}${curBdg}</div><div style="font-size:9.5px;color:var(--text3);">${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}</div>`:`${bankEsc(BK_ACCT[x.acct]||'')}・${bankEsc(BK_CLS[x.cls]||'')}${curBdg}`}</span><span style="font-family:monospace;">${valHtml}</span><span style="font-family:monospace;min-width:62px;text-align:right;">${gainTxt(x)}</span></div>`;
       }).join('')}
@@ -7289,8 +7300,19 @@ function syncRpayCashForTx(tx, opts){
 }
 
 // ── 証券口座（保有区分ごとに、口座の種類×資産クラスで評価額を手入力）──
-function openBrokerModal(){ renderBrokerModal(); renderBrokerRules(); showModal('broker-modal-overlay'); }
+let _brokerTab='hold';
+function setBrokerTab(t){
+  _brokerTab=t;
+  const tabs=[['hold','保有・残高'],['trade','売買を記録'],['cfg','ルール・設定']];
+  const tb=document.getElementById('broker-tabs');
+  if(tb) tb.innerHTML=tabs.map(([k,l])=>`<button type="button" onclick="setBrokerTab('${k}')" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border-radius:999px;border:none;cursor:pointer;background:${t===k?'var(--primary)':'var(--card2)'};color:${t===k?'var(--primary-text)':'var(--text3)'};">${l}</button>`).join('');
+  tabs.forEach(([k])=>{ const p=document.getElementById('broker-pane-'+k); if(p) p.style.display=(t===k)?'flex':'none'; });
+}
+function openBrokerModal(){ renderBrokerModal(); renderBrokerRules(); setBrokerTab(_brokerTab); showModal('broker-modal-overlay'); }
 function bkHoldLabel(x){ return (BK_ACCT[x.acct]||'')+'・'+(BK_CLS[x.cls]||'')+(x.name?'・'+x.name:''); }
+const BK_SUM='cursor:pointer;list-style:none;font-size:10.5px;font-weight:700;color:var(--primary);display:inline-block;padding:2px 0;';
+const _bkOpen={};
+function bkDetailsAttr(key){ return `data-k="${key}" ontoggle="_bkOpen[this.dataset.k]=this.open"${_bkOpen[key]?' open':''}`; }
 function renderBrokerModal(){
   const el=document.getElementById('broker-list'); if(!el) return;
   (S.brokerAccounts||[]).forEach(syncBrokerValue);
@@ -7298,58 +7320,66 @@ function renderBrokerModal(){
   const opts=(m,sel)=>Object.keys(m).filter(k=>k!=='unk'||sel==='unk').map(k=>`<option value="${k}"${k===sel?' selected':''}>${m[k]}</option>`).join('');
   const ri=getUsdJpyRateInfo();
   const srcTxt=ri.source==='gas'?'GAS自動取得':(ri.source==='manual'?'手動設定':'初期値');
-  const rateBar=`<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;">
-      <span style="font-size:11.5px;font-weight:700;color:var(--text);">💱 ドル円換算レート（USD/JPY）</span>
-      <span style="font-size:11px;font-family:monospace;font-weight:700;color:var(--primary);">1ドル = ${ri.rate.toFixed(2)}円（${srcTxt}）</span>
-    </div>
-    <div style="display:flex;gap:6px;align-items:center;">
-      <input id="usd-jpy-manual" type="number" step="0.01" inputmode="decimal" value="${S.usdJpyRate!=null?S.usdJpyRate:''}" placeholder="手動レート（例: 155.00）" style="flex:1;${inp}">
-      <button type="button" class="btn" onclick="saveUsdJpyRate()" style="font-size:11px;">保存</button>
-    </div>
-    <div style="font-size:9.5px;color:var(--text3);margin-top:4px;line-height:1.45;">株価カードの「USD/JPY」が取得済みのときはそちらを自動優先し、未取得時はこの手動レート（未設定なら${DEFAULT_USD_JPY}円）で円換算します。</div>
-  </div>`;
+  const rateEl=document.getElementById('broker-rate');
+  if(rateEl) rateEl.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">ドル円換算レート（USD/JPY）</div>
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
+      <div style="font-size:11px;font-family:monospace;font-weight:700;color:var(--primary);margin-bottom:6px;">現在 1ドル = ${ri.rate.toFixed(2)}円（${srcTxt}）</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input id="usd-jpy-manual" type="number" step="0.01" inputmode="decimal" value="${S.usdJpyRate!=null?S.usdJpyRate:''}" placeholder="手動レート（例: 155.00）" style="flex:1;${inp}">
+        <button type="button" class="btn" onclick="saveUsdJpyRate()" style="font-size:11px;">保存</button>
+      </div>
+      <div style="font-size:9.5px;color:var(--text3);margin-top:4px;line-height:1.45;">株価カードの「USD/JPY」が取得済みのときはそちらを自動優先し、未取得時はこの手動レート（未設定なら${DEFAULT_USD_JPY}円）で円換算します。</div>
+    </div>`;
   const cards=(S.brokerAccounts||[]).length?S.brokerAccounts.map(b=>{
     const id=bankEsc(b.id);
     const usdAmt=brokerUsdCashAmt(b);
-    const usdUpd=b.usdCash&&b.usdCash.updatedAt?bankFmtMD(new Date(b.usdCash.updatedAt))+'に更新':'';
+    const usdUpd=b.usdCash&&b.usdCash.updatedAt?bankFmtMD(new Date(b.usdCash.updatedAt))+'時点':'';
     return `
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:700;color:var(--text);">📈 ${bankEsc(b.name)}　<span style="font-family:monospace;font-weight:600;color:var(--text2);">${b.value==null?'':bankYen(b.value)}</span></span>
-        <button type="button" onclick="removeBroker('${id}')" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;">口座を削除</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:700;color:var(--text);">📈 ${bankEsc(b.name)}</span>
+        <span style="font-size:13px;font-family:monospace;font-weight:800;color:var(--text);">${b.value==null?'未入力':bankYen(b.value)}</span></div>
       <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text2);">
-          <b>💵 米ドル預り金（外貨建購入余力）</b>
-          ${usdAmt!=null?`<button type="button" onclick="updateBrokerUsdCash('${id}',true)" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;">クリア</button>`:''}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;color:var(--text2);">
+          <span style="min-width:0;"><b>米ドル預り金</b>${usdUpd?`<span style="font-size:9.5px;color:var(--text3);">　${usdUpd}</span>`:''}</span>
+          <span style="font-family:monospace;text-align:right;flex:none;">${usdAmt==null?'<span style="color:var(--text3);">未入力</span>':`<b style="color:var(--text);">${bankUsd(usdAmt)}</b><span style="font-size:9.5px;color:var(--text3);"> 約${bankYen(usdToJpy(usdAmt))}</span>`}</span>
         </div>
-        <div style="font-size:10px;color:var(--text3);margin:2px 0 5px;">${usdAmt==null?'未入力（入力すると評価額・総資産に円換算で含まれます）':`${bankUsd(usdAmt)}（約${bankYen(usdToJpy(usdAmt))}）${usdUpd?'　'+usdUpd:''}`}</div>
-        <div style="display:flex;gap:6px;"><input id="bk-usdcash-${id}" type="number" step="0.01" inputmode="decimal" placeholder="米ドル預り金（USD 例: 250.50）" style="flex:1;${inp}"><button type="button" class="btn" onclick="updateBrokerUsdCash('${id}')" style="font-size:11px;">更新</button></div>
+        <details ${bkDetailsAttr('usd_'+id)} style="margin-top:3px;"><summary style="${BK_SUM}">編集</summary>
+          <div style="display:flex;gap:6px;margin-top:5px;"><input id="bk-usdcash-${id}" type="number" step="0.01" inputmode="decimal" placeholder="残高（USD 例: 250.50）" style="flex:1;${inp}"><button type="button" class="btn" onclick="updateBrokerUsdCash('${id}')" style="font-size:11px;">更新</button></div>
+          ${usdAmt!=null?`<button type="button" onclick="updateBrokerUsdCash('${id}',true)" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;margin-top:4px;padding:0;">残高をクリア</button>`:''}
+        </details>
       </div>
       ${(b.holdings||[]).map(x=>{
         const hid=bankEsc(x.id);
         const usd=isUsdHolding(x);
-        const valTxt=x.value==null?'未入力':(usd?`${bankUsd(x.value)}（約${bankYen(holdingJpyValue(x))}）`:bankYen(x.value));
-        const priTxt=x.principal==null?'':(usd?`　元本 ${bankUsd(x.principal)}（約${bankYen(holdingJpyPrincipal(x))}）`:`　元本 ${bankYen(x.principal)}`);
+        const valTxt=x.value==null?'未入力':(usd?bankUsd(x.value):bankYen(x.value));
+        const subTxt=[usd&&x.value!=null?'約'+bankYen(holdingJpyValue(x)):'', x.principal!=null?'元本 '+(usd?bankUsd(x.principal):bankYen(x.principal)):'', x.updatedAt?bankFmtMD(new Date(x.updatedAt))+'時点':''].filter(Boolean).join('　');
         return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;color:var(--text2);">
-          <b style="min-width:0;word-break:break-word;">${bankEsc(bkHoldLabel(x))}${usd?' <span style="font-size:9.5px;padding:1px 5px;border-radius:999px;background:rgba(47,138,95,.14);color:var(--primary);">USD</span>':''}</b>
-          <span style="display:flex;gap:8px;flex:none;">
-            <button type="button" onclick="toggleHoldingCurrency('${id}','${hid}')" style="background:none;border:none;color:var(--primary);font-size:10.5px;font-weight:700;cursor:pointer;">${usd?'円に戻す':'ドル建てに切替'}</button>
-            <button type="button" onclick="removeHolding('${id}','${hid}')" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;">削除</button>
-          </span>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;font-size:11px;color:var(--text2);">
+          <b style="min-width:0;word-break:break-word;">${bankEsc(bkHoldLabel(x))}${usd?' <span class="fb-bdg fb-bdg-sm fb-bdg-pt">USD</span>':''}</b>
+          <span style="font-family:monospace;font-weight:700;color:var(--text);flex:none;">${valTxt}</span>
         </div>
-        <div style="font-size:10px;color:var(--text3);margin:2px 0 5px;">評価額 ${valTxt}${priTxt}${x.updatedAt?'　'+bankFmtMD(new Date(x.updatedAt))+'に更新':''}</div>
-        <div style="display:flex;gap:6px;"><input id="hv-${hid}" type="number" step="${usd?'0.01':'1'}" inputmode="${usd?'decimal':'numeric'}" placeholder="${usd?'新しい評価額（USD）':'新しい評価額'}" style="flex:1;${inp}"><input id="hp-${hid}" type="number" step="${usd?'0.01':'1'}" inputmode="${usd?'decimal':'numeric'}" placeholder="${usd?'元本（USD・任意）':'元本（任意）'}" style="flex:1;${inp}"><button type="button" class="btn" onclick="updateHolding('${id}','${hid}')" style="font-size:11px;">更新</button></div>
-        ${x.acct==='unk'||x.cls==='unk'?`<div style="display:flex;gap:6px;margin-top:5px;"><select id="hca-${hid}" style="flex:1;${inp}">${opts(BK_ACCT,'tokutei')}</select><select id="hcc-${hid}" style="flex:1;${inp}">${opts(BK_CLS,'jp')}</select><button type="button" class="btn" onclick="classifyHolding('${id}','${hid}')" style="font-size:11px;">振り分け</button></div>`:''}
+        ${subTxt?`<div style="font-size:9.5px;color:var(--text3);margin-top:1px;">${subTxt}</div>`:''}
+        <details ${bkDetailsAttr('h_'+hid)} style="margin-top:3px;"><summary style="${BK_SUM}">編集</summary>
+          <div style="display:flex;gap:6px;margin-top:5px;"><input id="hv-${hid}" type="number" step="${usd?'0.01':'1'}" inputmode="${usd?'decimal':'numeric'}" placeholder="${usd?'新しい評価額（USD）':'新しい評価額'}" style="flex:1;${inp}"><input id="hp-${hid}" type="number" step="${usd?'0.01':'1'}" inputmode="${usd?'decimal':'numeric'}" placeholder="${usd?'元本（USD・任意）':'元本（任意）'}" style="flex:1;${inp}"><button type="button" class="btn" onclick="updateHolding('${id}','${hid}')" style="font-size:11px;">更新</button></div>
+          ${x.acct==='unk'||x.cls==='unk'?`<div style="display:flex;gap:6px;margin-top:5px;"><select id="hca-${hid}" style="flex:1;${inp}">${opts(BK_ACCT,'tokutei')}</select><select id="hcc-${hid}" style="flex:1;${inp}">${opts(BK_CLS,'jp')}</select><button type="button" class="btn" onclick="classifyHolding('${id}','${hid}')" style="font-size:11px;">振り分け</button></div>`:''}
+          <div style="display:flex;gap:12px;margin-top:5px;">
+            <button type="button" onclick="toggleHoldingCurrency('${id}','${hid}')" style="background:none;border:none;color:var(--primary);font-size:10.5px;font-weight:700;cursor:pointer;padding:0;">${usd?'円建てに戻す':'ドル建てに切替'}</button>
+            <button type="button" onclick="removeHolding('${id}','${hid}')" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;padding:0;">この保有区分を削除</button>
+          </div>
+        </details>
       </div>`; }).join('')}
-      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
-        <div style="font-size:10.5px;font-weight:700;color:var(--text3);margin-bottom:5px;">保有区分を追加</div>
-        <input id="hk-n-${id}" type="text" placeholder="銘柄名（任意　例: eMAXIS Slim 全世界株式／AAPL／VTI）" style="width:100%;margin-bottom:6px;${inp}">
-        <div style="display:flex;gap:6px;margin-bottom:6px;"><select id="hk-a-${id}" style="flex:1;${inp}">${opts(BK_ACCT,'')}</select><select id="hk-c-${id}" style="flex:1;${inp}">${opts(BK_CLS,'')}</select><select id="hk-cur-${id}" onchange="onHoldingCurChange('${id}')" style="flex:0 0 92px;${inp}"><option value="JPY">円 (JPY)</option><option value="USD">ドル (USD)</option></select></div>
-        <div style="display:flex;gap:6px;"><input id="hk-v-${id}" type="number" inputmode="numeric" placeholder="評価額（円）" style="flex:1;${inp}"><input id="hk-p-${id}" type="number" inputmode="numeric" placeholder="元本（任意）" style="flex:1;${inp}"><button type="button" class="btn btn-primary" onclick="addHolding('${id}')" style="font-size:11px;">追加</button></div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <details ${bkDetailsAttr('add_'+id)} style="flex:1;min-width:0;"><summary style="${BK_SUM}">＋ 保有区分を追加</summary>
+          <div style="margin-top:6px;">
+            <input id="hk-n-${id}" type="text" placeholder="銘柄名（任意　例: eMAXIS Slim 全世界株式／AAPL／VTI）" style="width:100%;margin-bottom:6px;${inp}">
+            <div style="display:flex;gap:6px;margin-bottom:6px;"><select id="hk-a-${id}" style="flex:1;${inp}">${opts(BK_ACCT,'')}</select><select id="hk-c-${id}" style="flex:1;${inp}">${opts(BK_CLS,'')}</select><select id="hk-cur-${id}" onchange="onHoldingCurChange('${id}')" style="flex:0 0 92px;${inp}"><option value="JPY">円 (JPY)</option><option value="USD">ドル (USD)</option></select></div>
+            <div style="display:flex;gap:6px;"><input id="hk-v-${id}" type="number" inputmode="numeric" placeholder="評価額（円）" style="flex:1;${inp}"><input id="hk-p-${id}" type="number" inputmode="numeric" placeholder="元本（任意）" style="flex:1;${inp}"><button type="button" class="btn btn-primary" onclick="addHolding('${id}')" style="font-size:11px;">追加</button></div>
+          </div>
+        </details>
+        <button type="button" onclick="removeBroker('${id}')" style="background:none;border:none;color:var(--text3);font-size:10.5px;cursor:pointer;flex:none;padding:2px 0;">口座を削除</button>
       </div>
-    </div>`; }).join(''):'<div style="font-size:11px;color:var(--text3);padding:6px 0;">まだ証券口座がありません。下から追加してください。</div>';
-  el.innerHTML=rateBar+cards;
+    </div>`; }).join(''):`<div style="font-size:11px;color:var(--text3);padding:6px 0;">まだ証券口座がありません。<button type="button" onclick="setBrokerTab('cfg')" style="background:none;border:none;color:var(--primary);font-weight:700;cursor:pointer;font-size:11px;padding:0;">ルール・設定</button>から追加してください。</div>`;
+  el.innerHTML=cards;
 }
 function onHoldingCurChange(bid){
   const cur=(document.getElementById('hk-cur-'+bid)||{}).value||'JPY';
@@ -7484,7 +7514,7 @@ function renderBrokerSpot(){
   const txs=[]; for(let k=0;k<2;k++){ const d=new Date(today.getFullYear(),today.getMonth()-k,1); (loadTx(d.getFullYear(),d.getMonth()+1)||[]).forEach(t=>{ if(t.type==='expense'&&t.id&&!(S.brokerAutoLog||{})['spot_'+t.id]) txs.push(t); }); }
   txs.sort((a,b)=>a.date<b.date?1:-1);
   const rgTot=calcRealizedGainTotals();
-  const rgBadge=rgTot.count>0?`<div style="font-size:10.5px;color:var(--text2);background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 9px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;"><span>累計実現損益（${rgTot.count}件の売却）</span><span style="font-family:monospace;font-weight:700;color:${rgTot.jpy>=0?'var(--green)':'var(--red)'};">${rgTot.jpy>=0?'+':'−'}${bankYen(Math.abs(rgTot.jpy))}</span></div>`:'';
+  const rgBadge=rgTot.count>0?`<div style="font-size:10.5px;color:var(--text2);background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;"><span>累計実現損益（${rgTot.count}件の売却）</span><span style="font-family:monospace;font-weight:700;color:${rgTot.jpy>=0?'var(--green)':'var(--red)'};">${rgTot.jpy>=0?'+':'−'}${bankYen(Math.abs(rgTot.jpy))}</span></div>`:'';
   const recent=(S.brokerSpots||[]).slice(-5).reverse().map(r=>{
     const sideTxt=r.side==='sell'?(r.sellMode==='full'?'全額売却':'一部売却'):'購入';
     const amtTxt=r.currency==='USD'?bankUsd(r.amount):bankYen(r.amount);
@@ -7501,21 +7531,22 @@ function renderBrokerSpot(){
     <div style="font-size:10px;color:var(--text3);line-height:1.6;margin-bottom:6px;">評価通貨（USD/JPY）と決済通貨（円貨＝SBIハイブリッド預金／外貨＝米ドル預り金）を分けて記録できます。売却時は一部売却・全額売却に対応し、評価額・元本・実現損益を自動更新します。記録の取り消しはできません。</div>
     ${rgBadge}
     ${hs.length?`<div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="display:flex;gap:6px;">
-        <select id="sp-side" onchange="onBrokerSpotHoldingChange()" style="flex:0 0 92px;${inp}"><option value="buy">購入</option><option value="sell">売却</option></select>
-        <select id="sp-h" onchange="onBrokerSpotHoldingChange()" style="flex:1;${inp}">${hs.map(o=>`<option value="${bankEsc(o.b.id)}|${bankEsc(o.x.id)}">${bankEsc(o.b.name)}／${bankEsc(bkHoldLabel(o.x))}${isUsdHolding(o.x)?' [USD評価]':''}</option>`).join('')}</select>
-      </div>
+      <input type="hidden" id="sp-side" value="buy">
+      <div id="sp-side-btns" style="display:flex;gap:6px;"></div>
+      <select id="sp-h" onchange="onBrokerSpotHoldingChange()" style="${inp}">${hs.map(o=>`<option value="${bankEsc(o.b.id)}|${bankEsc(o.x.id)}">${bankEsc(o.b.name)}／${bankEsc(bkHoldLabel(o.x))}${isUsdHolding(o.x)?' [USD評価]':''}</option>`).join('')}</select>
       <div id="sp-sell-wrap" style="display:none;flex-direction:column;gap:5px;">
         <select id="sp-sell-mode" onchange="onBrokerSpotSellModeChange()" style="${inp}">
           <option value="partial">一部売却（任意の金額を売却）</option>
           <option value="full">全額売却（保有残高を0にする）</option>
         </select>
-        <div id="sp-sell-preview" style="font-size:10px;color:var(--text2);background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 9px;line-height:1.5;"></div>
+        <div id="sp-sell-preview" style="font-size:10px;color:var(--text2);background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;line-height:1.5;"></div>
       </div>
       <div style="display:flex;gap:6px;"><input id="sp-amt" type="number" inputmode="numeric" placeholder="金額（円）" oninput="onBrokerSpotCalcFx();updateBrokerSpotSellPreview()" style="flex:1;${inp}"><input id="sp-date" type="date" value="${ymd}" style="flex:1;${inp}"></div>
       <select id="sp-pay" onchange="onBrokerSpotPayChange()" style="${inp}"></select>
-      <div id="sp-fx-wrap" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;">
-        <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:5px;">💱 円貨決済の約定レート・決済額（取引時固定）</div>
+      <details id="sp-adv" ${bkDetailsAttr('sp_adv')} style="display:none;"><summary style="${BK_SUM}">詳細設定</summary>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+      <div id="sp-fx-wrap" style="display:none;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;">
+        <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:5px;">円貨決済の約定レート・決済額（取引時固定）</div>
         <div style="display:flex;gap:6px;">
           <input id="sp-rate" type="number" step="0.01" inputmode="decimal" placeholder="取引時レート（円/ドル）" oninput="onBrokerSpotCalcFx()" style="flex:1;${inp}">
           <input id="sp-jpy-amt" type="number" step="1" inputmode="numeric" placeholder="円貨決済額（円）" style="flex:1;${inp}">
@@ -7524,6 +7555,7 @@ function renderBrokerSpot(){
       </div>
       <div id="sp-tx-wrap"><select id="sp-tx" style="width:100%;${inp}"><option value="">取引とひも付けない</option>${txs.slice(0,60).map(t=>`<option value="${bankEsc(t.id)}">${bankEsc(t.date)}　${bankEsc(t.shop||'')}　${bankYen(t.amount)}</option>`).join('')}</select>
         <div style="font-size:10px;color:var(--text3);margin-top:3px;">引き落としが取引履歴にあれば選ぶと、積立ルールで二重に加算されません。</div></div>
+      </div></details>
       <button type="button" id="sp-submit-btn" class="btn btn-primary" onclick="saveBrokerSpot()" style="font-size:11.5px;">購入を記録して反映</button>
     </div>`:'<div style="font-size:10.5px;color:var(--text3);">先に保有区分を追加してください。</div>'}
     ${recent?`<div style="font-size:10.5px;color:var(--text3);margin-top:8px;line-height:1.7;">最近の記録<br>${recent}</div>`:''}</div>`;
@@ -7584,6 +7616,7 @@ function onBrokerSpotHoldingChange(){
   const [bid,hid]=(sel.value||'|').split('|');
   const b=(S.brokerAccounts||[]).find(x=>x.id===bid), h=b&&(b.holdings||[]).find(x=>x.id===hid);
   const isUsd=isUsdHolding(h);
+  renderBrokerSpotSideBtns();
   const sellWrap=document.getElementById('sp-sell-wrap');
   if(sellWrap) sellWrap.style.display=isSell?'flex':'none';
   const amtEl=document.getElementById('sp-amt');
@@ -7637,7 +7670,19 @@ function onBrokerSpotPayChange(){
     }
   }
   const txWrap=document.getElementById('sp-tx-wrap');
-  if(txWrap) txWrap.style.display=(pay==='cash'&&side==='buy')?'block':'none';
+  const showTx=(pay==='cash'&&side==='buy');
+  if(txWrap) txWrap.style.display=showTx?'block':'none';
+  const adv=document.getElementById('sp-adv');
+  if(adv) adv.style.display=(needFx||showTx)?'block':'none';
+}
+function setBrokerSpotSide(sd){
+  const el=document.getElementById('sp-side'); if(el) el.value=sd;
+  onBrokerSpotHoldingChange();
+}
+function renderBrokerSpotSideBtns(){
+  const box=document.getElementById('sp-side-btns'); if(!box) return;
+  const cur=(document.getElementById('sp-side')||{}).value||'buy';
+  box.innerHTML=[['buy','購入'],['sell','売却']].map(([k,l])=>`<button type="button" onclick="setBrokerSpotSide('${k}')" style="flex:1;padding:7px 0;font-size:11.5px;font-weight:700;border-radius:999px;cursor:pointer;border:1px solid ${cur===k?'var(--primary)':'var(--border)'};background:${cur===k?'var(--primary-light)':'var(--card)'};color:${cur===k?'var(--primary)':'var(--text3)'};">${l}</button>`).join('');
 }
 function onBrokerSpotCalcFx(){
   const amt=parseFloat((document.getElementById('sp-amt')||{}).value);
@@ -7834,7 +7879,7 @@ function addBroker(){
   S.brokerAccounts=S.brokerAccounts||[];
   S.brokerAccounts.push({id:'bk_'+uid(),name,value:null,principal:null,valueUpdatedAt:null,holdings:[]});
   document.getElementById('broker-new-name').value='';
-  bankTouch(); toast('証券口座を追加しました。保有区分を追加してください','success');
+  bankTouch(); setBrokerTab('hold'); toast('証券口座を追加しました。保有区分を追加してください','success');
 }
 function addHolding(bid){
   const b=(S.brokerAccounts||[]).find(x=>x.id===bid); if(!b) return;
