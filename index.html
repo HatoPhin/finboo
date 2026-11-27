@@ -3786,6 +3786,61 @@ function mergeDeletedIds(a,b){
 // ============================================================
 // ポイント計算
 // ============================================================
+// ===== 鉄道タッチ決済（Visaタッチ乗車）・東京メトロ/都営 30%還元キャンペーン =====
+const TRANSIT_RE=/東京メトロ|都営|京王|tokyo\s*metro|toei|keio|ﾄｳｷﾖｳﾒﾄﾛ|ﾄｴｲ|ｹｲｵｳ|トウキョウメトロ|トエイ|ケイオウ/i;
+const METRO_CP_RE=/東京メトロ|都営|tokyo\s*metro|toei|ﾄｳｷﾖｳﾒﾄﾛ|ﾄｴｲ|トウキョウメトロ|トエイ/i;
+const TRANSIT_RATE_PCT=8.0; // スマホのタッチ決済乗車 最大8%（基本0.5%込み・Olive クレジット）
+const METRO_CP={start:new Date(2026,10,26,4,0,0), end:new Date(2027,0,11,23,59,59), rate:0.3, cap:600,
+  cards:['三井住友カード(Olive)','三井住友カード(Olive デビット)','PayPayクレジット','V Point Pay']};
+function isTransitTx(t){ return t.type!=='income' && TRANSIT_RE.test((t.shop||'')+' '+(t.memo||'')); }
+function isMetroCpTx(t){ return t.type!=='income' && METRO_CP_RE.test((t.shop||'')+' '+(t.memo||'')); }
+// カード(決済手段)ごとの30%還元 使用済み運賃を、キャンペーン期間の全月から集計
+function metroCpStats(method){
+  const C=METRO_CP; let fare=0,cnt=0;
+  let yy=C.start.getFullYear(), mm=C.start.getMonth()+1;
+  while(yy<C.end.getFullYear()||(yy===C.end.getFullYear()&&mm<=C.end.getMonth()+1)){
+    const txs=(yy===S.viewYear&&mm===S.viewMonth)?S.transactions:(loadTx(yy,mm)||[]);
+    txs.forEach(t=>{
+      if(t.method!==method||!isMetroCpTx(t)) return;
+      const td=new Date(t.date); if(td<C.start||td>C.end) return;
+      fare+=t.amount; cnt++;
+    });
+    mm++; if(mm>12){mm=1;yy++;}
+  }
+  const capFare=Math.ceil(C.cap/C.rate);
+  return {fare,cnt,capFare,back:Math.min(C.cap,Math.floor(fare*C.rate)),remain:Math.max(0,capFare-fare)};
+}
+function metroCpActive(){ const n=new Date(); return n>=new Date(2026,10,1) && n<=new Date(2027,2,1); }
+function metroCpRowHtml(method){
+  const st=metroCpStats(method), C=METRO_CP;
+  const pct=Math.min(100,st.back/C.cap*100);
+  return `<div style="padding:10px 0;border-top:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      ${getMethodLogoHtml(method,{size:22,brandSize:11})}
+      <span style="flex:1;min-width:0;font-size:12px;font-weight:700;color:var(--text);">${method}</span>
+      <span style="font-size:13px;font-weight:800;color:var(--primary);font-family:monospace;">¥${st.back.toLocaleString()} / ¥${C.cap.toLocaleString()}</span>
+    </div>
+    <div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden;"><div style="background:var(--primary);height:100%;width:${pct}%;"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--text3);margin-top:5px;">
+      <span>使用済み運賃 ¥${st.fare.toLocaleString()}（${st.cnt}件）</span>
+      <span>${st.remain>0?`上限まであと運賃 <b style="color:var(--text2);">¥${st.remain.toLocaleString()}</b>`:'✅ 上限到達'}</span>
+    </div></div>`;
+}
+const METRO_CP_NOTE=()=>{
+  const C=METRO_CP, f=d=>`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`, left=Math.ceil((C.end-new Date())/86400000);
+  return `<div style="font-size:9px;color:var(--text3);margin-top:6px;line-height:1.6;">${left>=0?`対象期間: ${f(C.start)}〜${f(C.end)}（あと${left}日）`:`対象期間は${f(C.end)}に終了しました`}／エントリー不要・メトロと都営は合算・カード1枚あたり上限¥${C.cap}（運賃約¥${Math.ceil(C.cap/C.rate).toLocaleString()}分）／還元は終了後約4ヶ月後。店名・メモに「東京メトロ」「都営」を含む支出を集計。<a href="https://www.smbc-card.com/mem/cardinfo/26/cardinfo7994968.jsp" target="_blank" rel="noopener" style="color:var(--primary);">詳細</a>・<a href="https://www.smbc-card.com/mem/for_transit/point_up.jsp" target="_blank" rel="noopener" style="color:var(--primary);">最大8%還元</a></div>`;
+};
+function renderMetroPanel(){
+  let box=document.getElementById('wallet-metro-section');
+  if(!box){
+    const sec=document.getElementById('wallet-cards-section'); if(!sec) return;
+    box=document.createElement('div'); box.id='wallet-metro-section'; sec.insertAdjacentElement('afterend',box);
+  }
+  if(!metroCpActive()){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="card" style="padding:14px 18px;margin-top:12px;">
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">🚇 東京メトロ・都営 30%還元（使用済み運賃）</div>
+    ${METRO_CP.cards.map(metroCpRowHtml).join('')}${METRO_CP_NOTE()}</div>`;
+}
 function isVTarget(shop){const l=(shop||'').toLowerCase();return S.pointSettings.vTargetShops.some(k=>k&&l.includes(String(k).toLowerCase()));}
 function isSeven(shop){return(shop||'').includes('セブン');}
 function isOliveLounge(shop){return(shop||'').toLowerCase().includes('olive lounge');}
@@ -3923,6 +3978,7 @@ function calcPt(t){
     // Olive基本還元は月末合算付与のため明細には表示しない（種別ラベルのみ・calcAllPtsで月合算計算）
     let baseRule;
     if(isOliveLounge(t.shop))baseRule='月合算 Olive LOUNGE特典(10.0%)';
+    else if(isTransitTx(t))baseRule=`月合算 鉄道タッチ決済(${TRANSIT_RATE_PCT.toFixed(1)}%)`;
     else if(t.mobileOrder)baseRule=`月合算 モバイルオーダー(${(0.5+S.pointSettings.vProgramRate).toFixed(1)}%)`;
     else if(isSeven(t.shop))baseRule=`月合算 セブン-イレブン特約(${(0.5+S.pointSettings.sevenElevenRate).toFixed(1)}%)`;
     else if(isVTarget(t.shop))baseRule=`月合算 特約店(${(0.5+S.pointSettings.vProgramRate).toFixed(1)}%)`;
@@ -4037,7 +4093,7 @@ function pcCalc(t){
   return Math.max(0,Math.floor((t.amount||0)*pcRate(t.pointCard)/100));
 }
 function calcAllPts(){
-  let oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,oDT=0,oDN=0,pp=0,rk=0,sbi=0,ov=0,vCouponPts=0,oJ=0,jcbBonus=0;
+  let oTr=0,oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,oDT=0,oDN=0,pp=0,rk=0,sbi=0,ov=0,vCouponPts=0,oJ=0,jcbBonus=0;
   const cardPts={rakuten:0,d:0,v:0}; // ポイントカード提示分（決済手段とは別にたまる共通ポイント）
   const miscByType={}; // 独自還元率の決済手段のポイントを「ポイントの種類」ごとにグループ分けした合計
   const txs=S.transactions.map(t=>{
@@ -4048,6 +4104,7 @@ function calcAllPts(){
     if(t.type!=='income'){
       if(t.method==='三井住友カード(Olive)'){
         if(isOliveLounge(t.shop))oLounge+=t.amount;
+        else if(isTransitTx(t))oTr+=t.amount;
         else if(t.mobileOrder)oOrder+=t.amount;
         else if(isSeven(t.shop))oS+=t.amount;
         else if(isVTarget(t.shop))oT+=t.amount;
@@ -4113,6 +4170,7 @@ function calcAllPts(){
   const r=(0.5+S.pointSettings.vProgramRate)/100;
   // セブン-イレブン: 独自レート。ただしvProgramRateとは別スライダーで管理
   const rs=(0.5+S.pointSettings.sevenElevenRate)/100;
+  const ptTr = Math.floor(oTr/200) * Math.round(200*TRANSIT_RATE_PCT/100); // 鉄道タッチ決済(8%)
   const ptT = Math.floor(oT/200) * Math.round(200*r);   // 特約店
   const ptS = Math.floor(oS/200) * Math.round(200*rs);  // セブン-イレブン特約
   const ptOrder = Math.floor(oOrder/200) * Math.round(200*r); // モバイルオーダー：タッチ決済(特約店)と同じ還元率
@@ -4122,12 +4180,12 @@ function calcAllPts(){
   const ptN = Math.floor(oN/200) * 1;                   // 通常還元(0.5% = 200円で1pt)
   const ptDT = Math.floor(oDT/200) * 3;                 // デビット 対象コンビニ・飲食店/モバイルオーダー(1.5% = 200円で3pt)
   const ptDN = Math.floor(oDN/200) * 1;                 // デビット 通常還元(0.5% = 200円で1pt)
-  const vPts = ptT + ptS + ptOrder + ptLounge + ptM + ptP + ptN + ptDT + ptDN;
+  const vPts = ptTr + ptT + ptS + ptOrder + ptLounge + ptM + ptP + ptN + ptDT + ptDN;
   // JCBカードW月間合算ポイント計算（200円毎2pt=1.0%、切り捨て）＋優待店ボーナス
   const ptJ = Math.floor(oJ/200) * 2;
   const jcb = ptJ + jcbBonus;
   const total = vPts + vCouponPts + pp + rk + sbi + ov + jcb + cardPts.rakuten + cardPts.d + cardPts.v;
-  return{cardRk:cardPts.rakuten,cardD:cardPts.d,cardV:cardPts.v,txs,vPts,pp,rk,sbi,ov,miscByType,vCouponPts,jcb,ptJ,jcbBonus,total,oT,oM,oP,oN,oS,oOrder,oLounge,oDT,oDN,oJ,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN,ptDT,ptDN};
+  return{cardRk:cardPts.rakuten,cardD:cardPts.d,cardV:cardPts.v,txs,vPts,pp,rk,sbi,ov,miscByType,vCouponPts,jcb,ptJ,jcbBonus,total,oT,oM,oP,oN,oS,oOrder,oLounge,oDT,oDN,oJ,oTr,ptTr,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN,ptDT,ptDN};
 }
 
 // 任意の取引リスト(例: カードの請求サイクル分)からOlive(Vポイント)の区分別ポイントを計算する。
@@ -4135,12 +4193,13 @@ function calcAllPts(){
 function calcOliveBreakdown(list,mode){
   const OL='三井住友カード(Olive)', OLD='三井住友カード(Olive デビット)';
   const isDebit=(mode==='debit');
-  let oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,oDT=0,oDN=0,vCouponPts=0;
+  let oTr=0,oT=0,oM=0,oP=0,oN=0,oS=0,oOrder=0,oLounge=0,oDT=0,oDN=0,vCouponPts=0;
   (list||[]).forEach(t=>{
     if(t.type==='income')return;
     if(!isDebit){
       if(t.method===OL){
         if(isOliveLounge(t.shop))oLounge+=t.amount;
+        else if(isTransitTx(t))oTr+=t.amount;
         else if(t.mobileOrder)oOrder+=t.amount;
         else if(isSeven(t.shop))oS+=t.amount;
         else if(isVTarget(t.shop))oT+=t.amount;
@@ -4151,6 +4210,7 @@ function calcOliveBreakdown(list,mode){
       }
       if(t.chargeBonusMethod===OL){
         if(isOliveLounge(t.shop))oLounge+=t.amount;
+        else if(isTransitTx(t))oTr+=t.amount;
         else if(isSeven(t.shop))oS+=t.amount;
         else if(isVTarget(t.shop))oT+=t.amount;
         else if(isMobile(t.shop))oM+=t.amount;
@@ -4171,6 +4231,7 @@ function calcOliveBreakdown(list,mode){
   });
   const r=(0.5+S.pointSettings.vProgramRate)/100;
   const rs=(0.5+S.pointSettings.sevenElevenRate)/100;
+  const ptTr=Math.floor(oTr/200)*Math.round(200*TRANSIT_RATE_PCT/100);
   const ptT=Math.floor(oT/200)*Math.round(200*r);
   const ptS=Math.floor(oS/200)*Math.round(200*rs);
   const ptOrder=Math.floor(oOrder/200)*Math.round(200*r);
@@ -4180,13 +4241,14 @@ function calcOliveBreakdown(list,mode){
   const ptN=Math.floor(oN/200)*1;
   const ptDT=Math.floor(oDT/200)*3;
   const ptDN=Math.floor(oDN/200)*1;
-  const vPts=ptT+ptS+ptOrder+ptLounge+ptM+ptP+ptN+ptDT+ptDN;
-  return{vPts,vCouponPts,total:vPts+vCouponPts,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN,ptDT,ptDN};
+  const vPts=ptTr+ptT+ptS+ptOrder+ptLounge+ptM+ptP+ptN+ptDT+ptDN;
+  return{vPts,vCouponPts,total:vPts+vCouponPts,ptTr,ptT,ptS,ptOrder,ptLounge,ptM,ptP,ptN,ptDT,ptDN};
 }
 // Olive区分別ポイントを、実際のOlive明細名で並べた配列にする（0ptは除外）
 function oliveSubItems(b){
   return [
     {label:'Olive LOUNGEご利用特典Olive', pt:b.ptLounge},
+    {label:`鉄道 スマホのタッチ決済Olive`, pt:b.ptTr||0},
     {label:'コンビニ・飲食店 スマホのタッチ決済Olive', pt:b.ptT},
     {label:`セブン-イレブン スマホのタッチ決済+${S.pointSettings.sevenElevenRate.toFixed(1)}%Olive`, pt:b.ptS},
     {label:'コンビニ・飲食店 モバイルオーダーOlive', pt:b.ptOrder},
@@ -8256,6 +8318,8 @@ function renderWalletCards(){
   }
 }
 
+{ const _rwc=renderWalletCards; renderWalletCards=function(){ const r=_rwc.apply(this,arguments); try{renderMetroPanel();}catch(e){console.warn('metro panel',e);} return r; }; }
+
 // ウォレットカードの矢印: 1枚分ずつなめらかにスクロール（既存のスナップ動作は維持）
 let walletCardsUpdateNav=null;
 function walletCardsScrollBy(dir){
@@ -8379,6 +8443,11 @@ function openCardDetailModal(csId){
   const totalPts=Object.values(pointByMethod).reduce((a,b)=>a+b,0);
 
   // JCBカードW 新規入会キャンペーン進捗（対象期間はカードの請求サイクルと無関係のため、別途全月を横断して集計）
+  // 東京メトロ・都営 30%還元（対象: Olive / Oliveデビット / PayPayカード / V Point Pay）
+  const metroCampaignHtml=(METRO_CP.cards.includes(cs.method)&&metroCpActive())
+    ? `<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:4px 14px 12px;">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text2);padding-top:10px;">🚇 東京メトロ・都営 30%還元</div>
+        ${metroCpRowHtml(cs.method)}${METRO_CP_NOTE()}</div>` : '';
   let jcbCampaignHtml='';
   if(cs.method==='JCBカードW'&&S.jcbCampaign&&S.jcbCampaign.joinDate){
     const range=jcbCampaignRange(S.jcbCampaign.joinDate);
@@ -8448,6 +8517,7 @@ function openCardDetailModal(csId){
       </div>`:''}
     </div>
     ${jcbCampaignHtml}
+    ${metroCampaignHtml}
     <div>
       <div style="font-size:11.5px;font-weight:700;color:var(--text2);margin-bottom:8px;">決済手段ごとの獲得ポイント</div>
       <div style="display:flex;flex-direction:column;gap:6px;">
